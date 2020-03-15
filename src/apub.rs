@@ -24,12 +24,6 @@ pub enum ValidTypes {
     Undo,
 }
 
-impl Default for ValidTypes {
-    fn default() -> Self {
-        ValidTypes::Create
-    }
-}
-
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 #[serde(rename_all = "camelCase")]
@@ -38,13 +32,7 @@ pub enum ValidObjects {
     Object(AnyExistingObject),
 }
 
-impl Default for ValidObjects {
-    fn default() -> Self {
-        ValidObjects::Id(Default::default())
-    }
-}
-
-#[derive(Clone, Default, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AcceptedObjects {
     pub id: XsdAnyUri,
@@ -82,5 +70,11 @@ impl ValidObjects {
             ValidObjects::Id(ref id) => id,
             ValidObjects::Object(ref obj) => &obj.id,
         }
+    }
+}
+
+impl AcceptedActors {
+    pub fn inbox(&self) -> &XsdAnyUri {
+        self.endpoints.shared_inbox.as_ref().unwrap_or(&self.inbox)
     }
 }

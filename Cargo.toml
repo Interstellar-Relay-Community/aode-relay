@@ -11,7 +11,7 @@ anyhow = "1.0"
 actix = "0.10.0-alpha.2"
 actix-web = { version = "3.0.0-alpha.1", features = ["openssl"] }
 actix-rt = "1.0.0"
-activitystreams = "0.5.0-alpha.5"
+activitystreams = "0.5.0-alpha.6"
 bb8-postgres = "0.4.0"
 dotenv = "0.15.0"
 futures = "0.3.4"

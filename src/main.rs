@@ -27,7 +27,7 @@ async fn main() -> Result<(), anyhow::Error> {
     arbiter_labeler.clone().set_label();
 
     let state: State = db_actor
-        .send(db_actor::DbQuery(State::hydrate))
+        .send(db_actor::DbQuery(|pool| State::hydrate(false, pool)))
         .await?
         .await??;
 

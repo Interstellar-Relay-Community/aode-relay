@@ -76,7 +76,7 @@ impl Supervised for DbActor {}
 
 impl<F, Fut, R> Handler<DbQuery<F>> for DbActor
 where
-    F: Fn(Pool) -> Fut + 'static,
+    F: FnOnce(Pool) -> Fut + 'static,
     Fut: Future<Output = R>,
     R: Send + 'static,
 {
@@ -107,7 +107,7 @@ where
 
 impl<F, Fut, R> Message for DbQuery<F>
 where
-    F: Fn(Pool) -> Fut,
+    F: FnOnce(Pool) -> Fut,
     Fut: Future<Output = R>,
     R: Send + 'static,
 {

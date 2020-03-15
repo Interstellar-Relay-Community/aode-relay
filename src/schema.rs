@@ -1,7 +1,7 @@
 table! {
     blocks (id) {
         id -> Uuid,
-        actor_id -> Text,
+        domain_name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -19,7 +19,7 @@ table! {
 table! {
     whitelists (id) {
         id -> Uuid,
-        actor_id -> Text,
+        domain_name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
