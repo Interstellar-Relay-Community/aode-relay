@@ -4,10 +4,9 @@ use activitystreams::{
     primitives::XsdAnyUri,
 };
 use actix::Addr;
-use actix_web::{client::Client, web, HttpResponse};
+use actix_web::{client::Client, http::StatusCode, web, HttpResponse};
 use futures::join;
 use log::error;
-use std::collections::HashMap;
 
 use crate::{
     apub::{AcceptedActors, AcceptedObjects, ValidTypes},
@@ -117,9 +116,9 @@ async fn handle_forward(
 
     let inboxes = get_inboxes(&state, &actor, &object_id).await?;
 
-    deliver_many(client, inboxes, input);
+    deliver_many(client, inboxes, input.clone());
 
-    Ok(response(HashMap::<(), ()>::new()))
+    Ok(response(input))
 }
 
 async fn handle_relay(
@@ -150,11 +149,11 @@ async fn handle_relay(
 
     let inboxes = get_inboxes(&state, &actor, &object_id).await?;
 
-    deliver_many(client, inboxes, announce);
+    deliver_many(client, inboxes, announce.clone());
 
     state.cache(object_id.to_owned(), activity_id).await;
 
-    Ok(response(HashMap::<(), ()>::new()))
+    Ok(response(announce))
 }
 
 async fn handle_follow(
@@ -316,7 +315,17 @@ async fn get_inboxes(
     Ok(state.listeners_without(&inbox, &domain).await)
 }
 
-impl actix_web::error::ResponseError for MyError {}
+impl actix_web::error::ResponseError for MyError {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::InternalServerError()
+            .header("Content-Type", "application/activity+json")
+            .json(serde_json::json!({}))
+    }
+}
 
 impl From<std::convert::Infallible> for MyError {
     fn from(_: std::convert::Infallible) -> Self {
