@@ -3,7 +3,6 @@ use actix_web::{client::Client, web, App, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
 
 mod apub;
-mod cache;
 mod db_actor;
 mod inbox;
 mod label;

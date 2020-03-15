@@ -15,8 +15,10 @@ impl ArbiterLabelFactory {
     }
 
     pub fn set_label(&self) {
-        let id = self.0.fetch_add(1, Ordering::SeqCst);
-        actix::Arbiter::set_item(ArbiterLabel(id));
+        if !actix::Arbiter::contains_item::<ArbiterLabel>() {
+            let id = self.0.fetch_add(1, Ordering::SeqCst);
+            actix::Arbiter::set_item(ArbiterLabel(id));
+        }
     }
 }
 
