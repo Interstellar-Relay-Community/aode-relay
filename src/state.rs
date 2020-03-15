@@ -6,11 +6,14 @@ use lru::LruCache;
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
+use uuid::Uuid;
 
 use crate::{apub::AcceptedActors, db_actor::Pool};
 
 #[derive(Clone)]
 pub struct State {
+    use_https: bool,
+    hostname: String,
     whitelist_enabled: bool,
     actor_cache: Arc<RwLock<TtlCache<XsdAnyUri, AcceptedActors>>>,
     actor_id_cache: Arc<RwLock<LruCache<XsdAnyUri, XsdAnyUri>>>,
@@ -19,11 +22,69 @@ pub struct State {
     listeners: Arc<RwLock<HashSet<XsdAnyUri>>>,
 }
 
+pub enum UrlKind {
+    Activity,
+    Actor,
+    Followers,
+    Following,
+    Inbox,
+}
+
 #[derive(Clone, Debug, thiserror::Error)]
 #[error("No host present in URI")]
 pub struct HostError;
 
 impl State {
+    pub fn generate_url(&self, kind: UrlKind) -> String {
+        let scheme = if self.use_https { "https" } else { "http" };
+
+        match kind {
+            UrlKind::Activity => {
+                format!("{}://{}/activity/{}", scheme, self.hostname, Uuid::new_v4())
+            }
+            UrlKind::Actor => format!("{}://{}/actor", scheme, self.hostname),
+            UrlKind::Followers => format!("{}://{}/followers", scheme, self.hostname),
+            UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
+            UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
+        }
+    }
+
+    pub async fn remove_listener(&self, client: &Client, inbox: &XsdAnyUri) -> Result<(), Error> {
+        let hs = self.listeners.clone();
+
+        log::info!("DELETE FROM listeners WHERE actor_id = {};", inbox.as_str());
+        client
+            .execute(
+                "DELETE FROM listeners WHERE actor_id = $1::TEXT;",
+                &[&inbox.as_str()],
+            )
+            .await?;
+
+        let mut write_guard = hs.write().await;
+        write_guard.remove(inbox);
+
+        Ok(())
+    }
+
+    pub async fn listeners_without(&self, inbox: &XsdAnyUri, domain: &str) -> Vec<XsdAnyUri> {
+        let hs = self.listeners.clone();
+
+        let read_guard = hs.read().await;
+
+        read_guard
+            .iter()
+            .filter_map(|listener| {
+                if let Some(host) = listener.as_url().host() {
+                    if listener != inbox && host.to_string() != domain {
+                        return Some(listener.clone());
+                    }
+                }
+
+                None
+            })
+            .collect()
+    }
+
     pub async fn is_whitelisted(&self, actor_id: &XsdAnyUri) -> bool {
         if !self.whitelist_enabled {
             return true;
@@ -94,9 +155,13 @@ impl State {
             return Err(HostError.into());
         };
 
+        log::info!(
+            "INSERT INTO blocks (domain_name, created_at) VALUES ($1::TEXT, 'now'); [{}]",
+            host.to_string()
+        );
         client
             .execute(
-                "INSERT INTO blocks (actor_id, created_at) VALUES ($1::TEXT, now);",
+                "INSERT INTO blocks (domain_name, created_at) VALUES ($1::TEXT, 'now');",
                 &[&host.to_string()],
             )
             .await?;
@@ -116,9 +181,13 @@ impl State {
             return Err(HostError.into());
         };
 
+        log::info!(
+            "INSERT INTO whitelists (domain_name, created_at) VALUES ($1::TEXT, 'now'); [{}]",
+            host.to_string()
+        );
         client
             .execute(
-                "INSERT INTO whitelists (actor_id, created_at) VALUES ($1::TEXT, now);",
+                "INSERT INTO whitelists (domain_name, created_at) VALUES ($1::TEXT, 'now');",
                 &[&host.to_string()],
             )
             .await?;
@@ -132,9 +201,13 @@ impl State {
     pub async fn add_listener(&self, client: &Client, listener: XsdAnyUri) -> Result<(), Error> {
         let listeners = self.listeners.clone();
 
+        log::info!(
+            "INSERT INTO listeners (actor_id, created_at) VALUES ($1::TEXT, 'now'); [{}]",
+            listener.as_str(),
+        );
         client
             .execute(
-                "INSERT INTO listeners (actor_id, created_at) VALUES ($1::TEXT, now);",
+                "INSERT INTO listeners (actor_id, created_at) VALUES ($1::TEXT, 'now');",
                 &[&listener.as_str()],
             )
             .await?;
@@ -145,7 +218,12 @@ impl State {
         Ok(())
     }
 
-    pub async fn hydrate(whitelist_enabled: bool, pool: Pool) -> Result<Self, Error> {
+    pub async fn hydrate(
+        use_https: bool,
+        whitelist_enabled: bool,
+        hostname: String,
+        pool: Pool,
+    ) -> Result<Self, Error> {
         let pool1 = pool.clone();
         let pool2 = pool.clone();
 
@@ -170,7 +248,9 @@ impl State {
         let (blocks, whitelists, listeners) = try_join!(f1, f2, f3)?;
 
         Ok(State {
+            use_https,
             whitelist_enabled,
+            hostname,
             actor_cache: Arc::new(RwLock::new(TtlCache::new(1024 * 8))),
             actor_id_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
             blocks: Arc::new(RwLock::new(blocks)),
@@ -181,12 +261,14 @@ impl State {
 }
 
 pub async fn hydrate_blocks(client: &Client) -> Result<HashSet<String>, Error> {
+    log::info!("SELECT domain_name FROM blocks");
     let rows = client.query("SELECT domain_name FROM blocks", &[]).await?;
 
     parse_rows(rows)
 }
 
 pub async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, Error> {
+    log::info!("SELECT domain_name FROM whitelists");
     let rows = client
         .query("SELECT domain_name FROM whitelists", &[])
         .await?;
@@ -195,6 +277,7 @@ pub async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, Erro
 }
 
 pub async fn hydrate_listeners(client: &Client) -> Result<HashSet<XsdAnyUri>, Error> {
+    log::info!("SELECT actor_id FROM listeners");
     let rows = client.query("SELECT actor_id FROM listeners", &[]).await?;
 
     parse_rows(rows)

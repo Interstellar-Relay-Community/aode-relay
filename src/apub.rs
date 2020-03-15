@@ -3,6 +3,7 @@ use activitystreams::{
     primitives::XsdAnyUri,
     PropRefs,
 };
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PropRefs)]
 #[serde(rename_all = "camelCase")]
@@ -12,6 +13,9 @@ pub struct AnyExistingObject {
 
     #[serde(rename = "type")]
     pub kind: String,
+
+    #[serde(flatten)]
+    ext: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -22,6 +26,7 @@ pub enum ValidTypes {
     Delete,
     Follow,
     Undo,
+    Update,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -43,6 +48,9 @@ pub struct AcceptedObjects {
     pub actor: XsdAnyUri,
 
     pub object: ValidObjects,
+
+    #[serde(flatten)]
+    ext: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -69,6 +77,28 @@ impl ValidObjects {
         match self {
             ValidObjects::Id(ref id) => id,
             ValidObjects::Object(ref obj) => &obj.id,
+        }
+    }
+
+    pub fn is_kind(&self, query_kind: &str) -> bool {
+        match self {
+            ValidObjects::Id(_) => false,
+            ValidObjects::Object(AnyExistingObject { kind, .. }) => kind == query_kind,
+        }
+    }
+
+    pub fn child_object_is_actor(&self) -> bool {
+        match self {
+            ValidObjects::Id(_) => false,
+            ValidObjects::Object(AnyExistingObject { ext, .. }) => {
+                if let Some(o) = ext.get("object") {
+                    if let Ok(s) = serde_json::from_value::<String>(o.clone()) {
+                        return s.ends_with("/actor");
+                    }
+                }
+
+                false
+            }
         }
     }
 }

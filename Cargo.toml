@@ -23,3 +23,4 @@ serde_json = "1.0"
 thiserror = "1.0"
 tokio = { version = "0.2.13", features = ["sync"] }
 ttl_cache = "0.5.1"
+uuid = { version = "0.8", features = ["v4"] }

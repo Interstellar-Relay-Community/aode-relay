@@ -3,7 +3,7 @@ table! {
         id -> Uuid,
         domain_name -> Text,
         created_at -> Timestamp,
-        updated_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -12,7 +12,7 @@ table! {
         id -> Uuid,
         actor_id -> Text,
         created_at -> Timestamp,
-        updated_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -21,7 +21,7 @@ table! {
         id -> Uuid,
         domain_name -> Text,
         created_at -> Timestamp,
-        updated_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
