@@ -63,17 +63,18 @@ async fn handle_undo(
 
     let inbox = actor.inbox().to_owned();
 
-    let state2 = state.clone().into_inner();
     db_actor.do_send(DbQuery(move |pool: Pool| {
         let inbox = inbox.clone();
 
         async move {
             let conn = pool.get().await?;
 
-            state2.remove_listener(&conn, &inbox).await.map_err(|e| {
-                error!("Error removing listener, {}", e);
-                e
-            })
+            crate::db::remove_listener(&conn, &inbox)
+                .await
+                .map_err(|e| {
+                    error!("Error removing listener, {}", e);
+                    e
+                })
         }
     }));
 
@@ -181,17 +182,14 @@ async fn handle_follow(
     }
 
     if !is_listener {
-        let state = state.clone().into_inner();
-
         let inbox = actor.inbox().to_owned();
         db_actor.do_send(DbQuery(move |pool: Pool| {
             let inbox = inbox.clone();
-            let state = state.clone();
 
             async move {
                 let conn = pool.get().await?;
 
-                state.add_listener(&conn, inbox).await.map_err(|e| {
+                crate::db::add_listener(&conn, &inbox).await.map_err(|e| {
                     error!("Error adding listener, {}", e);
                     e
                 })

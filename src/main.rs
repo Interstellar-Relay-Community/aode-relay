@@ -6,10 +6,12 @@ use rsa_pem::KeyExt;
 use sha2::{Digest, Sha256};
 
 mod apub;
+mod db;
 mod db_actor;
 mod error;
 mod inbox;
 mod label;
+mod notify;
 mod state;
 mod verifier;
 mod webfinger;
@@ -62,7 +64,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
 #[actix_rt::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
-    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_LOG", "debug");
     pretty_env_logger::init();
 
     let pg_config: tokio_postgres::Config = std::env::var("DATABASE_URL")?.parse()?;
@@ -81,6 +83,8 @@ async fn main() -> Result<(), anyhow::Error> {
         }))
         .await?
         .await??;
+
+    let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
 
     HttpServer::new(move || {
         let actor = DbActor::new(pg_config.clone());
