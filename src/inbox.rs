@@ -1,3 +1,9 @@
+use crate::{
+    apub::{AcceptedActors, AcceptedObjects, ValidTypes},
+    db_actor::{DbActor, DbQuery, Pool},
+    error::MyError,
+    state::{State, UrlKind},
+};
 use activitystreams::{
     activity::apub::{Accept, Announce, Follow, Undo},
     context,
@@ -8,13 +14,6 @@ use actix_web::{client::Client, web, HttpResponse};
 use futures::join;
 use log::error;
 
-use crate::{
-    apub::{AcceptedActors, AcceptedObjects, ValidTypes},
-    db_actor::{DbActor, DbQuery, Pool},
-    error::MyError,
-    state::{State, UrlKind},
-};
-
 pub async fn inbox(
     db_actor: web::Data<Addr<DbActor>>,
     state: web::Data<State>,
@@ -23,7 +22,12 @@ pub async fn inbox(
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
-    let actor = fetch_actor(state.clone(), &client, &input.actor).await?;
+    let actor = fetch_actor(
+        state.clone().into_inner(),
+        client.clone().into_inner(),
+        &input.actor,
+    )
+    .await?;
 
     match input.kind {
         ValidTypes::Announce | ValidTypes::Create => {
@@ -217,15 +221,15 @@ async fn handle_follow(
     let client = client.into_inner();
     let accept2 = accept.clone();
     actix::Arbiter::spawn(async move {
-        let _ = deliver(&state.into_inner(), &client, actor_inbox, &accept2).await;
+        let _ = deliver(&state.into_inner(), &client.clone(), actor_inbox, &accept2).await;
     });
 
     Ok(response(accept))
 }
 
-async fn fetch_actor(
-    state: web::Data<State>,
-    client: &web::Data<Client>,
+pub async fn fetch_actor(
+    state: std::sync::Arc<State>,
+    client: std::sync::Arc<Client>,
     actor_id: &XsdAnyUri,
 ) -> Result<AcceptedActors, MyError> {
     if let Some(actor) = state.get_actor(actor_id).await {

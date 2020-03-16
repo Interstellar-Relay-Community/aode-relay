@@ -2,7 +2,9 @@
 use activitystreams::{actor::apub::Application, context, endpoint::EndpointProperties};
 use actix_web::{client::Client, middleware::Logger, web, App, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
+use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use rsa_pem::KeyExt;
+use sha2::{Digest, Sha256};
 
 mod apub;
 mod db_actor;
@@ -10,6 +12,7 @@ mod error;
 mod inbox;
 mod label;
 mod state;
+mod verifier;
 mod webfinger;
 
 use self::{
@@ -18,6 +21,8 @@ use self::{
     error::MyError,
     label::ArbiterLabelFactory,
     state::{State, UrlKind},
+    verifier::MyVerify,
+    webfinger::RelayResolver,
 };
 
 async fn index() -> impl Responder {
@@ -84,6 +89,11 @@ async fn main() -> Result<(), anyhow::Error> {
         let client = Client::default();
 
         App::new()
+            .wrap(VerifyDigest::new(Sha256::new()))
+            .wrap(VerifySignature::new(
+                MyVerify(state.clone(), client.clone()),
+                Default::default(),
+            ))
             .wrap(Logger::default())
             .data(actor)
             .data(state.clone())
@@ -91,7 +101,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/inbox").route(web::post().to(inbox::inbox)))
             .service(web::resource("/actor").route(web::get().to(actor_route)))
-            .service(actix_webfinger::resource::<_, webfinger::RelayResolver>())
+            .service(actix_webfinger::resource::<_, RelayResolver>())
     })
     .bind("127.0.0.1:8080")?
     .run()

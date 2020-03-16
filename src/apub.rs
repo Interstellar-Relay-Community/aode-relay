@@ -81,6 +81,9 @@ pub struct AcceptedActors {
     pub inbox: XsdAnyUri,
 
     pub endpoints: Endpoints,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<PublicKey>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]

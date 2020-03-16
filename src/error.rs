@@ -27,6 +27,12 @@ pub enum MyError {
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
 
+    #[error("Couldn't decode base64")]
+    Base64(#[from] base64::DecodeError),
+
+    #[error("Invalid algorithm provided to verifier")]
+    Algorithm,
+
     #[error("Wrong ActivityPub kind")]
     Kind,
 
@@ -50,6 +56,9 @@ pub enum MyError {
 
     #[error("URI is missing domain field")]
     Domain,
+
+    #[error("Public key is missing")]
+    MissingKey,
 }
 
 impl ResponseError for MyError {
