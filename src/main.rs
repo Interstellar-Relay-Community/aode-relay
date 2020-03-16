@@ -1,4 +1,3 @@
-#![feature(drain_filter)]
 use activitystreams::{actor::apub::Application, context, endpoint::EndpointProperties};
 use actix_web::{client::Client, middleware::Logger, web, App, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
