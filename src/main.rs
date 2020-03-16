@@ -89,17 +89,20 @@ async fn main() -> Result<(), anyhow::Error> {
         let client = Client::default();
 
         App::new()
-            .wrap(VerifyDigest::new(Sha256::new()))
-            .wrap(VerifySignature::new(
-                MyVerify(state.clone(), client.clone()),
-                Default::default(),
-            ))
             .wrap(Logger::default())
             .data(actor)
             .data(state.clone())
-            .data(client)
+            .data(client.clone())
             .service(web::resource("/").route(web::get().to(index)))
-            .service(web::resource("/inbox").route(web::post().to(inbox::inbox)))
+            .service(
+                web::resource("/inbox")
+                    .wrap(VerifyDigest::new(Sha256::new()))
+                    .wrap(VerifySignature::new(
+                        MyVerify(state.clone(), client),
+                        Default::default(),
+                    ))
+                    .route(web::post().to(inbox::inbox)),
+            )
             .service(web::resource("/actor").route(web::get().to(actor_route)))
             .service(actix_webfinger::resource::<_, RelayResolver>())
     })
