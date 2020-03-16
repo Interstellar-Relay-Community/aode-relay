@@ -9,18 +9,29 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 actix = "0.10.0-alpha.2"
-actix-web = { version = "3.0.0-alpha.1", features = ["openssl"] }
 actix-rt = "1.0.0"
+actix-web = { version = "3.0.0-alpha.1", features = ["openssl"] }
+actix-webfinger = { version = "0.3.0-alpha.2" }
 activitystreams = "0.5.0-alpha.6"
+base64 = "0.12"
 bb8-postgres = "0.4.0"
 dotenv = "0.15.0"
 futures = "0.3.4"
+http-signature-normalization-actix = { version = "0.3.0-alpha.1", default-features = false, features = ["sha-2"] }
 log = "0.4"
 lru = "0.4.3"
 pretty_env_logger = "0.4.0"
+rand = "0.7"
+rsa = "0.2"
+rsa-magic-public-key = { version = "0.1.0", git = "https://git.asonix.dog/Aardwolf/rsa-magic-public-key" }
+rsa-pem = { version = "0.1.0", git = "https://git.asonix.dog/Aardwolf/rsa-pem" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+sha2 = "0.8"
 thiserror = "1.0"
 tokio = { version = "0.2.13", features = ["sync"] }
 ttl_cache = "0.5.1"
 uuid = { version = "0.8", features = ["v4"] }
+
+[profile.dev.package.rsa]
+opt-level = 3

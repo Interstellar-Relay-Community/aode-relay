@@ -4,19 +4,16 @@ use activitystreams::{
     primitives::XsdAnyUri,
 };
 use actix::Addr;
-use actix_web::{client::Client, http::StatusCode, web, HttpResponse};
+use actix_web::{client::Client, web, HttpResponse};
 use futures::join;
 use log::error;
 
 use crate::{
     apub::{AcceptedActors, AcceptedObjects, ValidTypes},
     db_actor::{DbActor, DbQuery, Pool},
+    error::MyError,
     state::{State, UrlKind},
 };
-
-#[derive(Clone, Debug, thiserror::Error)]
-#[error("Something went wrong :(")]
-pub struct MyError;
 
 pub async fn inbox(
     db_actor: web::Data<Addr<DbActor>>,
@@ -57,7 +54,7 @@ async fn handle_undo(
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
     if !input.object.is_kind("Follow") {
-        return Err(MyError);
+        return Err(MyError::Kind);
     }
 
     let inbox = actor.inbox().to_owned();
@@ -99,7 +96,7 @@ async fn handle_undo(
         let undo2 = undo.clone();
         let client = client.into_inner();
         actix::Arbiter::spawn(async move {
-            let _ = deliver(&client, actor.id, &undo2).await;
+            let _ = deliver(&state.into_inner(), &client, actor.id, &undo2).await;
         });
     }
 
@@ -116,7 +113,7 @@ async fn handle_forward(
 
     let inboxes = get_inboxes(&state, &actor, &object_id).await?;
 
-    deliver_many(client, inboxes, input.clone());
+    deliver_many(state, client, inboxes, input.clone());
 
     Ok(response(input))
 }
@@ -130,7 +127,7 @@ async fn handle_relay(
     let object_id = input.object.id();
 
     if state.is_cached(object_id).await {
-        return Err(MyError);
+        return Err(MyError::Duplicate);
     }
 
     let activity_id: XsdAnyUri = state.generate_url(UrlKind::Activity).parse()?;
@@ -149,9 +146,9 @@ async fn handle_relay(
 
     let inboxes = get_inboxes(&state, &actor, &object_id).await?;
 
-    deliver_many(client, inboxes, announce.clone());
-
     state.cache(object_id.to_owned(), activity_id).await;
+
+    deliver_many(state, client, inboxes, announce.clone());
 
     Ok(response(announce))
 }
@@ -171,12 +168,12 @@ async fn handle_follow(
 
     if is_blocked {
         error!("Follow from blocked listener, {}", actor.id);
-        return Err(MyError);
+        return Err(MyError::Blocked);
     }
 
     if !is_whitelisted {
         error!("Follow from non-whitelisted listener, {}", actor.id);
-        return Err(MyError);
+        return Err(MyError::Whitelist);
     }
 
     if !is_listener {
@@ -220,7 +217,7 @@ async fn handle_follow(
     let client = client.into_inner();
     let accept2 = accept.clone();
     actix::Arbiter::spawn(async move {
-        let _ = deliver(&client, actor_inbox, &accept2).await;
+        let _ = deliver(&state.into_inner(), &client, actor_inbox, &accept2).await;
     });
 
     Ok(response(accept))
@@ -242,13 +239,13 @@ async fn fetch_actor(
         .await
         .map_err(|e| {
             error!("Couldn't send request to {} for actor, {}", actor_id, e);
-            MyError
+            MyError::SendRequest
         })?
         .json()
         .await
         .map_err(|e| {
             error!("Coudn't fetch actor from {}, {}", actor_id, e);
-            MyError
+            MyError::ReceiveResponse
         })?;
 
     state.cache_actor(actor_id.to_owned(), actor.clone()).await;
@@ -256,20 +253,24 @@ async fn fetch_actor(
     Ok(actor)
 }
 
-fn deliver_many<T>(client: web::Data<Client>, inboxes: Vec<XsdAnyUri>, item: T)
-where
+fn deliver_many<T>(
+    state: web::Data<State>,
+    client: web::Data<Client>,
+    inboxes: Vec<XsdAnyUri>,
+    item: T,
+) where
     T: serde::ser::Serialize + 'static,
 {
     let client = client.into_inner();
+    let state = state.into_inner();
 
     actix::Arbiter::spawn(async move {
         use futures::stream::StreamExt;
 
-        let client = client.clone();
         let mut unordered = futures::stream::FuturesUnordered::new();
 
         for inbox in inboxes {
-            unordered.push(deliver(&client, inbox, &item));
+            unordered.push(deliver(&state, &client, inbox, &item));
         }
 
         while let Some(_) = unordered.next().await {}
@@ -277,6 +278,7 @@ where
 }
 
 async fn deliver<T>(
+    state: &std::sync::Arc<State>,
     client: &std::sync::Arc<Client>,
     inbox: XsdAnyUri,
     item: &T,
@@ -284,20 +286,38 @@ async fn deliver<T>(
 where
     T: serde::ser::Serialize,
 {
+    use http_signature_normalization_actix::prelude::*;
+    use sha2::{Digest, Sha256};
+
+    let config = Config::default();
+    let mut digest = Sha256::new();
+
+    let key_id = state.generate_url(UrlKind::Actor);
+
+    let item_string = serde_json::to_string(item)?;
+
     let res = client
         .post(inbox.as_str())
         .header("Accept", "application/activity+json")
         .header("Content-Type", "application/activity+json")
-        .send_json(item)
+        .header("User-Agent", "Aode Relay v0.1.0")
+        .signature_with_digest(
+            &config,
+            &key_id,
+            &mut digest,
+            item_string,
+            |signing_string| state.sign(signing_string.as_bytes()),
+        )?
+        .send()
         .await
         .map_err(|e| {
             error!("Couldn't send deliver request to {}, {}", inbox, e);
-            MyError
+            MyError::SendRequest
         })?;
 
     if !res.status().is_success() {
         error!("Invalid response status from {}, {}", inbox, res.status());
-        return Err(MyError);
+        return Err(MyError::Status);
     }
 
     Ok(())
@@ -308,41 +328,13 @@ async fn get_inboxes(
     actor: &AcceptedActors,
     object_id: &XsdAnyUri,
 ) -> Result<Vec<XsdAnyUri>, MyError> {
-    let domain = object_id.as_url().host().ok_or(MyError)?.to_string();
+    let domain = object_id
+        .as_url()
+        .host()
+        .ok_or(MyError::Domain)?
+        .to_string();
 
     let inbox = actor.inbox();
 
     Ok(state.listeners_without(&inbox, &domain).await)
-}
-
-impl actix_web::error::ResponseError for MyError {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn error_response(&self) -> HttpResponse {
-        HttpResponse::InternalServerError()
-            .header("Content-Type", "application/activity+json")
-            .json(serde_json::json!({}))
-    }
-}
-
-impl From<std::convert::Infallible> for MyError {
-    fn from(_: std::convert::Infallible) -> Self {
-        MyError
-    }
-}
-
-impl From<activitystreams::primitives::XsdAnyUriError> for MyError {
-    fn from(_: activitystreams::primitives::XsdAnyUriError) -> Self {
-        error!("Error parsing URI");
-        MyError
-    }
-}
-
-impl From<std::io::Error> for MyError {
-    fn from(e: std::io::Error) -> Self {
-        error!("JSON Error, {}", e);
-        MyError
-    }
 }

@@ -2,7 +2,11 @@ use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
 use bb8_postgres::tokio_postgres::{row::Row, Client};
 use futures::try_join;
+use log::{error, info};
 use lru::LruCache;
+use rand::thread_rng;
+use rsa::{RSAPrivateKey, RSAPublicKey};
+use rsa_pem::KeyExt;
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
@@ -12,14 +16,21 @@ use crate::{apub::AcceptedActors, db_actor::Pool};
 
 #[derive(Clone)]
 pub struct State {
-    use_https: bool,
-    hostname: String,
-    whitelist_enabled: bool,
+    pub settings: Settings,
     actor_cache: Arc<RwLock<TtlCache<XsdAnyUri, AcceptedActors>>>,
     actor_id_cache: Arc<RwLock<LruCache<XsdAnyUri, XsdAnyUri>>>,
     blocks: Arc<RwLock<HashSet<String>>>,
     whitelists: Arc<RwLock<HashSet<String>>>,
     listeners: Arc<RwLock<HashSet<XsdAnyUri>>>,
+}
+
+#[derive(Clone)]
+pub struct Settings {
+    pub use_https: bool,
+    pub whitelist_enabled: bool,
+    pub hostname: String,
+    pub public_key: RSAPublicKey,
+    private_key: RSAPrivateKey,
 }
 
 pub enum UrlKind {
@@ -28,14 +39,58 @@ pub enum UrlKind {
     Followers,
     Following,
     Inbox,
+    MainKey,
 }
 
 #[derive(Clone, Debug, thiserror::Error)]
 #[error("No host present in URI")]
 pub struct HostError;
 
-impl State {
-    pub fn generate_url(&self, kind: UrlKind) -> String {
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("Error generating RSA key")]
+pub struct RsaError;
+
+impl Settings {
+    async fn hydrate(
+        client: &Client,
+        use_https: bool,
+        whitelist_enabled: bool,
+        hostname: String,
+    ) -> Result<Self, Error> {
+        info!("SELECT value FROM settings WHERE key = 'private_key'");
+        let rows = client
+            .query("SELECT value FROM settings WHERE key = 'private_key'", &[])
+            .await?;
+
+        let private_key = if let Some(row) = rows.into_iter().next() {
+            let key_str: String = row.get(0);
+            KeyExt::from_pem_pkcs8(&key_str)?
+        } else {
+            info!("Generating new keys");
+            let mut rng = thread_rng();
+            let key = RSAPrivateKey::new(&mut rng, 4096).map_err(|e| {
+                error!("Error generating RSA key, {}", e);
+                RsaError
+            })?;
+            let pem_pkcs8 = key.to_pem_pkcs8()?;
+
+            info!("INSERT INTO settings (key, value, created_at) VALUES ('private_key', $1::TEXT, 'now');");
+            client.execute("INSERT INTO settings (key, value, created_at) VALUES ('private_key', $1::TEXT, 'now');", &[&pem_pkcs8]).await?;
+            key
+        };
+
+        let public_key = private_key.to_public_key();
+
+        Ok(Settings {
+            use_https,
+            whitelist_enabled,
+            hostname,
+            private_key,
+            public_key,
+        })
+    }
+
+    fn generate_url(&self, kind: UrlKind) -> String {
         let scheme = if self.use_https { "https" } else { "http" };
 
         match kind {
@@ -46,13 +101,40 @@ impl State {
             UrlKind::Followers => format!("{}://{}/followers", scheme, self.hostname),
             UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
             UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
+            UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
         }
+    }
+
+    fn generate_resource(&self) -> String {
+        format!("relay@{}", self.hostname)
+    }
+
+    fn sign(&self, bytes: &[u8]) -> Result<String, crate::error::MyError> {
+        use rsa::{hash::Hashes, padding::PaddingScheme};
+        let bytes =
+            self.private_key
+                .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), bytes)?;
+        Ok(base64::encode_config(bytes, base64::URL_SAFE))
+    }
+}
+
+impl State {
+    pub fn generate_url(&self, kind: UrlKind) -> String {
+        self.settings.generate_url(kind)
+    }
+
+    pub fn generate_resource(&self) -> String {
+        self.settings.generate_resource()
+    }
+
+    pub fn sign(&self, bytes: &[u8]) -> Result<String, crate::error::MyError> {
+        self.settings.sign(bytes)
     }
 
     pub async fn remove_listener(&self, client: &Client, inbox: &XsdAnyUri) -> Result<(), Error> {
         let hs = self.listeners.clone();
 
-        log::info!("DELETE FROM listeners WHERE actor_id = {};", inbox.as_str());
+        info!("DELETE FROM listeners WHERE actor_id = {};", inbox.as_str());
         client
             .execute(
                 "DELETE FROM listeners WHERE actor_id = $1::TEXT;",
@@ -86,7 +168,7 @@ impl State {
     }
 
     pub async fn is_whitelisted(&self, actor_id: &XsdAnyUri) -> bool {
-        if !self.whitelist_enabled {
+        if !self.settings.whitelist_enabled {
             return true;
         }
 
@@ -155,7 +237,7 @@ impl State {
             return Err(HostError.into());
         };
 
-        log::info!(
+        info!(
             "INSERT INTO blocks (domain_name, created_at) VALUES ($1::TEXT, 'now'); [{}]",
             host.to_string()
         );
@@ -181,7 +263,7 @@ impl State {
             return Err(HostError.into());
         };
 
-        log::info!(
+        info!(
             "INSERT INTO whitelists (domain_name, created_at) VALUES ($1::TEXT, 'now'); [{}]",
             host.to_string()
         );
@@ -201,7 +283,7 @@ impl State {
     pub async fn add_listener(&self, client: &Client, listener: XsdAnyUri) -> Result<(), Error> {
         let listeners = self.listeners.clone();
 
-        log::info!(
+        info!(
             "INSERT INTO listeners (actor_id, created_at) VALUES ($1::TEXT, 'now'); [{}]",
             listener.as_str(),
         );
@@ -226,6 +308,7 @@ impl State {
     ) -> Result<Self, Error> {
         let pool1 = pool.clone();
         let pool2 = pool.clone();
+        let pool3 = pool.clone();
 
         let f1 = async move {
             let conn = pool.get().await?;
@@ -245,12 +328,16 @@ impl State {
             hydrate_listeners(&conn).await
         };
 
-        let (blocks, whitelists, listeners) = try_join!(f1, f2, f3)?;
+        let f4 = async move {
+            let conn = pool3.get().await?;
+
+            Settings::hydrate(&conn, use_https, whitelist_enabled, hostname).await
+        };
+
+        let (blocks, whitelists, listeners, settings) = try_join!(f1, f2, f3, f4)?;
 
         Ok(State {
-            use_https,
-            whitelist_enabled,
-            hostname,
+            settings,
             actor_cache: Arc::new(RwLock::new(TtlCache::new(1024 * 8))),
             actor_id_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
             blocks: Arc::new(RwLock::new(blocks)),
@@ -261,14 +348,14 @@ impl State {
 }
 
 pub async fn hydrate_blocks(client: &Client) -> Result<HashSet<String>, Error> {
-    log::info!("SELECT domain_name FROM blocks");
+    info!("SELECT domain_name FROM blocks");
     let rows = client.query("SELECT domain_name FROM blocks", &[]).await?;
 
     parse_rows(rows)
 }
 
 pub async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, Error> {
-    log::info!("SELECT domain_name FROM whitelists");
+    info!("SELECT domain_name FROM whitelists");
     let rows = client
         .query("SELECT domain_name FROM whitelists", &[])
         .await?;
@@ -277,7 +364,7 @@ pub async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, Erro
 }
 
 pub async fn hydrate_listeners(client: &Client) -> Result<HashSet<XsdAnyUri>, Error> {
-    log::info!("SELECT actor_id FROM listeners");
+    info!("SELECT actor_id FROM listeners");
     let rows = client.query("SELECT actor_id FROM listeners", &[]).await?;
 
     parse_rows(rows)

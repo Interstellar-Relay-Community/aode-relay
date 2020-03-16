@@ -2,16 +2,20 @@
 use activitystreams::{actor::apub::Application, context, endpoint::EndpointProperties};
 use actix_web::{client::Client, middleware::Logger, web, App, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
+use rsa_pem::KeyExt;
 
 mod apub;
 mod db_actor;
+mod error;
 mod inbox;
 mod label;
 mod state;
+mod webfinger;
 
 use self::{
+    apub::PublicKey,
     db_actor::DbActor,
-    inbox::MyError,
+    error::MyError,
     label::ArbiterLabelFactory,
     state::{State, UrlKind},
 };
@@ -42,7 +46,13 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         .set_inbox(state.generate_url(UrlKind::Inbox))?
         .set_endpoints(endpoint)?;
 
-    Ok(inbox::response(application))
+    let public_key = PublicKey {
+        id: state.generate_url(UrlKind::MainKey).parse()?,
+        owner: state.generate_url(UrlKind::Actor).parse()?,
+        public_key_pem: state.settings.public_key.to_pem_pkcs8()?,
+    };
+
+    Ok(inbox::response(public_key.extend(application)))
 }
 
 #[actix_rt::main]
@@ -81,6 +91,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/inbox").route(web::post().to(inbox::inbox)))
             .service(web::resource("/actor").route(web::get().to(actor_route)))
+            .service(actix_webfinger::resource::<_, webfinger::RelayResolver>())
     })
     .bind("127.0.0.1:8080")?
     .run()

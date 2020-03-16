@@ -17,6 +17,16 @@ table! {
 }
 
 table! {
+    settings (id) {
+        id -> Uuid,
+        key -> Text,
+        value -> Text,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
     whitelists (id) {
         id -> Uuid,
         domain_name -> Text,
@@ -28,5 +38,6 @@ table! {
 allow_tables_to_appear_in_same_query!(
     blocks,
     listeners,
+    settings,
     whitelists,
 );

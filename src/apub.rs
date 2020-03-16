@@ -5,6 +5,23 @@ use activitystreams::{
 };
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicKey {
+    pub id: XsdAnyUri,
+    pub owner: XsdAnyUri,
+    pub public_key_pem: String,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicKeyExtension<T> {
+    public_key: PublicKey,
+
+    #[serde(flatten)]
+    extending: T,
+}
+
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PropRefs)]
 #[serde(rename_all = "camelCase")]
 #[prop_refs(Object)]
@@ -70,6 +87,15 @@ pub struct AcceptedActors {
 #[serde(rename_all = "camelCase")]
 pub struct Endpoints {
     shared_inbox: Option<XsdAnyUri>,
+}
+
+impl PublicKey {
+    pub fn extend<T>(self, extending: T) -> PublicKeyExtension<T> {
+        PublicKeyExtension {
+            public_key: self,
+            extending,
+        }
+    }
 }
 
 impl ValidObjects {
