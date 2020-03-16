@@ -11,6 +11,12 @@ use std::collections::HashSet;
 pub struct HostError;
 
 pub async fn listen(client: &Client) -> Result<(), Error> {
+    info!("LISTEN new_blocks;");
+    info!("LISTEN new_whitelists;");
+    info!("LISTEN new_listeners;");
+    info!("LISTEN rm_blocks;");
+    info!("LISTEN rm_whitelists;");
+    info!("LISTEN rm_listeners;");
     client
         .batch_execute(
             "LISTEN new_blocks;

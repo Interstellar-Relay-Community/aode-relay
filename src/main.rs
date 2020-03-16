@@ -64,7 +64,6 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
 #[actix_rt::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
-    std::env::set_var("RUST_LOG", "debug");
     pretty_env_logger::init();
 
     let pg_config: tokio_postgres::Config = std::env::var("DATABASE_URL")?.parse()?;
