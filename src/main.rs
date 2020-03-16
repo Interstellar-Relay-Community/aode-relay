@@ -108,7 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(web::resource("/actor").route(web::get().to(actor_route)))
             .service(actix_webfinger::resource::<_, RelayResolver>())
     })
-    .bind("127.0.0.1:8080")?
+    .bind("0.0.0.0:8080")?
     .run()
     .await?;
     Ok(())
