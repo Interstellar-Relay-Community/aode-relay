@@ -33,7 +33,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
     let mut application = Application::default();
     let mut endpoint = EndpointProperties::default();
 
-    endpoint.set_shared_inbox(format!("https://{}/inbox", "localhost"))?;
+    endpoint.set_shared_inbox(state.generate_url(UrlKind::Inbox))?;
 
     application
         .object_props
