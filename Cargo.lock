@@ -318,9 +318,9 @@ dependencies = [
 
 [[package]]
 name = "actix-webfinger"
-version = "0.3.0-alpha.2"
+version = "0.3.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "221e03224c654d7c6f35cc7a8bb7bc01ce0e53eb61b7722de199c6182cd9f3fe"
+checksum = "120ce509b4ad2a0dedfbaebc1c1fb2b5e7bb34430a851c3eb264a704135e30a7"
 dependencies = [
  "actix-http",
  "actix-web",
@@ -827,9 +827,9 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "flate2"
-version = "1.0.13"
+version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bd6d6f4752952feb71363cffc9ebac9411b75b87c6ab6058c40c8900cf43c0f"
+checksum = "2cfff41391129e0a856d6d822600b8d71179d46879e310417eb9c762eb178b42"
 dependencies = [
  "cfg-if",
  "crc32fast",
