@@ -97,11 +97,13 @@ impl Settings {
         format!("relay@{}", self.hostname)
     }
 
-    fn sign(&self, bytes: &[u8]) -> Result<String, crate::error::MyError> {
+    fn sign(&self, signing_string: &str) -> Result<String, crate::error::MyError> {
         use rsa::{hash::Hashes, padding::PaddingScheme};
+        use sha2::{Digest, Sha256};
+        let hashed = Sha256::digest(signing_string.as_bytes());
         let bytes =
             self.private_key
-                .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), bytes)?;
+                .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), &hashed)?;
         Ok(base64::encode_config(bytes, base64::URL_SAFE))
     }
 }
@@ -115,8 +117,8 @@ impl State {
         self.settings.generate_resource()
     }
 
-    pub fn sign(&self, bytes: &[u8]) -> Result<String, crate::error::MyError> {
-        self.settings.sign(bytes)
+    pub fn sign(&self, signing_string: &str) -> Result<String, crate::error::MyError> {
+        self.settings.sign(signing_string)
     }
 
     pub async fn bust_whitelist(&self, whitelist: &str) {

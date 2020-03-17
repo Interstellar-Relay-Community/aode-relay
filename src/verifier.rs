@@ -1,8 +1,9 @@
 use crate::{error::MyError, state::State};
 use actix_web::client::Client;
-use http_signature_normalization_actix::prelude::*;
+use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
 use rsa_pem::KeyExt;
+use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin, sync::Arc};
 
 #[derive(Clone)]
@@ -35,16 +36,18 @@ impl SignatureVerify for MyVerify {
 
             match algorithm {
                 Some(Algorithm::Hs2019) => (),
+                Some(Algorithm::Deprecated(DeprecatedAlgorithm::RsaSha256)) => (),
                 _ => return Err(MyError::Algorithm),
             };
 
             let decoded = base64::decode(signature)?;
+            let hashed = Sha256::digest(signing_string.as_bytes());
 
             public_key.verify(
                 PaddingScheme::PKCS1v15,
                 Some(&Hashes::SHA2_256),
+                &hashed,
                 &decoded,
-                signing_string.as_bytes(),
             )?;
 
             Ok(true)

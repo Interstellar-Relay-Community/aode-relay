@@ -308,7 +308,7 @@ where
             &key_id,
             &mut digest,
             item_string,
-            |signing_string| state.sign(signing_string.as_bytes()),
+            |signing_string| state.sign(signing_string),
         )?
         .send()
         .await

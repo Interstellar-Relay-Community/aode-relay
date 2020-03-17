@@ -530,6 +530,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bit-vec"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4523a10839ffae575fb08aa3423026c8cb4687eef43952afb956229d4f246f7"
+
+[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1711,8 +1717,10 @@ dependencies = [
 [[package]]
 name = "rsa-pem"
 version = "0.1.0"
-source = "git+https://git.asonix.dog/Aardwolf/rsa-pem#6c47c3fc377375a5bfedbb7457832fc013d3227d"
+source = "git+https://git.asonix.dog/Aardwolf/rsa-pem#8dc04bd060d7993058c120f5cbfa654890113614"
 dependencies = [
+ "bit-vec",
+ "log",
  "num-bigint",
  "num-bigint-dig",
  "num-traits",
@@ -2469,6 +2477,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a563d10ead87e2d798e357d44f40f495ad70bcee4d5c0d3f77a5b1b7376645d9"
 dependencies = [
+ "bit-vec",
  "num-bigint",
 ]
 
