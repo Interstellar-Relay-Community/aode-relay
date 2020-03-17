@@ -50,10 +50,8 @@ async fn verify(
     debug!("Fetching actor");
     let actor = fetch_actor(state, client, &key_id.parse()?).await?;
 
-    let public_key = actor.public_key.ok_or(MyError::MissingKey)?;
-
     debug!("Parsing public key");
-    let public_key = RSAPublicKey::from_pem_pkcs8(&public_key.public_key_pem)?;
+    let public_key = RSAPublicKey::from_pem_pkcs8(&actor.public_key.public_key_pem)?;
 
     match algorithm {
         Some(Algorithm::Hs2019) => (),

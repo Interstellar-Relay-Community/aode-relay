@@ -59,9 +59,6 @@ pub enum MyError {
 
     #[error("URI is missing domain field")]
     Domain,
-
-    #[error("Public key is missing")]
-    MissingKey,
 }
 
 impl ResponseError for MyError {

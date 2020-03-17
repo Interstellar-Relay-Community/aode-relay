@@ -27,7 +27,14 @@ pub async fn inbox(
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
-    if input.actor.as_str() != verified.key_id() {
+    let actor = fetch_actor(
+        state.clone().into_inner(),
+        client.clone().into_inner(),
+        &input.actor,
+    )
+    .await?;
+
+    if actor.public_key.id.as_str() != verified.key_id() {
         error!(
             "Request payload and requestor disagree on actor, {} != {}",
             input.actor,
@@ -35,13 +42,6 @@ pub async fn inbox(
         );
         return Err(MyError::BadActor);
     }
-
-    let actor = fetch_actor(
-        state.clone().into_inner(),
-        client.clone().into_inner(),
-        &input.actor,
-    )
-    .await?;
 
     match input.kind {
         ValidTypes::Announce | ValidTypes::Create => {
