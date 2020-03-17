@@ -39,6 +39,7 @@ pub enum UrlKind {
     Following,
     Inbox,
     MainKey,
+    Outbox,
 }
 
 #[derive(Clone, Debug, thiserror::Error)]
@@ -90,6 +91,7 @@ impl Settings {
             UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
             UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
             UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
+            UrlKind::Outbox => format!("{}://{}/outbox", scheme, self.hostname),
         }
     }
 

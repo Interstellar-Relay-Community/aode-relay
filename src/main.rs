@@ -50,6 +50,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         .set_followers(state.generate_url(UrlKind::Followers))?
         .set_following(state.generate_url(UrlKind::Following))?
         .set_inbox(state.generate_url(UrlKind::Inbox))?
+        .set_outbox(state.generate_url(UrlKind::Outbox))?
         .set_endpoints(endpoint)?;
 
     let public_key = PublicKey {
