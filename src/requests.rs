@@ -20,7 +20,7 @@ pub async fn fetch_actor(
 
     let key_id = state.generate_url(UrlKind::MainKey);
 
-    let actor: AcceptedActors = client
+    let mut res = client
         .get(actor_id.as_str())
         .header("Accept", "application/activity+json")
         .signature(&Config::default(), key_id, |signing_string| {
@@ -31,13 +31,23 @@ pub async fn fetch_actor(
         .map_err(|e| {
             error!("Couldn't send request to {} for actor, {}", actor_id, e);
             MyError::SendRequest
-        })?
-        .json()
-        .await
-        .map_err(|e| {
-            error!("Coudn't fetch actor from {}, {}", actor_id, e);
-            MyError::ReceiveResponse
         })?;
+
+    if !res.status().is_success() {
+        error!("Invalid status code for actor fetch, {}", res.status());
+        if let Ok(bytes) = res.body().await {
+            if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
+                error!("Response, {}", s);
+            }
+        }
+
+        return Err(MyError::Status);
+    }
+
+    let actor: AcceptedActors = res.json().await.map_err(|e| {
+        error!("Coudn't fetch actor from {}, {}", actor_id, e);
+        MyError::ReceiveResponse
+    })?;
 
     state.cache_actor(actor_id.to_owned(), actor.clone()).await;
 
@@ -86,7 +96,7 @@ where
 
     let item_string = serde_json::to_string(item)?;
 
-    let res = client
+    let mut res = client
         .post(inbox.as_str())
         .header("Accept", "application/activity+json")
         .header("Content-Type", "application/activity+json")
@@ -107,6 +117,11 @@ where
 
     if !res.status().is_success() {
         error!("Invalid response status from {}, {}", inbox, res.status());
+        if let Ok(bytes) = res.body().await {
+            if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
+                error!("Response, {}", s);
+            }
+        }
         return Err(MyError::Status);
     }
 
