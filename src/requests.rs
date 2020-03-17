@@ -12,13 +12,20 @@ pub async fn fetch_actor(
     client: std::sync::Arc<Client>,
     actor_id: &XsdAnyUri,
 ) -> Result<AcceptedActors, MyError> {
+    use http_signature_normalization_actix::prelude::*;
+
     if let Some(actor) = state.get_actor(actor_id).await {
         return Ok(actor);
     }
 
+    let key_id = state.generate_url(UrlKind::MainKey);
+
     let actor: AcceptedActors = client
         .get(actor_id.as_str())
         .header("Accept", "application/activity+json")
+        .signature(&Config::default(), key_id, |signing_string| {
+            state.sign(signing_string)
+        })?
         .send()
         .await
         .map_err(|e| {
@@ -73,10 +80,9 @@ where
     use http_signature_normalization_actix::prelude::*;
     use sha2::{Digest, Sha256};
 
-    let config = Config::default();
     let mut digest = Sha256::new();
 
-    let key_id = state.generate_url(UrlKind::Actor);
+    let key_id = state.generate_url(UrlKind::MainKey);
 
     let item_string = serde_json::to_string(item)?;
 
@@ -86,7 +92,7 @@ where
         .header("Content-Type", "application/activity+json")
         .header("User-Agent", "Aode Relay v0.1.0")
         .signature_with_digest(
-            &config,
+            &Config::default(),
             &key_id,
             &mut digest,
             item_string,
