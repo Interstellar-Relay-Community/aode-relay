@@ -1,5 +1,7 @@
 use activitystreams::{actor::apub::Application, context, endpoint::EndpointProperties};
-use actix_web::{client::Client, middleware::Logger, web, App, HttpServer, Responder};
+use actix_web::{
+    client::Client, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
+};
 use bb8_postgres::tokio_postgres;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use rsa_pem::KeyExt;
@@ -12,6 +14,7 @@ mod error;
 mod inbox;
 mod label;
 mod notify;
+mod requests;
 mod state;
 mod verifier;
 mod webfinger;
@@ -25,6 +28,15 @@ use self::{
     verifier::MyVerify,
     webfinger::RelayResolver,
 };
+
+pub fn response<T>(item: T) -> HttpResponse
+where
+    T: serde::ser::Serialize,
+{
+    HttpResponse::Ok()
+        .content_type("application/activity+json")
+        .json(item)
+}
 
 async fn index() -> impl Responder {
     "hewwo, mr obama"
@@ -59,7 +71,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         public_key_pem: state.settings.public_key.to_pem_pkcs8()?,
     };
 
-    Ok(inbox::response(public_key.extend(application)))
+    Ok(response(public_key.extend(application)))
 }
 
 #[actix_rt::main]

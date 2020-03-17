@@ -1,4 +1,4 @@
-use crate::{error::MyError, state::State};
+use crate::{error::MyError, requests::fetch_actor, state::State};
 use actix_web::client::Client;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
@@ -28,7 +28,7 @@ impl SignatureVerify for MyVerify {
         let client = Arc::new(self.1.clone());
 
         Box::pin(async move {
-            let actor = crate::inbox::fetch_actor(state, client, &key_id.parse()?).await?;
+            let actor = fetch_actor(state, client, &key_id.parse()?).await?;
 
             let public_key = actor.public_key.ok_or(MyError::MissingKey)?;
 
