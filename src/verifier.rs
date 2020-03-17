@@ -1,6 +1,7 @@
 use crate::{error::MyError, requests::fetch_actor, state::State};
 use actix_web::client::Client;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
+use log::{debug, error, info, warn};
 use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
 use rsa_pem::KeyExt;
 use sha2::{Digest, Sha256};
@@ -28,29 +29,53 @@ impl SignatureVerify for MyVerify {
         let client = Arc::new(self.1.clone());
 
         Box::pin(async move {
-            let actor = fetch_actor(state, client, &key_id.parse()?).await?;
-
-            let public_key = actor.public_key.ok_or(MyError::MissingKey)?;
-
-            let public_key = RSAPublicKey::from_pem_pkcs8(&public_key.public_key_pem)?;
-
-            match algorithm {
-                Some(Algorithm::Hs2019) => (),
-                Some(Algorithm::Deprecated(DeprecatedAlgorithm::RsaSha256)) => (),
-                _ => return Err(MyError::Algorithm),
-            };
-
-            let decoded = base64::decode(signature)?;
-            let hashed = Sha256::digest(signing_string.as_bytes());
-
-            public_key.verify(
-                PaddingScheme::PKCS1v15,
-                Some(&Hashes::SHA2_256),
-                &hashed,
-                &decoded,
-            )?;
-
-            Ok(true)
+            verify(state, client, algorithm, key_id, signature, signing_string)
+                .await
+                .map_err(|e| {
+                    error!("Failed to verify, {}", e);
+                    e
+                })
         })
     }
+}
+
+async fn verify(
+    state: Arc<State>,
+    client: Arc<Client>,
+    algorithm: Option<Algorithm>,
+    key_id: String,
+    signature: String,
+    signing_string: String,
+) -> Result<bool, MyError> {
+    debug!("Fetching actor");
+    let actor = fetch_actor(state, client, &key_id.parse()?).await?;
+
+    let public_key = actor.public_key.ok_or(MyError::MissingKey)?;
+
+    debug!("Parsing public key");
+    let public_key = RSAPublicKey::from_pem_pkcs8(&public_key.public_key_pem)?;
+
+    match algorithm {
+        Some(Algorithm::Hs2019) => (),
+        Some(Algorithm::Deprecated(DeprecatedAlgorithm::RsaSha256)) => (),
+        other => {
+            warn!("Invalid algorithm supplied for signature, {:?}", other);
+            return Err(MyError::Algorithm);
+        }
+    };
+
+    debug!("Decoding base64");
+    let decoded = base64::decode(signature)?;
+    debug!("hashing");
+    let hashed = Sha256::digest(signing_string.as_bytes());
+
+    info!("Verifying signature for signing string, {}", signing_string);
+    public_key.verify(
+        PaddingScheme::PKCS1v15,
+        Some(&Hashes::SHA2_256),
+        &hashed,
+        &decoded,
+    )?;
+
+    Ok(true)
 }

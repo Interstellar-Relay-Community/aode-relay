@@ -106,7 +106,7 @@ impl Settings {
         let bytes =
             self.private_key
                 .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), &hashed)?;
-        Ok(base64::encode_config(bytes, base64::URL_SAFE))
+        Ok(base64::encode(bytes))
     }
 }
 
