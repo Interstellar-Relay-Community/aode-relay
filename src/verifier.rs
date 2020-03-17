@@ -1,7 +1,7 @@
 use crate::{error::MyError, requests::fetch_actor, state::State};
 use actix_web::client::Client;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
 use rsa_pem::KeyExt;
 use sha2::{Digest, Sha256};
@@ -67,7 +67,7 @@ async fn verify(
     debug!("hashing");
     let hashed = Sha256::digest(signing_string.as_bytes());
 
-    info!("Verifying signature for signing string, {}", signing_string);
+    debug!("Verifying signature for {}", key_id);
     public_key.verify(
         PaddingScheme::PKCS1v15,
         Some(&Hashes::SHA2_256),
