@@ -30,6 +30,9 @@ pub enum MyError {
     #[error("Couldn't decode base64")]
     Base64(#[from] base64::DecodeError),
 
+    #[error("Actor tried to submit another actor's payload")]
+    BadActor,
+
     #[error("Invalid algorithm provided to verifier")]
     Algorithm,
 

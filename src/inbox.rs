@@ -15,6 +15,7 @@ use activitystreams::{
 use actix::Addr;
 use actix_web::{client::Client, web, HttpResponse};
 use futures::join;
+use http_signature_normalization_actix::middleware::SignatureVerified;
 use log::error;
 
 pub async fn inbox(
@@ -22,8 +23,18 @@ pub async fn inbox(
     state: web::Data<State>,
     client: web::Data<Client>,
     input: web::Json<AcceptedObjects>,
+    verified: SignatureVerified,
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
+
+    if input.actor.as_str() != verified.key_id() {
+        error!(
+            "Request payload and requestor disagree on actor, {} != {}",
+            input.actor,
+            verified.key_id()
+        );
+        return Err(MyError::BadActor);
+    }
 
     let actor = fetch_actor(
         state.clone().into_inner(),
