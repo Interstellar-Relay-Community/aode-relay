@@ -115,13 +115,20 @@ impl ValidObjects {
         }
     }
 
-    pub fn child_object_is_actor(&self) -> bool {
+    pub fn is(&self, uri: &XsdAnyUri) -> bool {
+        match self {
+            ValidObjects::Id(id) => id == uri,
+            ValidObjects::Object(AnyExistingObject { id, .. }) => id == uri,
+        }
+    }
+
+    pub fn child_object_is(&self, uri: &XsdAnyUri) -> bool {
         match self {
             ValidObjects::Id(_) => false,
             ValidObjects::Object(AnyExistingObject { ext, .. }) => {
                 if let Some(o) = ext.get("object") {
-                    if let Ok(s) = serde_json::from_value::<String>(o.clone()) {
-                        return s.ends_with("/actor");
+                    if let Ok(child_uri) = serde_json::from_value::<XsdAnyUri>(o.clone()) {
+                        return child_uri == *uri;
                     }
                 }
 

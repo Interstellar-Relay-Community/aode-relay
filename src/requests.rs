@@ -57,15 +57,15 @@ pub async fn fetch_actor(
 }
 
 pub fn deliver_many<T>(
-    state: web::Data<State>,
-    client: web::Data<Client>,
+    state: &web::Data<State>,
+    client: &web::Data<Client>,
     inboxes: Vec<XsdAnyUri>,
     item: T,
 ) where
     T: serde::ser::Serialize + 'static,
 {
-    let client = client.into_inner();
-    let state = state.into_inner();
+    let client = client.clone().into_inner();
+    let state = state.clone().into_inner();
 
     actix::Arbiter::spawn(async move {
         use futures::stream::StreamExt;

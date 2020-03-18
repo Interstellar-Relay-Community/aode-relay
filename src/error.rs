@@ -30,8 +30,17 @@ pub enum MyError {
     #[error("Couldn't decode base64")]
     Base64(#[from] base64::DecodeError),
 
-    #[error("Actor tried to submit another actor's payload")]
-    BadActor,
+    #[error("Actor is blocked, {0}")]
+    Blocked(String),
+
+    #[error("Actor is not whitelisted, {0}")]
+    Whitelist(String),
+
+    #[error("Cannot make decisions for foreign actor, {0}")]
+    WrongActor(String),
+
+    #[error("Actor ({0}) tried to submit another actor's ({1}) payload")]
+    BadActor(String, String),
 
     #[error("Invalid algorithm provided to verifier")]
     Algorithm,
@@ -41,12 +50,6 @@ pub enum MyError {
 
     #[error("Object has already been relayed")]
     Duplicate,
-
-    #[error("Actor is blocked")]
-    Blocked,
-
-    #[error("Actor is not whitelisted")]
-    Whitelist,
 
     #[error("Couldn't send request")]
     SendRequest,
