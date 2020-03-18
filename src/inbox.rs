@@ -165,18 +165,20 @@ async fn handle_follow(
         return Err(MyError::WrongActor(input.object.id().to_string()));
     }
 
-    if !is_listener && input.object.is(&my_id) {
-        let follow = generate_follow(state, &actor.id, &my_id)?;
-
+    if !is_listener {
         let inbox = actor.inbox().to_owned();
         db.add_listener(inbox).await?;
 
-        let client2 = client.clone();
-        let inbox = actor.inbox().clone();
-        let follow2 = follow.clone();
-        actix::Arbiter::spawn(async move {
-            let _ = client2.deliver(inbox, &follow2).await;
-        });
+        // if following relay directly, not just following 'public', followback
+        if input.object.is(&my_id) {
+            let follow = generate_follow(state, &actor.id, &my_id)?;
+            let client2 = client.clone();
+            let inbox = actor.inbox().clone();
+            let follow2 = follow.clone();
+            actix::Arbiter::spawn(async move {
+                let _ = client2.deliver(inbox, &follow2).await;
+            });
+        }
     }
 
     let accept = generate_accept_follow(state, &actor.id, &input.id, &my_id)?;
