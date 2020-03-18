@@ -1,7 +1,7 @@
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
 use bb8_postgres::tokio_postgres::{row::Row, Client};
-use log::info;
+use log::{info, warn};
 use rsa::RSAPrivateKey;
 use rsa_pem::KeyExt;
 use std::collections::HashSet;
@@ -148,15 +148,25 @@ pub async fn hydrate_listeners(client: &Client) -> Result<HashSet<XsdAnyUri>, Er
     parse_rows(rows)
 }
 
-fn parse_rows<T>(rows: Vec<Row>) -> Result<HashSet<T>, Error>
+fn parse_rows<T, E>(rows: Vec<Row>) -> Result<HashSet<T>, Error>
 where
-    T: std::str::FromStr + Eq + std::hash::Hash,
+    T: std::str::FromStr<Err = E> + Eq + std::hash::Hash,
+    E: std::fmt::Display,
 {
     let hs = rows
         .into_iter()
-        .filter_map(move |row| {
-            let s: String = row.try_get(0).ok()?;
-            s.parse().ok()
+        .filter_map(move |row| match row.try_get::<_, String>(0) {
+            Ok(s) => match s.parse() {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    warn!("Couln't parse row, '{}', {}", s, e);
+                    None
+                }
+            },
+            Err(e) => {
+                warn!("Couldn't get column, {}", e);
+                None
+            }
         })
         .collect();
 
