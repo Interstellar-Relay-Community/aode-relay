@@ -1,7 +1,9 @@
 use activitystreams::{
+    actor::Actor,
+    ext::Extension,
     object::{Object, ObjectBox},
     primitives::XsdAnyUri,
-    PropRefs,
+    Base, BaseBox, PropRefs,
 };
 use std::collections::HashMap;
 
@@ -13,16 +15,9 @@ pub struct PublicKey {
     pub public_key_pem: String,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PublicKeyExtension<T> {
-    public_key: PublicKey,
+impl<T> Extension<T> for PublicKey where T: Actor {}
 
-    #[serde(flatten)]
-    extending: T,
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PropRefs)]
+#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize, PropRefs)]
 #[serde(rename_all = "camelCase")]
 #[prop_refs(Object)]
 pub struct AnyExistingObject {
@@ -89,15 +84,6 @@ pub struct AcceptedActors {
 #[serde(rename_all = "camelCase")]
 pub struct Endpoints {
     shared_inbox: Option<XsdAnyUri>,
-}
-
-impl PublicKey {
-    pub fn extend<T>(self, extending: T) -> PublicKeyExtension<T> {
-        PublicKeyExtension {
-            public_key: self,
-            extending,
-        }
-    }
 }
 
 impl ValidObjects {

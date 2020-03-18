@@ -1,4 +1,7 @@
-use activitystreams::{actor::apub::Application, context, endpoint::EndpointProperties};
+use activitystreams::{
+    actor::Application, context, endpoint::EndpointProperties, ext::Extensible,
+    object::properties::ObjectProperties,
+};
 use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
@@ -50,13 +53,13 @@ async fn index() -> impl Responder {
 }
 
 async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError> {
-    let mut application = Application::default();
+    let mut application = Application::full();
     let mut endpoint = EndpointProperties::default();
 
     endpoint.set_shared_inbox(state.generate_url(UrlKind::Inbox))?;
 
-    application
-        .object_props
+    let props: &mut ObjectProperties = application.as_mut();
+    props
         .set_id(state.generate_url(UrlKind::Actor))?
         .set_summary_xsd_string("AodeRelay bot")?
         .set_name_xsd_string("AodeRelay")?
@@ -64,7 +67,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         .set_context_xsd_any_uri(context())?;
 
     application
-        .ap_actor_props
+        .extension
         .set_preferred_username("relay")?
         .set_followers(state.generate_url(UrlKind::Followers))?
         .set_following(state.generate_url(UrlKind::Following))?
@@ -78,7 +81,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         public_key_pem: state.settings.public_key.to_pem_pkcs8()?,
     };
 
-    Ok(ok(public_key.extend(application)))
+    Ok(ok(application.extend(public_key)))
 }
 
 #[actix_rt::main]

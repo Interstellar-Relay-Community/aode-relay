@@ -7,22 +7,17 @@ use crate::{
     state::{State, UrlKind},
 };
 use activitystreams::{
-    activity::apub::{Accept, Announce, Follow, Undo},
+    activity::{Accept, Announce, Follow, Undo},
     context,
     object::properties::ObjectProperties,
     primitives::XsdAnyUri,
+    public, security,
 };
 use actix_web::{web, HttpResponse};
 use futures::join;
 use http_signature_normalization_actix::middleware::SignatureVerified;
 use log::error;
 use std::convert::TryInto;
-
-fn public() -> XsdAnyUri {
-    "https://www.w3.org/ns/activitystreams#Public"
-        .parse()
-        .unwrap()
-}
 
 pub async fn inbox(
     db: web::Data<Db>,
@@ -203,7 +198,7 @@ fn generate_undo_follow(
 
     undo.undo_props
         .set_actor_xsd_any_uri(my_id.clone())?
-        .set_object_object_box({
+        .set_object_base_box({
             let mut follow = Follow::default();
 
             follow
@@ -272,7 +267,7 @@ fn generate_accept_follow(
     accept
         .accept_props
         .set_actor_xsd_any_uri(my_id.clone())?
-        .set_object_object_box({
+        .set_object_base_box({
             let mut follow = Follow::default();
 
             follow.object_props.set_id(input_id.clone())?;
@@ -303,7 +298,7 @@ where
     t.as_mut()
         .set_id(id.try_into()?)?
         .set_many_to_xsd_any_uris(vec![to.try_into()?])?
-        .set_context_xsd_any_uri(context())?;
+        .set_many_context_xsd_any_uris(vec![context(), security()])?;
     Ok(t)
 }
 
