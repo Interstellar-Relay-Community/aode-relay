@@ -45,34 +45,32 @@ impl Db {
         Ok(self.actor.send(DbQuery(f)).await?.await?)
     }
 
-    pub fn remove_listener(&self, inbox: XsdAnyUri) {
-        self.actor.do_send(DbQuery(move |pool: Pool| {
+    pub async fn remove_listener(&self, inbox: XsdAnyUri) -> Result<(), MyError> {
+        self.execute_inline(move |pool: Pool| {
             let inbox = inbox.clone();
 
             async move {
                 let conn = pool.get().await?;
 
-                remove_listener(&conn, &inbox).await.map_err(|e| {
-                    error!("Error removing listener, {}", e);
-                    e
-                })
+                remove_listener(&conn, &inbox).await
             }
-        }));
+        })
+        .await?
+        .map_err(MyError::from)
     }
 
-    pub fn add_listener(&self, inbox: XsdAnyUri) {
-        self.actor.do_send(DbQuery(move |pool: Pool| {
+    pub async fn add_listener(&self, inbox: XsdAnyUri) -> Result<(), MyError> {
+        self.execute_inline(move |pool: Pool| {
             let inbox = inbox.clone();
 
             async move {
                 let conn = pool.get().await?;
 
-                add_listener(&conn, &inbox).await.map_err(|e| {
-                    error!("Error adding listener, {}", e);
-                    e
-                })
+                add_listener(&conn, &inbox).await
             }
-        }));
+        })
+        .await?
+        .map_err(MyError::from)
     }
 }
 

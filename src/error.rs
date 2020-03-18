@@ -8,6 +8,9 @@ use tokio::sync::oneshot::error::RecvError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MyError {
+    #[error("Error in db, {0}")]
+    DbError(#[from] anyhow::Error),
+
     #[error("Couldn't parse key, {0}")]
     Key(#[from] KeyError),
 

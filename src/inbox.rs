@@ -100,7 +100,7 @@ async fn handle_undo(
     }
 
     let inbox = actor.inbox().to_owned();
-    db.remove_listener(inbox);
+    db.remove_listener(inbox).await?;
 
     let undo = generate_undo_follow(state, &actor.id, &my_id)?;
 
@@ -169,7 +169,7 @@ async fn handle_follow(
         let follow = generate_follow(state, &actor.id, &my_id)?;
 
         let inbox = actor.inbox().to_owned();
-        db.add_listener(inbox);
+        db.add_listener(inbox).await?;
 
         let client2 = client.clone();
         let inbox = actor.inbox().clone();
