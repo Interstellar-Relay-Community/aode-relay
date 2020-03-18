@@ -9,12 +9,14 @@ use crate::{
 use activitystreams::{
     activity::apub::{Accept, Announce, Follow, Undo},
     context,
+    object::properties::ObjectProperties,
     primitives::XsdAnyUri,
 };
 use actix_web::{web, HttpResponse};
 use futures::join;
 use http_signature_normalization_actix::middleware::SignatureVerified;
 use log::error;
+use std::convert::TryInto;
 
 fn public() -> XsdAnyUri {
     "https://www.w3.org/ns/activitystreams#Public"
@@ -196,25 +198,24 @@ fn generate_undo_follow(
     my_id: &XsdAnyUri,
 ) -> Result<Undo, MyError> {
     let mut undo = Undo::default();
-    let mut follow = Follow::default();
 
-    follow
-        .object_props
-        .set_id(state.generate_url(UrlKind::Activity))?;
-    follow
-        .follow_props
-        .set_actor_xsd_any_uri(actor_id.clone())?
-        .set_object_xsd_any_uri(actor_id.clone())?;
-
-    undo.object_props
-        .set_id(state.generate_url(UrlKind::Activity))?
-        .set_many_to_xsd_any_uris(vec![actor_id.clone()])?
-        .set_context_xsd_any_uri(context())?;
     undo.undo_props
-        .set_object_object_box(follow)?
-        .set_actor_xsd_any_uri(my_id.clone())?;
+        .set_actor_xsd_any_uri(my_id.clone())?
+        .set_object_object_box({
+            let mut follow = Follow::default();
 
-    Ok(undo)
+            follow
+                .object_props
+                .set_id(state.generate_url(UrlKind::Activity))?;
+            follow
+                .follow_props
+                .set_actor_xsd_any_uri(actor_id.clone())?
+                .set_object_xsd_any_uri(actor_id.clone())?;
+
+            follow
+        })?;
+
+    prepare_activity(undo, state.generate_url(UrlKind::Actor), actor_id.clone())
 }
 
 // Generate a type that says "Look at this object"
@@ -226,17 +227,15 @@ fn generate_announce(
     let mut announce = Announce::default();
 
     announce
-        .object_props
-        .set_context_xsd_any_uri(context())?
-        .set_many_to_xsd_any_uris(vec![state.generate_url(UrlKind::Followers)])?
-        .set_id(activity_id.clone())?;
-
-    announce
         .announce_props
         .set_object_xsd_any_uri(object_id.clone())?
         .set_actor_xsd_any_uri(state.generate_url(UrlKind::Actor))?;
 
-    Ok(announce)
+    prepare_activity(
+        announce,
+        activity_id.clone(),
+        state.generate_url(UrlKind::Followers),
+    )
 }
 
 // Generate a type that says "I want to follow you"
@@ -248,17 +247,15 @@ fn generate_follow(
     let mut follow = Follow::default();
 
     follow
-        .object_props
-        .set_id(state.generate_url(UrlKind::Activity))?
-        .set_many_to_xsd_any_uris(vec![actor_id.clone()])?
-        .set_context_xsd_any_uri(context())?;
-
-    follow
         .follow_props
         .set_object_xsd_any_uri(actor_id.clone())?
         .set_actor_xsd_any_uri(my_id.clone())?;
 
-    Ok(follow)
+    prepare_activity(
+        follow,
+        state.generate_url(UrlKind::Activity),
+        actor_id.clone(),
+    )
 }
 
 // Generate a type that says "I accept your follow request"
@@ -269,24 +266,43 @@ fn generate_accept_follow(
     my_id: &XsdAnyUri,
 ) -> Result<Accept, MyError> {
     let mut accept = Accept::default();
-    let mut follow = Follow::default();
 
-    follow.object_props.set_id(input_id.clone())?;
-    follow
-        .follow_props
-        .set_object_xsd_any_uri(my_id.clone())?
-        .set_actor_xsd_any_uri(actor_id.clone())?;
-
-    accept
-        .object_props
-        .set_id(state.generate_url(UrlKind::Activity))?
-        .set_many_to_xsd_any_uris(vec![actor_id.clone()])?;
     accept
         .accept_props
-        .set_object_object_box(follow)?
-        .set_actor_xsd_any_uri(my_id.clone())?;
+        .set_actor_xsd_any_uri(my_id.clone())?
+        .set_object_object_box({
+            let mut follow = Follow::default();
 
-    Ok(accept)
+            follow.object_props.set_id(input_id.clone())?;
+            follow
+                .follow_props
+                .set_object_xsd_any_uri(my_id.clone())?
+                .set_actor_xsd_any_uri(actor_id.clone())?;
+
+            follow
+        })?;
+
+    prepare_activity(
+        accept,
+        state.generate_url(UrlKind::Activity),
+        actor_id.clone(),
+    )
+}
+
+fn prepare_activity<T, U, V>(
+    mut t: T,
+    id: impl TryInto<XsdAnyUri, Error = U>,
+    to: impl TryInto<XsdAnyUri, Error = V>,
+) -> Result<T, MyError>
+where
+    T: AsMut<ObjectProperties>,
+    MyError: From<U> + From<V>,
+{
+    t.as_mut()
+        .set_id(id.try_into()?)?
+        .set_many_to_xsd_any_uris(vec![to.try_into()?])?
+        .set_context_xsd_any_uri(context())?;
+    Ok(t)
 }
 
 async fn get_inboxes(
