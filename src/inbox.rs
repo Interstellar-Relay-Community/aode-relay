@@ -38,7 +38,7 @@ pub async fn inbox(
     let (is_blocked, is_whitelisted, is_listener) = join!(
         state.is_blocked(&actor.id),
         state.is_whitelisted(&actor.id),
-        state.is_listener(&actor.id)
+        state.is_listener(actor.inbox())
     );
 
     if is_blocked {
@@ -50,7 +50,7 @@ pub async fn inbox(
     }
 
     if input.kind != ValidTypes::Follow && !is_listener {
-        return Err(MyError::NotSubscribed(actor.id.to_string()));
+        return Err(MyError::NotSubscribed(actor.inbox().to_string()));
     }
 
     if actor.public_key.id.as_str() != verified.key_id() {
