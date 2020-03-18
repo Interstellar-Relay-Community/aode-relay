@@ -1,3 +1,4 @@
+use crate::{apub::AcceptedActors, db_actor::Pool, requests::Requests};
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
 use bb8_postgres::tokio_postgres::Client;
@@ -11,12 +12,12 @@ use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
 use uuid::Uuid;
 
-use crate::{apub::AcceptedActors, db_actor::Pool};
+pub type ActorCache = Arc<RwLock<TtlCache<XsdAnyUri, AcceptedActors>>>;
 
 #[derive(Clone)]
 pub struct State {
     pub settings: Settings,
-    actor_cache: Arc<RwLock<TtlCache<XsdAnyUri, AcceptedActors>>>,
+    actor_cache: ActorCache,
     actor_id_cache: Arc<RwLock<LruCache<XsdAnyUri, XsdAnyUri>>>,
     blocks: Arc<RwLock<HashSet<String>>>,
     whitelists: Arc<RwLock<HashSet<String>>>,
@@ -98,29 +99,23 @@ impl Settings {
     fn generate_resource(&self) -> String {
         format!("relay@{}", self.hostname)
     }
-
-    fn sign(&self, signing_string: &str) -> Result<String, crate::error::MyError> {
-        use rsa::{hash::Hashes, padding::PaddingScheme};
-        use sha2::{Digest, Sha256};
-        let hashed = Sha256::digest(signing_string.as_bytes());
-        let bytes =
-            self.private_key
-                .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), &hashed)?;
-        Ok(base64::encode(bytes))
-    }
 }
 
 impl State {
+    pub fn requests(&self) -> Requests {
+        Requests::new(
+            self.generate_url(UrlKind::MainKey),
+            self.settings.private_key.clone(),
+            self.actor_cache.clone(),
+        )
+    }
+
     pub fn generate_url(&self, kind: UrlKind) -> String {
         self.settings.generate_url(kind)
     }
 
     pub fn generate_resource(&self) -> String {
         self.settings.generate_resource()
-    }
-
-    pub fn sign(&self, signing_string: &str) -> Result<String, crate::error::MyError> {
-        self.settings.sign(signing_string)
     }
 
     pub async fn bust_whitelist(&self, whitelist: &str) {
@@ -194,20 +189,6 @@ impl State {
 
         let read_guard = hs.read().await;
         read_guard.contains(actor_id)
-    }
-
-    pub async fn get_actor(&self, actor_id: &XsdAnyUri) -> Option<AcceptedActors> {
-        let cache = self.actor_cache.clone();
-
-        let read_guard = cache.read().await;
-        read_guard.get(actor_id).cloned()
-    }
-
-    pub async fn cache_actor(&self, actor_id: XsdAnyUri, actor: AcceptedActors) {
-        let cache = self.actor_cache.clone();
-
-        let mut write_guard = cache.write().await;
-        write_guard.insert(actor_id, actor, std::time::Duration::from_secs(3600));
     }
 
     pub async fn is_cached(&self, object_id: &XsdAnyUri) -> bool {

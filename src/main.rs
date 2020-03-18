@@ -1,7 +1,5 @@
 use activitystreams::{actor::apub::Application, context, endpoint::EndpointProperties};
-use actix_web::{
-    client::Client, middleware::Logger, web, App, HttpResponse, HttpServer, Responder,
-};
+use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use rsa_pem::KeyExt;
@@ -21,7 +19,7 @@ mod webfinger;
 
 use self::{
     apub::PublicKey,
-    db_actor::DbActor,
+    db_actor::Db,
     error::MyError,
     label::ArbiterLabelFactory,
     state::{State, UrlKind},
@@ -86,34 +84,31 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let arbiter_labeler = ArbiterLabelFactory::new();
 
-    let db_actor = DbActor::new(pg_config.clone());
+    let db = Db::new(pg_config.clone());
     arbiter_labeler.clone().set_label();
 
-    let state: State = db_actor
-        .send(db_actor::DbQuery(move |pool| {
-            State::hydrate(use_https, use_whitelist, hostname, pool)
-        }))
-        .await?
+    let state: State = db
+        .execute_inline(move |pool| State::hydrate(use_https, use_whitelist, hostname, pool))
         .await??;
 
     let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
 
     HttpServer::new(move || {
-        let actor = DbActor::new(pg_config.clone());
         arbiter_labeler.clone().set_label();
-        let client = Client::default();
+        let state = state.clone();
+        let actor = Db::new(pg_config.clone());
 
         App::new()
             .wrap(Logger::default())
             .data(actor)
             .data(state.clone())
-            .data(client.clone())
+            .data(state.requests())
             .service(web::resource("/").route(web::get().to(index)))
             .service(
                 web::resource("/inbox")
                     .wrap(VerifyDigest::new(Sha256::new()))
                     .wrap(VerifySignature::new(
-                        MyVerify(state.clone(), client),
+                        MyVerify(state.requests()),
                         Default::default(),
                     ))
                     .route(web::post().to(inbox::inbox)),

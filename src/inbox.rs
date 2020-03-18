@@ -1,9 +1,8 @@
 use crate::{
     apub::{AcceptedActors, AcceptedObjects, ValidTypes},
-    db::{add_listener, remove_listener},
-    db_actor::{DbActor, DbQuery, Pool},
+    db_actor::Db,
     error::MyError,
-    requests::{deliver, deliver_many, fetch_actor},
+    requests::Requests,
     response,
     state::{State, UrlKind},
 };
@@ -12,27 +11,20 @@ use activitystreams::{
     context,
     primitives::XsdAnyUri,
 };
-use actix::Addr;
-use actix_web::{client::Client, web, HttpResponse};
+use actix_web::{web, HttpResponse};
 use futures::join;
 use http_signature_normalization_actix::middleware::SignatureVerified;
-use log::error;
 
 pub async fn inbox(
-    db_actor: web::Data<Addr<DbActor>>,
+    db: web::Data<Db>,
     state: web::Data<State>,
-    client: web::Data<Client>,
+    client: web::Data<Requests>,
     input: web::Json<AcceptedObjects>,
     verified: SignatureVerified,
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
-    let actor = fetch_actor(
-        state.clone().into_inner(),
-        client.clone().into_inner(),
-        &input.actor,
-    )
-    .await?;
+    let actor = client.fetch_actor(&input.actor).await?;
 
     let (is_blocked, is_whitelisted) =
         join!(state.is_blocked(&actor.id), state.is_whitelisted(&actor.id),);
@@ -46,6 +38,7 @@ pub async fn inbox(
     }
 
     if actor.public_key.id.as_str() != verified.key_id() {
+        log::error!("Bad actor, more info: {:?}", input);
         return Err(MyError::BadActor(
             actor.public_key.id.to_string(),
             verified.key_id().to_owned(),
@@ -54,81 +47,68 @@ pub async fn inbox(
 
     match input.kind {
         ValidTypes::Announce | ValidTypes::Create => {
-            handle_relay(state, client, input, actor).await
+            handle_relay(&state, &client, input, actor).await
         }
-        ValidTypes::Follow => handle_follow(db_actor, state, client, input, actor).await,
+        ValidTypes::Follow => handle_follow(&db, &state, &client, input, actor).await,
         ValidTypes::Delete | ValidTypes::Update => {
-            handle_forward(state, client, input, actor).await
+            handle_forward(&state, &client, input, actor).await
         }
-        ValidTypes::Undo => handle_undo(db_actor, state, client, input, actor).await,
+        ValidTypes::Undo => handle_undo(&db, &state, &client, input, actor).await,
     }
 }
 
 async fn handle_undo(
-    db_actor: web::Data<Addr<DbActor>>,
-    state: web::Data<State>,
-    client: web::Data<Client>,
+    db: &Db,
+    state: &State,
+    client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
     if !input.object.is_kind("Follow") {
-        return Err(MyError::Kind);
+        return Err(MyError::Kind(
+            input.object.kind().unwrap_or("unknown").to_owned(),
+        ));
     }
 
     let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
 
     if !input.object.child_object_is(&my_id) {
+        log::error!("Wrong actor, more info: {:?}", input);
         return Err(MyError::WrongActor(input.object.id().to_string()));
     }
 
     let inbox = actor.inbox().to_owned();
+    db.remove_listener(inbox);
 
-    db_actor.do_send(DbQuery(move |pool: Pool| {
-        let inbox = inbox.clone();
+    let undo = generate_undo_follow(state, &actor.id, &my_id)?;
 
-        async move {
-            let conn = pool.get().await?;
-
-            remove_listener(&conn, &inbox).await.map_err(|e| {
-                error!("Error removing listener, {}", e);
-                e
-            })
-        }
-    }));
-
-    let actor_inbox = actor.inbox().clone();
-    let undo = generate_undo_follow(&state, &actor.id, &my_id)?;
+    let client2 = client.clone();
+    let inbox = actor.inbox().clone();
     let undo2 = undo.clone();
     actix::Arbiter::spawn(async move {
-        let _ = deliver(
-            &state.into_inner(),
-            &client.into_inner(),
-            actor_inbox,
-            &undo2,
-        )
-        .await;
+        let _ = client2.deliver(inbox, &undo2).await;
     });
 
     Ok(response(undo))
 }
 
 async fn handle_forward(
-    state: web::Data<State>,
-    client: web::Data<Client>,
+    state: &State,
+    client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
     let object_id = input.object.id();
 
-    let inboxes = get_inboxes(&state, &actor, &object_id).await?;
-    deliver_many(&state, &client, inboxes, input.clone());
+    let inboxes = get_inboxes(state, &actor, &object_id).await?;
+    client.deliver_many(inboxes, input.clone());
 
     Ok(response(input))
 }
 
 async fn handle_relay(
-    state: web::Data<State>,
-    client: web::Data<Client>,
+    state: &State,
+    client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
@@ -140,9 +120,9 @@ async fn handle_relay(
 
     let activity_id: XsdAnyUri = state.generate_url(UrlKind::Activity).parse()?;
 
-    let announce = generate_announce(&state, &activity_id, object_id)?;
-    let inboxes = get_inboxes(&state, &actor, &object_id).await?;
-    deliver_many(&state, &client, inboxes, announce.clone());
+    let announce = generate_announce(state, &activity_id, object_id)?;
+    let inboxes = get_inboxes(state, &actor, &object_id).await?;
+    client.deliver_many(inboxes, announce.clone());
 
     state.cache(object_id.to_owned(), activity_id).await;
 
@@ -150,9 +130,9 @@ async fn handle_relay(
 }
 
 async fn handle_follow(
-    db_actor: web::Data<Addr<DbActor>>,
-    state: web::Data<State>,
-    client: web::Data<Client>,
+    db: &Db,
+    state: &State,
+    client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
@@ -165,46 +145,26 @@ async fn handle_follow(
     let is_listener = state.is_listener(&actor.id).await;
 
     if !is_listener {
+        let follow = generate_follow(state, &actor.id, &my_id)?;
+
         let inbox = actor.inbox().to_owned();
-        db_actor.do_send(DbQuery(move |pool: Pool| {
-            let inbox = inbox.clone();
+        db.add_listener(inbox);
 
-            async move {
-                let conn = pool.get().await?;
-
-                add_listener(&conn, &inbox).await.map_err(|e| {
-                    error!("Error adding listener, {}", e);
-                    e
-                })
-            }
-        }));
-
-        let actor_inbox = actor.inbox().clone();
-        let follow = generate_follow(&state, &actor.id, &my_id)?;
-        let state2 = state.clone();
         let client2 = client.clone();
+        let inbox = actor.inbox().clone();
+        let follow2 = follow.clone();
         actix::Arbiter::spawn(async move {
-            let _ = deliver(
-                &state2.into_inner(),
-                &client2.into_inner(),
-                actor_inbox,
-                &follow,
-            )
-            .await;
+            let _ = client2.deliver(inbox, &follow2).await;
         });
     }
 
-    let actor_inbox = actor.inbox().clone();
-    let accept = generate_accept_follow(&state, &actor.id, &input.id, &my_id)?;
+    let accept = generate_accept_follow(state, &actor.id, &input.id, &my_id)?;
+
+    let client2 = client.clone();
+    let inbox = actor.inbox().clone();
     let accept2 = accept.clone();
     actix::Arbiter::spawn(async move {
-        let _ = deliver(
-            &state.into_inner(),
-            &client.into_inner(),
-            actor_inbox,
-            &accept2,
-        )
-        .await;
+        let _ = client2.deliver(inbox, &accept2).await;
     });
 
     Ok(response(accept))
@@ -212,7 +172,7 @@ async fn handle_follow(
 
 // Generate a type that says "I want to stop following you"
 fn generate_undo_follow(
-    state: &web::Data<State>,
+    state: &State,
     actor_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
 ) -> Result<Undo, MyError> {
@@ -240,7 +200,7 @@ fn generate_undo_follow(
 
 // Generate a type that says "Look at this object"
 fn generate_announce(
-    state: &web::Data<State>,
+    state: &State,
     activity_id: &XsdAnyUri,
     object_id: &XsdAnyUri,
 ) -> Result<Announce, MyError> {
@@ -262,7 +222,7 @@ fn generate_announce(
 
 // Generate a type that says "I want to follow you"
 fn generate_follow(
-    state: &web::Data<State>,
+    state: &State,
     actor_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
 ) -> Result<Follow, MyError> {
@@ -284,7 +244,7 @@ fn generate_follow(
 
 // Generate a type that says "I accept your follow request"
 fn generate_accept_follow(
-    state: &web::Data<State>,
+    state: &State,
     actor_id: &XsdAnyUri,
     input_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
@@ -311,7 +271,7 @@ fn generate_accept_follow(
 }
 
 async fn get_inboxes(
-    state: &web::Data<State>,
+    state: &State,
     actor: &AcceptedActors,
     object_id: &XsdAnyUri,
 ) -> Result<Vec<XsdAnyUri>, MyError> {

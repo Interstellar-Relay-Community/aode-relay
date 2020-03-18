@@ -108,6 +108,13 @@ impl ValidObjects {
         }
     }
 
+    pub fn kind(&self) -> Option<&str> {
+        match self {
+            ValidObjects::Id(_) => None,
+            ValidObjects::Object(AnyExistingObject { kind, .. }) => Some(kind),
+        }
+    }
+
     pub fn is_kind(&self, query_kind: &str) -> bool {
         match self {
             ValidObjects::Id(_) => false,

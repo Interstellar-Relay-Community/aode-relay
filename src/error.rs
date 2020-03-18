@@ -1,8 +1,10 @@
 use activitystreams::primitives::XsdAnyUriError;
+use actix::MailboxError;
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use log::error;
 use rsa_pem::KeyError;
 use std::{convert::Infallible, io::Error};
+use tokio::sync::oneshot::error::RecvError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MyError {
@@ -27,6 +29,9 @@ pub enum MyError {
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
 
+    #[error("Failed to get output of db operation")]
+    Oneshot(#[from] RecvError),
+
     #[error("Couldn't decode base64")]
     Base64(#[from] base64::DecodeError),
 
@@ -42,11 +47,17 @@ pub enum MyError {
     #[error("Actor ({0}) tried to submit another actor's ({1}) payload")]
     BadActor(String, String),
 
+    #[error("Wrong ActivityPub kind, {0}")]
+    Kind(String),
+
+    #[error("The requested actor's mailbox is closed")]
+    MailboxClosed,
+
+    #[error("The requested actor's mailbox has timed out")]
+    MailboxTimeout,
+
     #[error("Invalid algorithm provided to verifier")]
     Algorithm,
-
-    #[error("Wrong ActivityPub kind")]
-    Kind,
 
     #[error("Object has already been relayed")]
     Duplicate,
@@ -85,5 +96,14 @@ impl From<Infallible> for MyError {
 impl From<rsa::errors::Error> for MyError {
     fn from(e: rsa::errors::Error) -> Self {
         MyError::Rsa(e)
+    }
+}
+
+impl From<MailboxError> for MyError {
+    fn from(m: MailboxError) -> MyError {
+        match m {
+            MailboxError::Closed => MyError::MailboxClosed,
+            MailboxError::Timeout => MyError::MailboxTimeout,
+        }
     }
 }

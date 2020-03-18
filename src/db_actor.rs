@@ -1,8 +1,18 @@
-use crate::label::ArbiterLabel;
+use crate::{
+    db::{add_listener, remove_listener},
+    error::MyError,
+    label::ArbiterLabel,
+};
+use activitystreams::primitives::XsdAnyUri;
 use actix::prelude::*;
 use bb8_postgres::{bb8, tokio_postgres, PostgresConnectionManager};
 use log::{error, info};
 use tokio::sync::oneshot::{channel, Receiver};
+
+#[derive(Clone)]
+pub struct Db {
+    actor: Addr<DbActor>,
+}
 
 pub type Pool = bb8::Pool<PostgresConnectionManager<tokio_postgres::tls::NoTls>>;
 
@@ -17,11 +27,52 @@ pub struct DbActor {
 
 pub struct DbQuery<F>(pub F);
 
-impl DbActor {
-    pub fn new(config: tokio_postgres::Config) -> Addr<Self> {
-        Supervisor::start(|_| DbActor {
+impl Db {
+    pub fn new(config: tokio_postgres::Config) -> Db {
+        let actor = Supervisor::start(|_| DbActor {
             pool: DbActorState::new_empty(config),
-        })
+        });
+
+        Db { actor }
+    }
+
+    pub async fn execute_inline<T, F, Fut>(&self, f: F) -> Result<T, MyError>
+    where
+        T: Send + 'static,
+        F: FnOnce(Pool) -> Fut + Send + 'static,
+        Fut: Future<Output = T>,
+    {
+        Ok(self.actor.send(DbQuery(f)).await?.await?)
+    }
+
+    pub fn remove_listener(&self, inbox: XsdAnyUri) {
+        self.actor.do_send(DbQuery(move |pool: Pool| {
+            let inbox = inbox.clone();
+
+            async move {
+                let conn = pool.get().await?;
+
+                remove_listener(&conn, &inbox).await.map_err(|e| {
+                    error!("Error removing listener, {}", e);
+                    e
+                })
+            }
+        }));
+    }
+
+    pub fn add_listener(&self, inbox: XsdAnyUri) {
+        self.actor.do_send(DbQuery(move |pool: Pool| {
+            let inbox = inbox.clone();
+
+            async move {
+                let conn = pool.get().await?;
+
+                add_listener(&conn, &inbox).await.map_err(|e| {
+                    error!("Error adding listener, {}", e);
+                    e
+                })
+            }
+        }));
     }
 }
 

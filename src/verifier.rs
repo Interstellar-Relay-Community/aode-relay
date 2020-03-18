@@ -1,14 +1,13 @@
-use crate::{error::MyError, requests::fetch_actor, state::State};
-use actix_web::client::Client;
+use crate::{error::MyError, requests::Requests};
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::{debug, error, warn};
 use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
 use rsa_pem::KeyExt;
 use sha2::{Digest, Sha256};
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin};
 
 #[derive(Clone)]
-pub struct MyVerify(pub State, pub Client);
+pub struct MyVerify(pub Requests);
 
 impl SignatureVerify for MyVerify {
     type Error = MyError;
@@ -25,11 +24,10 @@ impl SignatureVerify for MyVerify {
         let signature = signature.to_owned();
         let signing_string = signing_string.to_owned();
 
-        let state = Arc::new(self.0.clone());
-        let client = Arc::new(self.1.clone());
+        let client = self.0.clone();
 
         Box::pin(async move {
-            verify(state, client, algorithm, key_id, signature, signing_string)
+            verify(client, algorithm, key_id, signature, signing_string)
                 .await
                 .map_err(|e| {
                     error!("Failed to verify, {}", e);
@@ -40,15 +38,14 @@ impl SignatureVerify for MyVerify {
 }
 
 async fn verify(
-    state: Arc<State>,
-    client: Arc<Client>,
+    client: Requests,
     algorithm: Option<Algorithm>,
     key_id: String,
     signature: String,
     signing_string: String,
 ) -> Result<bool, MyError> {
     debug!("Fetching actor");
-    let actor = fetch_actor(state, client, &key_id.parse()?).await?;
+    let actor = client.fetch_actor(&key_id.parse()?).await?;
 
     debug!("Parsing public key");
     let public_key = RSAPublicKey::from_pem_pkcs8(&actor.public_key.public_key_pem)?;
