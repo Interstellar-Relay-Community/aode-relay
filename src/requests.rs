@@ -23,9 +23,11 @@ pub async fn fetch_actor(
     let mut res = client
         .get(actor_id.as_str())
         .header("Accept", "application/activity+json")
-        .signature(&Config::default(), key_id, |signing_string| {
-            state.sign(signing_string)
-        })?
+        .signature(
+            &Config::default().dont_use_created_field(),
+            key_id,
+            |signing_string| state.sign(signing_string),
+        )?
         .send()
         .await
         .map_err(|e| {
@@ -102,7 +104,7 @@ where
         .header("Content-Type", "application/activity+json")
         .header("User-Agent", "Aode Relay v0.1.0")
         .signature_with_digest(
-            &Config::default(),
+            &Config::default().dont_use_created_field(),
             &key_id,
             &mut digest,
             item_string,

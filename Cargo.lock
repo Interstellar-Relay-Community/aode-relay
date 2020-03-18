@@ -550,7 +550,7 @@ dependencies = [
  "block-padding",
  "byte-tools",
  "byteorder",
- "generic-array 0.12.3",
+ "generic-array",
 ]
 
 [[package]]
@@ -709,7 +709,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4434400df11d95d556bac068ddfedd482915eb18fe8bea89bc80b6e4b1c179e5"
 dependencies = [
- "generic-array 0.12.3",
+ "generic-array",
  "subtle 1.0.0",
 ]
 
@@ -730,7 +730,7 @@ version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3d0c8c8752312f9713efd397ff63acb9f85585afbf179282e720e7704954dd5"
 dependencies = [
- "generic-array 0.12.3",
+ "generic-array",
 ]
 
 [[package]]
@@ -969,15 +969,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "generic-array"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ed1e761351b56f54eb9dcd0cfaca9fd0daecf93918e1cfc01c8a3d26ee7adcd"
-dependencies = [
- "typenum",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1069,9 +1060,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2db9cb1c64aaabb27523433fc8df0467670df81642fd770086cf8a2eb11b24a"
+checksum = "6f09843aded69175105d933d8d47920b61b123c92bdf38eb8d71162414a040e6"
 dependencies = [
  "chrono",
  "thiserror",
@@ -1079,14 +1070,15 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.3.0-alpha.4"
+version = "0.3.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93de73e7120cd0109107dd2594cba35f19841c75b09696db495554756d55727e"
+checksum = "2ef97fd4d560efcc886defdd46b44ac9dbaa6000c467bf0a6a63592a5373a468"
 dependencies = [
  "actix-http",
  "actix-web",
  "base64 0.11.0",
  "bytes",
+ "chrono",
  "futures",
  "http-signature-normalization",
  "log",
@@ -1192,9 +1184,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.67"
+version = "0.2.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb147597cdf94ed43ab7a9038716637d2d1bf2bc571da995d0028dec06bd3018"
+checksum = "dea0c0405123bba743ee3f91f49b1c7cfb684eef0da0a50110f758ccf24cdff0"
 
 [[package]]
 name = "libm"
@@ -1511,15 +1503,14 @@ checksum = "5894c618ce612a3fa23881b152b608bafb8c56cfc22f434a3ba3120b40f7b587"
 
 [[package]]
 name = "postgres-protocol"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a30f0e172ae0fb0653dbf777ad10a74b8e58d6de95a892f2e1d3e94a9df9a844"
+checksum = "3f611afe4d1407ebe7f3ced1ffc66f730fac1b1c13085e230a8cdcb921e97710"
 dependencies = [
- "base64 0.11.0",
+ "base64 0.12.0",
  "byteorder",
  "bytes",
  "fallible-iterator",
- "generic-array 0.13.2",
  "hmac",
  "md5",
  "memchr",
