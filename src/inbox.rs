@@ -1,9 +1,9 @@
 use crate::{
+    accepted,
     apub::{AcceptedActors, AcceptedObjects, ValidTypes},
     db_actor::Db,
     error::MyError,
     requests::Requests,
-    response,
     state::{State, UrlKind},
 };
 use activitystreams::{
@@ -102,7 +102,7 @@ async fn handle_undo(
         let _ = client2.deliver(inbox, &undo2).await;
     });
 
-    Ok(response(undo))
+    Ok(accepted(undo))
 }
 
 async fn handle_forward(
@@ -116,7 +116,7 @@ async fn handle_forward(
     let inboxes = get_inboxes(state, &actor, &object_id).await?;
     client.deliver_many(inboxes, input.clone());
 
-    Ok(response(input))
+    Ok(accepted(input))
 }
 
 async fn handle_relay(
@@ -139,7 +139,7 @@ async fn handle_relay(
 
     state.cache(object_id.to_owned(), activity_id).await;
 
-    Ok(response(announce))
+    Ok(accepted(announce))
 }
 
 async fn handle_follow(
@@ -180,7 +180,7 @@ async fn handle_follow(
         let _ = client2.deliver(inbox, &accept2).await;
     });
 
-    Ok(response(accept))
+    Ok(accepted(accept))
 }
 
 // Generate a type that says "I want to stop following you"

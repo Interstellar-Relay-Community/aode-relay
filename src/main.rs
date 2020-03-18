@@ -27,11 +27,20 @@ use self::{
     webfinger::RelayResolver,
 };
 
-pub fn response<T>(item: T) -> HttpResponse
+pub fn ok<T>(item: T) -> HttpResponse
 where
     T: serde::ser::Serialize,
 {
     HttpResponse::Ok()
+        .content_type("application/activity+json")
+        .json(item)
+}
+
+pub fn accepted<T>(item: T) -> HttpResponse
+where
+    T: serde::ser::Serialize,
+{
+    HttpResponse::Accepted()
         .content_type("application/activity+json")
         .json(item)
 }
@@ -69,7 +78,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         public_key_pem: state.settings.public_key.to_pem_pkcs8()?,
     };
 
-    Ok(response(public_key.extend(application)))
+    Ok(ok(public_key.extend(application)))
 }
 
 #[actix_rt::main]
