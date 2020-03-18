@@ -152,6 +152,7 @@ async fn handle_follow(
     let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
 
     if !input.object.is(&my_id) {
+        error!("Wrong Actor, {:?}", input);
         return Err(MyError::WrongActor(input.object.id().to_string()));
     }
 
