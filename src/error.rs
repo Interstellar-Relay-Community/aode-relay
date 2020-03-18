@@ -35,6 +35,9 @@ pub enum MyError {
     #[error("Couldn't decode base64")]
     Base64(#[from] base64::DecodeError),
 
+    #[error("Actor ({0}), or Actor's server, is not subscribed")]
+    NotSubscribed(String),
+
     #[error("Actor is blocked, {0}")]
     Blocked(String),
 
@@ -77,13 +80,23 @@ pub enum MyError {
 
 impl ResponseError for MyError {
     fn status_code(&self) -> StatusCode {
-        StatusCode::INTERNAL_SERVER_ERROR
+        match self {
+            MyError::Blocked(_)
+            | MyError::Whitelist(_)
+            | MyError::WrongActor(_)
+            | MyError::BadActor(_, _) => StatusCode::FORBIDDEN,
+            MyError::Duplicate => StatusCode::ACCEPTED,
+            MyError::Kind(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::InternalServerError()
+        HttpResponse::build(self.status_code())
             .header("Content-Type", "application/activity+json")
-            .json(serde_json::json!({}))
+            .json(serde_json::json!({
+                "error": self.to_string(),
+            }))
     }
 }
 

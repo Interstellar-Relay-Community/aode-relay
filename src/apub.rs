@@ -35,7 +35,7 @@ pub struct AnyExistingObject {
     ext: HashMap<String, serde_json::Value>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub enum ValidTypes {
     Announce,

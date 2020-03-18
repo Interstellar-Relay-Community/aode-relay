@@ -14,6 +14,13 @@ use activitystreams::{
 use actix_web::{web, HttpResponse};
 use futures::join;
 use http_signature_normalization_actix::middleware::SignatureVerified;
+use log::error;
+
+fn public() -> XsdAnyUri {
+    "https://www.w3.org/ns/activitystreams#Public"
+        .parse()
+        .unwrap()
+}
 
 pub async fn inbox(
     db: web::Data<Db>,
@@ -26,8 +33,11 @@ pub async fn inbox(
 
     let actor = client.fetch_actor(&input.actor).await?;
 
-    let (is_blocked, is_whitelisted) =
-        join!(state.is_blocked(&actor.id), state.is_whitelisted(&actor.id),);
+    let (is_blocked, is_whitelisted, is_listener) = join!(
+        state.is_blocked(&actor.id),
+        state.is_whitelisted(&actor.id),
+        state.is_listener(&actor.id)
+    );
 
     if is_blocked {
         return Err(MyError::Blocked(actor.id.to_string()));
@@ -37,8 +47,12 @@ pub async fn inbox(
         return Err(MyError::Whitelist(actor.id.to_string()));
     }
 
+    if input.kind != ValidTypes::Follow && !is_listener {
+        return Err(MyError::NotSubscribed(actor.id.to_string()));
+    }
+
     if actor.public_key.id.as_str() != verified.key_id() {
-        log::error!("Bad actor, more info: {:?}", input);
+        error!("Bad actor, more info: {:?}", input);
         return Err(MyError::BadActor(
             actor.public_key.id.to_string(),
             verified.key_id().to_owned(),
@@ -72,8 +86,7 @@ async fn handle_undo(
 
     let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
 
-    if !input.object.child_object_is(&my_id) {
-        log::error!("Wrong actor, more info: {:?}", input);
+    if !input.object.child_object_is(&my_id) && !input.object.child_object_is(&public()) {
         return Err(MyError::WrongActor(input.object.id().to_string()));
     }
 
