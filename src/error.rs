@@ -85,6 +85,7 @@ impl ResponseError for MyError {
             | MyError::Whitelist(_)
             | MyError::WrongActor(_)
             | MyError::BadActor(_, _) => StatusCode::FORBIDDEN,
+            MyError::NotSubscribed(_) => StatusCode::UNAUTHORIZED,
             MyError::Duplicate => StatusCode::ACCEPTED,
             MyError::Kind(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
