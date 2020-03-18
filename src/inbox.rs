@@ -61,9 +61,9 @@ pub async fn inbox(
 
     match input.kind {
         ValidTypes::Announce | ValidTypes::Create => {
-            handle_relay(&state, &client, input, actor).await
+            handle_announce(&state, &client, input, actor).await
         }
-        ValidTypes::Follow => handle_follow(&db, &state, &client, input, actor).await,
+        ValidTypes::Follow => handle_follow(&db, &state, &client, input, actor, is_listener).await,
         ValidTypes::Delete | ValidTypes::Update => {
             handle_forward(&state, &client, input, actor).await
         }
@@ -78,10 +78,17 @@ async fn handle_undo(
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
+    match input.object.kind() {
+        Some("Follow") | Some("Announce") | Some("Create") => (),
+        _ => {
+            return Err(MyError::Kind(
+                input.object.kind().unwrap_or("unknown").to_owned(),
+            ));
+        }
+    }
+
     if !input.object.is_kind("Follow") {
-        return Err(MyError::Kind(
-            input.object.kind().unwrap_or("unknown").to_owned(),
-        ));
+        return handle_forward(state, client, input, actor).await;
     }
 
     let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
@@ -119,7 +126,7 @@ async fn handle_forward(
     Ok(accepted(input))
 }
 
-async fn handle_relay(
+async fn handle_announce(
     state: &State,
     client: &Requests,
     input: AcceptedObjects,
@@ -148,17 +155,15 @@ async fn handle_follow(
     client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
+    is_listener: bool,
 ) -> Result<HttpResponse, MyError> {
     let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
 
-    if !input.object.is(&my_id) {
-        error!("Wrong Actor, {:?}", input);
+    if !input.object.is(&my_id) && !input.object.is(&public()) {
         return Err(MyError::WrongActor(input.object.id().to_string()));
     }
 
-    let is_listener = state.is_listener(&actor.id).await;
-
-    if !is_listener {
+    if !is_listener && input.object.is(&my_id) {
         let follow = generate_follow(state, &actor.id, &my_id)?;
 
         let inbox = actor.inbox().to_owned();
