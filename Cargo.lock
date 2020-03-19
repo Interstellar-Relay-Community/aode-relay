@@ -2,8 +2,9 @@
 # It is not intended for manual editing.
 [[package]]
 name = "activitystreams"
-version = "0.5.0-alpha.9"
-source = "git+https://git.asonix.dog/Aardwolf/activitystreams?branch=asonix/try-extensions#3258d7e0a7032d9959ad5d2ee05206be8e5a91af"
+version = "0.5.0-alpha.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04827f3390831f772d15ff3171336cc4fbac714f59233d24731beb7c865293a6"
 dependencies = [
  "activitystreams-derive",
  "chrono",
@@ -17,7 +18,8 @@ dependencies = [
 [[package]]
 name = "activitystreams-derive"
 version = "0.5.0-alpha.4"
-source = "git+https://git.asonix.dog/Aardwolf/activitystreams?branch=asonix/try-extensions#3258d7e0a7032d9959ad5d2ee05206be8e5a91af"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2bc640808dceb2efac81e6bcb77a7f4e2e76af7fb60e88f966b48123b625d2f"
 dependencies = [
  "proc-macro2",
  "quote",
