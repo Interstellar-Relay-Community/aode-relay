@@ -1,15 +1,13 @@
 use activitystreams::primitives::XsdAnyUriError;
-use actix::MailboxError;
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use log::error;
 use rsa_pem::KeyError;
 use std::{convert::Infallible, io::Error};
-use tokio::sync::oneshot::error::RecvError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MyError {
     #[error("Error in db, {0}")]
-    DbError(#[from] anyhow::Error),
+    DbError(#[from] bb8_postgres::tokio_postgres::error::Error),
 
     #[error("Couldn't parse key, {0}")]
     Key(#[from] KeyError),
@@ -32,9 +30,6 @@ pub enum MyError {
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
 
-    #[error("Failed to get output of db operation")]
-    Oneshot(#[from] RecvError),
-
     #[error("Couldn't decode base64")]
     Base64(#[from] base64::DecodeError),
 
@@ -56,11 +51,14 @@ pub enum MyError {
     #[error("Wrong ActivityPub kind, {0}")]
     Kind(String),
 
-    #[error("The requested actor's mailbox is closed")]
-    MailboxClosed,
+    #[error("No host present in URI, {0}")]
+    Host(String),
 
-    #[error("The requested actor's mailbox has timed out")]
-    MailboxTimeout,
+    #[error("Too many CPUs, {0}")]
+    CpuCount(#[from] std::num::TryFromIntError),
+
+    #[error("Timed out while waiting on db pool")]
+    DbTimeout,
 
     #[error("Invalid algorithm provided to verifier")]
     Algorithm,
@@ -104,6 +102,18 @@ impl ResponseError for MyError {
     }
 }
 
+impl<T> From<bb8_postgres::bb8::RunError<T>> for MyError
+where
+    T: Into<MyError>,
+{
+    fn from(e: bb8_postgres::bb8::RunError<T>) -> Self {
+        match e {
+            bb8_postgres::bb8::RunError::User(e) => e.into(),
+            bb8_postgres::bb8::RunError::TimedOut => MyError::DbTimeout,
+        }
+    }
+}
+
 impl From<Infallible> for MyError {
     fn from(i: Infallible) -> Self {
         match i {}
@@ -113,14 +123,5 @@ impl From<Infallible> for MyError {
 impl From<rsa::errors::Error> for MyError {
     fn from(e: rsa::errors::Error) -> Self {
         MyError::Rsa(e)
-    }
-}
-
-impl From<MailboxError> for MyError {
-    fn from(m: MailboxError) -> MyError {
-        match m {
-            MailboxError::Closed => MyError::MailboxClosed,
-            MailboxError::Timeout => MyError::MailboxTimeout,
-        }
     }
 }

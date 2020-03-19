@@ -1,9 +1,7 @@
-use crate::{apub::AcceptedActors, db_actor::Pool, requests::Requests};
+use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
 use activitystreams::primitives::XsdAnyUri;
-use anyhow::Error;
-use bb8_postgres::tokio_postgres::Client;
 use futures::try_join;
-use log::{error, info};
+use log::info;
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RSAPrivateKey, RSAPublicKey};
@@ -44,28 +42,21 @@ pub enum UrlKind {
     Outbox,
 }
 
-#[derive(Clone, Debug, thiserror::Error)]
-#[error("Error generating RSA key")]
-pub struct RsaError;
-
 impl Settings {
     async fn hydrate(
-        client: &Client,
+        db: &Db,
         use_https: bool,
         whitelist_enabled: bool,
         hostname: String,
-    ) -> Result<Self, Error> {
-        let private_key = if let Some(key) = crate::db::hydrate_private_key(client).await? {
+    ) -> Result<Self, MyError> {
+        let private_key = if let Some(key) = db.hydrate_private_key().await? {
             key
         } else {
             info!("Generating new keys");
             let mut rng = thread_rng();
-            let key = RSAPrivateKey::new(&mut rng, 4096).map_err(|e| {
-                error!("Error generating RSA key, {}", e);
-                RsaError
-            })?;
+            let key = RSAPrivateKey::new(&mut rng, 4096)?;
 
-            crate::db::update_private_key(client, &key).await?;
+            db.update_private_key(&key).await?;
 
             key
         };
@@ -249,35 +240,12 @@ impl State {
         use_https: bool,
         whitelist_enabled: bool,
         hostname: String,
-        pool: Pool,
-    ) -> Result<Self, Error> {
-        let pool1 = pool.clone();
-        let pool2 = pool.clone();
-        let pool3 = pool.clone();
-
-        let f1 = async move {
-            let conn = pool.get().await?;
-
-            crate::db::hydrate_blocks(&conn).await
-        };
-
-        let f2 = async move {
-            let conn = pool1.get().await?;
-
-            crate::db::hydrate_whitelists(&conn).await
-        };
-
-        let f3 = async move {
-            let conn = pool2.get().await?;
-
-            crate::db::hydrate_listeners(&conn).await
-        };
-
-        let f4 = async move {
-            let conn = pool3.get().await?;
-
-            Settings::hydrate(&conn, use_https, whitelist_enabled, hostname).await
-        };
+        db: &Db,
+    ) -> Result<Self, MyError> {
+        let f1 = db.hydrate_blocks();
+        let f2 = db.hydrate_whitelists();
+        let f3 = db.hydrate_listeners();
+        let f4 = Settings::hydrate(db, use_https, whitelist_enabled, hostname);
 
         let (blocks, whitelists, listeners, settings) = try_join!(f1, f2, f3, f4)?;
 

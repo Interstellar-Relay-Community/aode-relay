@@ -1,7 +1,7 @@
 use crate::{
     accepted,
     apub::{AcceptedActors, AcceptedObjects, ValidTypes},
-    db_actor::Db,
+    db::Db,
     error::MyError,
     requests::Requests,
     state::{State, UrlKind},

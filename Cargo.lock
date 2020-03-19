@@ -387,6 +387,7 @@ dependencies = [
  "http-signature-normalization-actix",
  "log",
  "lru",
+ "num_cpus",
  "pretty_env_logger",
  "rand",
  "rsa",

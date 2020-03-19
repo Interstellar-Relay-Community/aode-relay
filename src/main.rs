@@ -10,10 +10,8 @@ use sha2::{Digest, Sha256};
 
 mod apub;
 mod db;
-mod db_actor;
 mod error;
 mod inbox;
-mod label;
 mod nodeinfo;
 mod notify;
 mod requests;
@@ -23,9 +21,8 @@ mod webfinger;
 
 use self::{
     apub::PublicKey,
-    db_actor::Db,
+    db::Db,
     error::MyError,
-    label::ArbiterLabelFactory,
     state::{State, UrlKind},
     verifier::MyVerify,
     webfinger::RelayResolver,
@@ -95,25 +92,18 @@ async fn main() -> Result<(), anyhow::Error> {
     let use_whitelist = std::env::var("USE_WHITELIST").is_ok();
     let use_https = std::env::var("USE_HTTPS").is_ok();
 
-    let arbiter_labeler = ArbiterLabelFactory::new();
+    let db = Db::build(pg_config.clone()).await?;
 
-    let db = Db::new(pg_config.clone());
-    arbiter_labeler.clone().set_label();
-
-    let state: State = db
-        .execute_inline(move |pool| State::hydrate(use_https, use_whitelist, hostname, pool))
-        .await??;
+    let state = State::hydrate(use_https, use_whitelist, hostname, &db).await?;
 
     let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
 
     HttpServer::new(move || {
-        arbiter_labeler.clone().set_label();
         let state = state.clone();
-        let actor = Db::new(pg_config.clone());
 
         App::new()
             .wrap(Logger::default())
-            .data(actor)
+            .data(db.clone())
             .data(state.clone())
             .data(state.requests())
             .service(web::resource("/").route(web::get().to(index)))
