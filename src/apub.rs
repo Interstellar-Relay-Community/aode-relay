@@ -15,7 +15,11 @@ pub struct PublicKey {
     pub public_key_pem: String,
 }
 
-impl<T> Extension<T> for PublicKey where T: Actor {}
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicKeyExtension {
+    pub public_key: PublicKey,
+}
 
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize, PropRefs)]
 #[serde(rename_all = "camelCase")]
@@ -85,6 +89,20 @@ pub struct AcceptedActors {
 pub struct Endpoints {
     shared_inbox: Option<XsdAnyUri>,
 }
+
+impl PublicKey {
+    pub fn to_ext(self) -> PublicKeyExtension {
+        self.into()
+    }
+}
+
+impl From<PublicKey> for PublicKeyExtension {
+    fn from(public_key: PublicKey) -> Self {
+        PublicKeyExtension { public_key }
+    }
+}
+
+impl<T> Extension<T> for PublicKeyExtension where T: Actor {}
 
 impl ValidObjects {
     pub fn id(&self) -> &XsdAnyUri {

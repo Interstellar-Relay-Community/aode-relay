@@ -81,7 +81,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         public_key_pem: state.settings.public_key.to_pem_pkcs8()?,
     };
 
-    Ok(ok(application.extend(public_key)))
+    Ok(ok(application.extend(public_key.to_ext())))
 }
 
 #[actix_rt::main]
