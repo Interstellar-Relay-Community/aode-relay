@@ -40,6 +40,7 @@ pub enum UrlKind {
     Following,
     Inbox,
     MainKey,
+    NodeInfo,
     Outbox,
 }
 
@@ -92,6 +93,7 @@ impl Settings {
             UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
             UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
             UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
+            UrlKind::NodeInfo => format!("{}://{}/nodeinfo/2.0", scheme, self.hostname),
             UrlKind::Outbox => format!("{}://{}/outbox", scheme, self.hostname),
         }
     }
@@ -99,14 +101,31 @@ impl Settings {
     fn generate_resource(&self) -> String {
         format!("relay@{}", self.hostname)
     }
+
+    fn software_name(&self) -> String {
+        "AodeRelay".to_owned()
+    }
+
+    fn software_version(&self) -> String {
+        "v0.1.0-master".to_owned()
+    }
 }
 
 impl State {
+    pub fn software_name(&self) -> String {
+        self.settings.software_name()
+    }
+
+    pub fn software_version(&self) -> String {
+        self.settings.software_version()
+    }
+
     pub fn requests(&self) -> Requests {
         Requests::new(
             self.generate_url(UrlKind::MainKey),
             self.settings.private_key.clone(),
             self.actor_cache.clone(),
+            format!("{} {}", self.software_name(), self.software_version()),
         )
     }
 

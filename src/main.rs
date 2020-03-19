@@ -14,6 +14,7 @@ mod db_actor;
 mod error;
 mod inbox;
 mod label;
+mod nodeinfo;
 mod notify;
 mod requests;
 mod state;
@@ -126,7 +127,12 @@ async fn main() -> Result<(), anyhow::Error> {
                     .route(web::post().to(inbox::inbox)),
             )
             .service(web::resource("/actor").route(web::get().to(actor_route)))
-            .service(actix_webfinger::resource::<_, RelayResolver>())
+            .service(web::resource("/nodeinfo/2.0").route(web::get().to(nodeinfo::route)))
+            .service(
+                web::scope("/.well-known")
+                    .service(actix_webfinger::scoped::<_, RelayResolver>())
+                    .service(web::resource("/nodeinfo").route(web::get().to(nodeinfo::well_known))),
+            )
     })
     .bind("0.0.0.0:8080")?
     .run()

@@ -15,16 +15,23 @@ pub struct Requests {
     private_key: RSAPrivateKey,
     actor_cache: ActorCache,
     config: Config,
+    user_agent: String,
 }
 
 impl Requests {
-    pub fn new(key_id: String, private_key: RSAPrivateKey, actor_cache: ActorCache) -> Self {
+    pub fn new(
+        key_id: String,
+        private_key: RSAPrivateKey,
+        actor_cache: ActorCache,
+        user_agent: String,
+    ) -> Self {
         Requests {
             client: Client::default(),
             key_id,
             private_key,
             actor_cache,
             config: Config::default().dont_use_created_field(),
+            user_agent,
         }
     }
 
@@ -48,6 +55,7 @@ impl Requests {
             .client
             .get(url)
             .header("Accept", "application/activity+json")
+            .header("User-Agent", self.user_agent.as_str())
             .signature(&self.config, &self.key_id, |signing_string| {
                 self.sign(signing_string)
             })?
@@ -105,7 +113,7 @@ impl Requests {
             .post(inbox.as_str())
             .header("Accept", "application/activity+json")
             .header("Content-Type", "application/activity+json")
-            .header("User-Agent", "Aode Relay v0.1.0")
+            .header("User-Agent", self.user_agent.as_str())
             .signature_with_digest(
                 &self.config,
                 &self.key_id,
