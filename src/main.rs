@@ -1,6 +1,6 @@
 use activitystreams::{
     actor::Application, context, endpoint::EndpointProperties, ext::Extensible,
-    object::properties::ObjectProperties,
+    object::properties::ObjectProperties, security,
 };
 use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use bb8_postgres::tokio_postgres;
@@ -64,7 +64,7 @@ async fn actor_route(state: web::Data<State>) -> Result<impl Responder, MyError>
         .set_summary_xsd_string("AodeRelay bot")?
         .set_name_xsd_string("AodeRelay")?
         .set_url_xsd_any_uri(state.generate_url(UrlKind::Actor))?
-        .set_context_xsd_any_uri(context())?;
+        .set_many_context_xsd_any_uris(vec![context(), security()])?;
 
     application
         .extension
