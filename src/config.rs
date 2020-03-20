@@ -44,6 +44,10 @@ impl Config {
         Ok(config.try_into()?)
     }
 
+    pub fn validate_signatures(&self) -> bool {
+        self.validate_signatures
+    }
+
     pub fn digest_middleware(&self) -> VerifyDigest<Sha256> {
         if self.validate_signatures {
             VerifyDigest::new(Sha256::new())

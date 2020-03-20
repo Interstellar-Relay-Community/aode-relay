@@ -16,7 +16,7 @@ use activitystreams::{
 };
 use actix_web::{web, HttpResponse};
 use futures::join;
-use http_signature_normalization_actix::middleware::SignatureVerified;
+use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 use log::error;
 use std::convert::TryInto;
 
@@ -26,7 +26,8 @@ pub async fn inbox(
     config: web::Data<Config>,
     client: web::Data<Requests>,
     input: web::Json<AcceptedObjects>,
-    verified: SignatureVerified,
+    verified: Option<SignatureVerified>,
+    digest_verified: Option<DigestVerified>,
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
@@ -50,12 +51,18 @@ pub async fn inbox(
         return Err(MyError::NotSubscribed(actor.inbox().to_string()));
     }
 
-    if actor.public_key.id.as_str() != verified.key_id() {
-        error!("Bad actor, more info: {:?}", input);
-        return Err(MyError::BadActor(
-            actor.public_key.id.to_string(),
-            verified.key_id().to_owned(),
-        ));
+    if config.validate_signatures() && (digest_verified.is_none() || verified.is_none()) {
+        return Err(MyError::NoSignature(actor.public_key.id.to_string()));
+    } else if config.validate_signatures() {
+        if let Some(verified) = verified {
+            if actor.public_key.id.as_str() != verified.key_id() {
+                error!("Bad actor, more info: {:?}", input);
+                return Err(MyError::BadActor(
+                    actor.public_key.id.to_string(),
+                    verified.key_id().to_owned(),
+                ));
+            }
+        }
     }
 
     match input.kind {

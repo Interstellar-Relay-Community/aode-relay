@@ -1112,9 +1112,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f09843aded69175105d933d8d47920b61b123c92bdf38eb8d71162414a040e6"
+checksum = "257835255b5d40c6de712d90e56dc874ca5da2816121e7b9f3cfc7b3a55a5714"
 dependencies = [
  "chrono",
  "thiserror",
@@ -1122,9 +1122,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.3.0-alpha.6"
+version = "0.3.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da5b8165a06ced6083c67a62538a48a0d7e952d66c35f6bd0da2f6c35a4689ff"
+checksum = "fdd3dc071dc49a2e57bf5259b969e1c6c7652c2bf5b5d9e624f42867d2946b54"
 dependencies = [
  "actix-http",
  "actix-web",

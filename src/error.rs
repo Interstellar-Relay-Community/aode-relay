@@ -55,6 +55,9 @@ pub enum MyError {
     #[error("Actor ({0}) tried to submit another actor's ({1}) payload")]
     BadActor(String, String),
 
+    #[error("Signature verification is required, but no signature was given")]
+    NoSignature(String),
+
     #[error("Wrong ActivityPub kind, {0}")]
     Kind(String),
 
