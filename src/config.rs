@@ -96,6 +96,10 @@ impl Config {
         "v0.1.0-master".to_owned()
     }
 
+    pub fn source_code(&self) -> String {
+        "https://git.asonix.dog/asonix/ap-relay".to_owned()
+    }
+
     pub fn generate_url(&self, kind: UrlKind) -> String {
         let scheme = if self.https { "https" } else { "http" };
 

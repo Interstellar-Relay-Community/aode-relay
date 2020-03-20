@@ -45,36 +45,33 @@ impl State {
     }
 
     pub async fn bust_whitelist(&self, whitelist: &str) {
-        let hs = self.whitelists.clone();
-
-        let mut write_guard = hs.write().await;
+        let mut write_guard = self.whitelists.write().await;
         write_guard.remove(whitelist);
     }
 
     pub async fn bust_block(&self, block: &str) {
-        let hs = self.blocks.clone();
-
-        let mut write_guard = hs.write().await;
+        let mut write_guard = self.blocks.write().await;
         write_guard.remove(block);
     }
 
     pub async fn bust_listener(&self, inbox: &XsdAnyUri) {
-        let hs = self.listeners.clone();
-
-        let mut write_guard = hs.write().await;
+        let mut write_guard = self.listeners.write().await;
         write_guard.remove(inbox);
     }
 
-    pub async fn listeners_without(&self, inbox: &XsdAnyUri, domain: &str) -> Vec<XsdAnyUri> {
-        let hs = self.listeners.clone();
+    pub async fn listeners(&self) -> Vec<XsdAnyUri> {
+        let read_guard = self.listeners.read().await;
+        read_guard.iter().cloned().collect()
+    }
 
-        let read_guard = hs.read().await;
+    pub async fn listeners_without(&self, inbox: &XsdAnyUri, domain: &str) -> Vec<XsdAnyUri> {
+        let read_guard = self.listeners.read().await;
 
         read_guard
             .iter()
             .filter_map(|listener| {
-                if let Some(host) = listener.as_url().host() {
-                    if listener != inbox && host.to_string() != domain {
+                if let Some(dom) = listener.as_url().domain() {
+                    if listener != inbox && dom != domain {
                         return Some(listener.clone());
                     }
                 }
@@ -89,10 +86,8 @@ impl State {
             return true;
         }
 
-        let hs = self.whitelists.clone();
-
         if let Some(host) = actor_id.as_url().host() {
-            let read_guard = hs.read().await;
+            let read_guard = self.whitelists.read().await;
             return read_guard.contains(&host.to_string());
         }
 
@@ -100,10 +95,8 @@ impl State {
     }
 
     pub async fn is_blocked(&self, actor_id: &XsdAnyUri) -> bool {
-        let hs = self.blocks.clone();
-
         if let Some(host) = actor_id.as_url().host() {
-            let read_guard = hs.read().await;
+            let read_guard = self.blocks.read().await;
             return read_guard.contains(&host.to_string());
         }
 
@@ -111,9 +104,7 @@ impl State {
     }
 
     pub async fn is_listener(&self, actor_id: &XsdAnyUri) -> bool {
-        let hs = self.listeners.clone();
-
-        let read_guard = hs.read().await;
+        let read_guard = self.listeners.read().await;
         read_guard.contains(actor_id)
     }
 
@@ -125,30 +116,22 @@ impl State {
     }
 
     pub async fn cache(&self, object_id: XsdAnyUri, actor_id: XsdAnyUri) {
-        let cache = self.actor_id_cache.clone();
-
-        let mut write_guard = cache.write().await;
+        let mut write_guard = self.actor_id_cache.write().await;
         write_guard.put(object_id, actor_id);
     }
 
     pub async fn cache_block(&self, host: String) {
-        let blocks = self.blocks.clone();
-
-        let mut write_guard = blocks.write().await;
+        let mut write_guard = self.blocks.write().await;
         write_guard.insert(host);
     }
 
     pub async fn cache_whitelist(&self, host: String) {
-        let whitelists = self.whitelists.clone();
-
-        let mut write_guard = whitelists.write().await;
+        let mut write_guard = self.whitelists.write().await;
         write_guard.insert(host);
     }
 
     pub async fn cache_listener(&self, listener: XsdAnyUri) {
-        let listeners = self.listeners.clone();
-
-        let mut write_guard = listeners.write().await;
+        let mut write_guard = self.listeners.write().await;
         write_guard.insert(listener);
     }
 

@@ -18,8 +18,30 @@ mod webfinger;
 
 use self::{args::Args, config::Config, db::Db, state::State, webfinger::RelayResolver};
 
-async fn index() -> impl Responder {
-    "hewwo, mr obama"
+async fn index(state: web::Data<State>, config: web::Data<Config>) -> impl Responder {
+    let mut s = String::new();
+    s.push_str(&format!("Welcome to the relay on {}\n", config.hostname()));
+
+    let listeners = state.listeners().await;
+    if listeners.is_empty() {
+        s.push_str("There are no currently connected servers\n");
+    } else {
+        s.push_str("Here are the currently connected servers:\n");
+        s.push_str("\n");
+    }
+
+    for listener in listeners {
+        if let Some(domain) = listener.as_url().domain() {
+            s.push_str(&format!("{}\n", domain));
+        }
+    }
+    s.push_str("\n");
+    s.push_str(&format!(
+        "The source code for this project can be found at {}\n",
+        config.source_code()
+    ));
+
+    s
 }
 
 #[actix_rt::main]
