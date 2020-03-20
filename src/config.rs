@@ -118,7 +118,7 @@ impl Config {
             UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
             UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
             UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
-            UrlKind::NodeInfo => format!("{}://{}/nodeinfo/2.0", scheme, self.hostname),
+            UrlKind::NodeInfo => format!("{}://{}/nodeinfo/2.0.json", scheme, self.hostname),
             UrlKind::Outbox => format!("{}://{}/outbox", scheme, self.hostname),
         }
     }

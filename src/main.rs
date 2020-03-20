@@ -120,7 +120,7 @@ async fn main() -> Result<(), anyhow::Error> {
                     .route(web::post().to(inbox::inbox)),
             )
             .service(web::resource("/actor").route(web::get().to(actor::route)))
-            .service(web::resource("/nodeinfo/2.0").route(web::get().to(nodeinfo::route)))
+            .service(web::resource("/nodeinfo/2.0.json").route(web::get().to(nodeinfo::route)))
             .service(
                 web::scope("/.well-known")
                     .service(actix_webfinger::scoped::<_, RelayResolver>())

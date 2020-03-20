@@ -1,19 +1,26 @@
-use crate::config::{Config, UrlKind};
+use crate::{
+    config::{Config, UrlKind},
+    state::State,
+};
 use actix_web::{web, Responder};
 use actix_webfinger::Link;
-use std::collections::HashMap;
+use serde_json::json;
 
 pub async fn well_known(config: web::Data<Config>) -> impl Responder {
-    web::Json(Link {
-        rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
-        href: Some(config.generate_url(UrlKind::NodeInfo)),
-        template: None,
-        kind: None,
-    })
+    web::Json(json!({
+        "links": [
+            Link {
+                rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
+                href: Some(config.generate_url(UrlKind::NodeInfo)),
+                template: None,
+                kind: None,
+            }
+        ]
+    }))
     .with_header("Content-Type", "application/jrd+json")
 }
 
-pub async fn route(config: web::Data<Config>) -> web::Json<NodeInfo> {
+pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::Json<NodeInfo> {
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {
@@ -27,7 +34,15 @@ pub async fn route(config: web::Data<Config>) -> web::Json<NodeInfo> {
             local_posts: 0,
             local_comments: 0,
         },
-        metadata: Metadata::default(),
+        metadata: Metadata {
+            peers: state
+                .listeners()
+                .await
+                .iter()
+                .filter_map(|listener| listener.as_url().domain())
+                .map(|s| s.to_owned())
+                .collect(),
+        },
     })
 }
 
@@ -69,8 +84,9 @@ pub struct Usage {
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize)]
-#[serde(transparent)]
-pub struct Metadata(pub HashMap<String, serde_json::Value>);
+pub struct Metadata {
+    peers: Vec<String>,
+}
 
 impl serde::ser::Serialize for NodeInfoVersion {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
