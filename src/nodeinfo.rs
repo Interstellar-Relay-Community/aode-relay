@@ -28,9 +28,17 @@ pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::J
             version: config.software_version(),
         },
         protocols: vec![Protocol::ActivityPub],
-        services: vec![],
+        services: Services {
+            inbound: vec![],
+            outbound: vec![],
+        },
         open_registrations: false,
         usage: Usage {
+            users: Users {
+                total: 1,
+                active_halfyear: 1,
+                active_month: 1,
+            },
             local_posts: 0,
             local_comments: 0,
         },
@@ -52,7 +60,7 @@ pub struct NodeInfo {
     version: NodeInfoVersion,
     software: Software,
     protocols: Vec<Protocol>,
-    services: Vec<Service>,
+    services: Services,
     open_registrations: bool,
     usage: Usage,
     metadata: Metadata,
@@ -74,11 +82,19 @@ pub enum Protocol {
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
+pub struct Services {
+    inbound: Vec<Service>,
+    outbound: Vec<Service>,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Service {}
 
 #[derive(Clone, Debug, Default, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Usage {
+    users: Users,
     local_posts: u64,
     local_comments: u64,
 }
@@ -86,6 +102,14 @@ pub struct Usage {
 #[derive(Clone, Debug, Default, serde::Serialize)]
 pub struct Metadata {
     peers: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Users {
+    total: u64,
+    active_halfyear: u64,
+    active_month: u64,
 }
 
 impl serde::ser::Serialize for NodeInfoVersion {
