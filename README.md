@@ -34,7 +34,8 @@ Whitelisted domains are only checked against incoming activities if `WHITELIST_M
 - Update {anything}, the Update Anything is relayed verbatim to listening servers
 
 ### Configuration
-By default, all these values are set to development values
+By default, all these values are set to development values. These are read from the environment, or
+from the `.env` file in the working directory.
 ```env
 HOSTNAME=localhost:8080
 ADDR=127.0.0.1
