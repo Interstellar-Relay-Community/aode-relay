@@ -1,7 +1,7 @@
 # AodeRelay
 _A simple and efficient activitypub relay_
 
-### USAGE
+### Usage
 To simply run the server, the command is as follows
 ```bash
 $ ./relay
@@ -23,6 +23,15 @@ $ ./relay -uw asonix.dog blimps.xyz
 
 Whitelisted domains are only checked against incoming activities if `WHITELIST_MODE` is enabled
 
+### Subscribing
+Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.
+For example, if the server is `https://relay.my.tld`, the correct URL would be
+`https://relay.my.tld/inbox`.
+
+Pleroma admins can subscribe to this relay by adding the `/actor` route to their relay settings. For
+ecample, if the server is `https://relay.my.tld`, the correct URL would be
+`https://relay.my.tld/actor`.
+
 ### Supported Activities
 - Announce {anything}, {anything} is Announced to listening servers
 - Create {anything}, {anything} is Announced to listening servers
@@ -30,8 +39,12 @@ Whitelisted domains are only checked against incoming activities if `WHITELIST_M
 - Follow Public, become a listener of the relay
 - Undo Follow {self}, stop listening on the relay, an Undo Follow will be sent back
 - Undo Follow Public, stop listening on the relay
-- Delete {anything}, the Delete Anything is relayed verbatim to listening servers
-- Update {anything}, the Update Anything is relayed verbatim to listening servers
+- Delete {anything}, the Delete {anything} is relayed verbatim to listening servers
+- Update {anything}, the Update {anything} is relayed verbatim to listening servers
+
+### Supported Discovery Protocols
+- Webfinger
+- NodeInfo
 
 ### Configuration
 By default, all these values are set to development values. These are read from the environment, or
