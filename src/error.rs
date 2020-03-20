@@ -1,11 +1,18 @@
 use activitystreams::primitives::XsdAnyUriError;
-use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
+use actix_web::{
+    error::{BlockingError, ResponseError},
+    http::StatusCode,
+    HttpResponse,
+};
 use log::error;
 use rsa_pem::KeyError;
-use std::{convert::Infallible, io::Error};
+use std::{convert::Infallible, fmt::Debug, io::Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum MyError {
+    #[error("Error in configuration, {0}")]
+    Config(#[from] config::ConfigError),
+
     #[error("Error in db, {0}")]
     DbError(#[from] bb8_postgres::tokio_postgres::error::Error),
 
@@ -51,9 +58,6 @@ pub enum MyError {
     #[error("Wrong ActivityPub kind, {0}")]
     Kind(String),
 
-    #[error("No host present in URI, {0}")]
-    Host(String),
-
     #[error("Too many CPUs, {0}")]
     CpuCount(#[from] std::num::TryFromIntError),
 
@@ -77,6 +81,9 @@ pub enum MyError {
 
     #[error("URI is missing domain field")]
     Domain,
+
+    #[error("Blocking operation was canceled")]
+    Canceled,
 }
 
 impl ResponseError for MyError {
@@ -99,6 +106,18 @@ impl ResponseError for MyError {
             .json(serde_json::json!({
                 "error": self.to_string(),
             }))
+    }
+}
+
+impl<T> From<BlockingError<T>> for MyError
+where
+    T: Into<MyError> + Debug,
+{
+    fn from(e: BlockingError<T>) -> Self {
+        match e {
+            BlockingError::Error(e) => e.into(),
+            BlockingError::Canceled => MyError::Canceled,
+        }
     }
 }
 

@@ -2,7 +2,11 @@ use crate::error::MyError;
 use activitystreams::primitives::XsdAnyUri;
 use bb8_postgres::{
     bb8,
-    tokio_postgres::{row::Row, Client, Config, NoTls},
+    tokio_postgres::{
+        error::{Error, SqlState},
+        row::Row,
+        Client, Config, NoTls,
+    },
     PostgresConnectionManager,
 };
 use log::{info, warn};
@@ -43,6 +47,48 @@ impl Db {
         Ok(())
     }
 
+    pub async fn add_blocks(&self, domains: &[String]) -> Result<(), MyError> {
+        let conn = self.pool.get().await?;
+        for domain in domains {
+            match add_block(&conn, domain.as_str()).await {
+                Err(e) if e.code() != Some(&SqlState::UNIQUE_VIOLATION) => {
+                    Err(e)?;
+                }
+                _ => (),
+            };
+        }
+        Ok(())
+    }
+
+    pub async fn remove_blocks(&self, domains: &[String]) -> Result<(), MyError> {
+        let conn = self.pool.get().await?;
+        for domain in domains {
+            remove_block(&conn, domain.as_str()).await?
+        }
+        Ok(())
+    }
+
+    pub async fn add_whitelists(&self, domains: &[String]) -> Result<(), MyError> {
+        let conn = self.pool.get().await?;
+        for domain in domains {
+            match add_whitelist(&conn, domain.as_str()).await {
+                Err(e) if e.code() != Some(&SqlState::UNIQUE_VIOLATION) => {
+                    Err(e)?;
+                }
+                _ => (),
+            };
+        }
+        Ok(())
+    }
+
+    pub async fn remove_whitelists(&self, domains: &[String]) -> Result<(), MyError> {
+        let conn = self.pool.get().await?;
+        for domain in domains {
+            remove_whitelist(&conn, domain.as_str()).await?
+        }
+        Ok(())
+    }
+
     pub async fn hydrate_blocks(&self) -> Result<HashSet<String>, MyError> {
         let conn = self.pool.get().await?;
 
@@ -74,7 +120,7 @@ impl Db {
     }
 }
 
-pub async fn listen(client: &Client) -> Result<(), MyError> {
+pub async fn listen(client: &Client) -> Result<(), Error> {
     info!("LISTEN new_blocks;");
     info!("LISTEN new_whitelists;");
     info!("LISTEN new_listeners;");
@@ -117,49 +163,67 @@ async fn update_private_key(client: &Client, key: &RSAPrivateKey) -> Result<(), 
     Ok(())
 }
 
-async fn add_block(client: &Client, block: &XsdAnyUri) -> Result<(), MyError> {
-    let host = if let Some(host) = block.as_url().host() {
-        host
-    } else {
-        return Err(MyError::Host(block.to_string()));
-    };
-
+async fn add_block(client: &Client, domain: &str) -> Result<(), Error> {
     info!(
         "INSERT INTO blocks (domain_name, created_at) VALUES ($1::TEXT, 'now'); [{}]",
-        host.to_string()
+        domain,
     );
     client
         .execute(
             "INSERT INTO blocks (domain_name, created_at) VALUES ($1::TEXT, 'now');",
-            &[&host.to_string()],
+            &[&domain],
         )
         .await?;
 
     Ok(())
 }
 
-async fn add_whitelist(client: &Client, whitelist: &XsdAnyUri) -> Result<(), MyError> {
-    let host = if let Some(host) = whitelist.as_url().host() {
-        host
-    } else {
-        return Err(MyError::Host(whitelist.to_string()));
-    };
+async fn remove_block(client: &Client, domain: &str) -> Result<(), Error> {
+    info!(
+        "DELETE FROM blocks WHERE domain_name = $1::TEXT; [{}]",
+        domain,
+    );
+    client
+        .execute(
+            "DELETE FROM blocks WHERE domain_name = $1::TEXT;",
+            &[&domain],
+        )
+        .await?;
 
+    Ok(())
+}
+
+async fn add_whitelist(client: &Client, domain: &str) -> Result<(), Error> {
     info!(
         "INSERT INTO whitelists (domain_name, created_at) VALUES ($1::TEXT, 'now'); [{}]",
-        host.to_string()
+        domain,
     );
     client
         .execute(
             "INSERT INTO whitelists (domain_name, created_at) VALUES ($1::TEXT, 'now');",
-            &[&host.to_string()],
+            &[&domain],
         )
         .await?;
 
     Ok(())
 }
 
-async fn remove_listener(client: &Client, listener: &XsdAnyUri) -> Result<(), MyError> {
+async fn remove_whitelist(client: &Client, domain: &str) -> Result<(), Error> {
+    info!(
+        "DELETE FROM whitelists WHERE domain_name = $1::TEXT; [{}]",
+        domain,
+    );
+    client
+        .execute(
+            "DELETE FROM whitelists WHERE domain_name = $1::TEXT;",
+            &[&domain],
+        )
+        .await?;
+
+    Ok(())
+}
+
+async fn remove_listener(client: &Client, listener: &XsdAnyUri) -> Result<(), Error> {
     info!(
         "DELETE FROM listeners WHERE actor_id = {};",
         listener.as_str()
@@ -174,7 +238,7 @@ async fn remove_listener(client: &Client, listener: &XsdAnyUri) -> Result<(), My
     Ok(())
 }
 
-async fn add_listener(client: &Client, listener: &XsdAnyUri) -> Result<(), MyError> {
+async fn add_listener(client: &Client, listener: &XsdAnyUri) -> Result<(), Error> {
     info!(
         "INSERT INTO listeners (actor_id, created_at) VALUES ($1::TEXT, 'now'); [{}]",
         listener.as_str(),
@@ -189,14 +253,14 @@ async fn add_listener(client: &Client, listener: &XsdAnyUri) -> Result<(), MyErr
     Ok(())
 }
 
-async fn hydrate_blocks(client: &Client) -> Result<HashSet<String>, MyError> {
+async fn hydrate_blocks(client: &Client) -> Result<HashSet<String>, Error> {
     info!("SELECT domain_name FROM blocks");
     let rows = client.query("SELECT domain_name FROM blocks", &[]).await?;
 
     parse_rows(rows)
 }
 
-async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, MyError> {
+async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, Error> {
     info!("SELECT domain_name FROM whitelists");
     let rows = client
         .query("SELECT domain_name FROM whitelists", &[])
@@ -205,14 +269,14 @@ async fn hydrate_whitelists(client: &Client) -> Result<HashSet<String>, MyError>
     parse_rows(rows)
 }
 
-async fn hydrate_listeners(client: &Client) -> Result<HashSet<XsdAnyUri>, MyError> {
+async fn hydrate_listeners(client: &Client) -> Result<HashSet<XsdAnyUri>, Error> {
     info!("SELECT actor_id FROM listeners");
     let rows = client.query("SELECT actor_id FROM listeners", &[]).await?;
 
     parse_rows(rows)
 }
 
-fn parse_rows<T, E>(rows: Vec<Row>) -> Result<HashSet<T>, MyError>
+fn parse_rows<T, E>(rows: Vec<Row>) -> Result<HashSet<T>, Error>
 where
     T: std::str::FromStr<Err = E> + Eq + std::hash::Hash,
     E: std::fmt::Display,

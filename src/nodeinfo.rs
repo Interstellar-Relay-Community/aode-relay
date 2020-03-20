@@ -1,24 +1,24 @@
-use crate::state::{State, UrlKind};
+use crate::config::{Config, UrlKind};
 use actix_web::{web, Responder};
 use actix_webfinger::Link;
 use std::collections::HashMap;
 
-pub async fn well_known(state: web::Data<State>) -> impl Responder {
+pub async fn well_known(config: web::Data<Config>) -> impl Responder {
     web::Json(Link {
         rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
-        href: Some(state.generate_url(UrlKind::NodeInfo)),
+        href: Some(config.generate_url(UrlKind::NodeInfo)),
         template: None,
         kind: None,
     })
     .with_header("Content-Type", "application/jrd+json")
 }
 
-pub async fn route(state: web::Data<State>) -> web::Json<NodeInfo> {
+pub async fn route(config: web::Data<Config>) -> web::Json<NodeInfo> {
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {
-            name: state.software_name(),
-            version: state.software_version(),
+            name: config.software_name(),
+            version: config.software_version(),
         },
         protocols: vec![Protocol::ActivityPub],
         services: vec![],

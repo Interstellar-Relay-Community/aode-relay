@@ -1,5 +1,12 @@
-use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
+use crate::{
+    apub::AcceptedActors,
+    config::{Config, UrlKind},
+    db::Db,
+    error::MyError,
+    requests::Requests,
+};
 use activitystreams::primitives::XsdAnyUri;
+use actix_web::web;
 use futures::try_join;
 use log::info;
 use lru::LruCache;
@@ -8,13 +15,14 @@ use rsa::{RSAPrivateKey, RSAPublicKey};
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
-use uuid::Uuid;
 
 pub type ActorCache = Arc<RwLock<TtlCache<XsdAnyUri, AcceptedActors>>>;
 
 #[derive(Clone)]
 pub struct State {
-    pub settings: Settings,
+    pub public_key: RSAPublicKey,
+    private_key: RSAPrivateKey,
+    config: Config,
     actor_cache: ActorCache,
     actor_id_cache: Arc<RwLock<LruCache<XsdAnyUri, XsdAnyUri>>>,
     blocks: Arc<RwLock<HashSet<String>>>,
@@ -22,110 +30,18 @@ pub struct State {
     listeners: Arc<RwLock<HashSet<XsdAnyUri>>>,
 }
 
-#[derive(Clone)]
-pub struct Settings {
-    pub use_https: bool,
-    pub whitelist_enabled: bool,
-    pub hostname: String,
-    pub public_key: RSAPublicKey,
-    private_key: RSAPrivateKey,
-}
-
-pub enum UrlKind {
-    Activity,
-    Actor,
-    Followers,
-    Following,
-    Inbox,
-    MainKey,
-    NodeInfo,
-    Outbox,
-}
-
-impl Settings {
-    async fn hydrate(
-        db: &Db,
-        use_https: bool,
-        whitelist_enabled: bool,
-        hostname: String,
-    ) -> Result<Self, MyError> {
-        let private_key = if let Some(key) = db.hydrate_private_key().await? {
-            key
-        } else {
-            info!("Generating new keys");
-            let mut rng = thread_rng();
-            let key = RSAPrivateKey::new(&mut rng, 4096)?;
-
-            db.update_private_key(&key).await?;
-
-            key
-        };
-
-        let public_key = private_key.to_public_key();
-
-        Ok(Settings {
-            use_https,
-            whitelist_enabled,
-            hostname,
-            private_key,
-            public_key,
-        })
-    }
-
-    fn generate_url(&self, kind: UrlKind) -> String {
-        let scheme = if self.use_https { "https" } else { "http" };
-
-        match kind {
-            UrlKind::Activity => {
-                format!("{}://{}/activity/{}", scheme, self.hostname, Uuid::new_v4())
-            }
-            UrlKind::Actor => format!("{}://{}/actor", scheme, self.hostname),
-            UrlKind::Followers => format!("{}://{}/followers", scheme, self.hostname),
-            UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
-            UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
-            UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
-            UrlKind::NodeInfo => format!("{}://{}/nodeinfo/2.0", scheme, self.hostname),
-            UrlKind::Outbox => format!("{}://{}/outbox", scheme, self.hostname),
-        }
-    }
-
-    fn generate_resource(&self) -> String {
-        format!("relay@{}", self.hostname)
-    }
-
-    fn software_name(&self) -> String {
-        "AodeRelay".to_owned()
-    }
-
-    fn software_version(&self) -> String {
-        "v0.1.0-master".to_owned()
-    }
-}
-
 impl State {
-    pub fn software_name(&self) -> String {
-        self.settings.software_name()
-    }
-
-    pub fn software_version(&self) -> String {
-        self.settings.software_version()
-    }
-
     pub fn requests(&self) -> Requests {
         Requests::new(
-            self.generate_url(UrlKind::MainKey),
-            self.settings.private_key.clone(),
+            self.config.generate_url(UrlKind::MainKey),
+            self.private_key.clone(),
             self.actor_cache.clone(),
-            format!("{} {}", self.software_name(), self.software_version()),
+            format!(
+                "{} {}",
+                self.config.software_name(),
+                self.config.software_version()
+            ),
         )
-    }
-
-    pub fn generate_url(&self, kind: UrlKind) -> String {
-        self.settings.generate_url(kind)
-    }
-
-    pub fn generate_resource(&self) -> String {
-        self.settings.generate_resource()
     }
 
     pub async fn bust_whitelist(&self, whitelist: &str) {
@@ -169,7 +85,7 @@ impl State {
     }
 
     pub async fn is_whitelisted(&self, actor_id: &XsdAnyUri) -> bool {
-        if !self.settings.whitelist_enabled {
+        if !self.config.whitelist_mode() {
             return true;
         }
 
@@ -236,21 +152,36 @@ impl State {
         write_guard.insert(listener);
     }
 
-    pub async fn hydrate(
-        use_https: bool,
-        whitelist_enabled: bool,
-        hostname: String,
-        db: &Db,
-    ) -> Result<Self, MyError> {
+    pub async fn hydrate(config: Config, db: &Db) -> Result<Self, MyError> {
         let f1 = db.hydrate_blocks();
         let f2 = db.hydrate_whitelists();
         let f3 = db.hydrate_listeners();
-        let f4 = Settings::hydrate(db, use_https, whitelist_enabled, hostname);
 
-        let (blocks, whitelists, listeners, settings) = try_join!(f1, f2, f3, f4)?;
+        let f4 = async move {
+            if let Some(key) = db.hydrate_private_key().await? {
+                Ok(key)
+            } else {
+                info!("Generating new keys");
+                let key = web::block(move || {
+                    let mut rng = thread_rng();
+                    RSAPrivateKey::new(&mut rng, 4096)
+                })
+                .await?;
+
+                db.update_private_key(&key).await?;
+
+                Ok(key)
+            }
+        };
+
+        let (blocks, whitelists, listeners, private_key) = try_join!(f1, f2, f3, f4)?;
+
+        let public_key = private_key.to_public_key();
 
         Ok(State {
-            settings,
+            public_key,
+            private_key,
+            config,
             actor_cache: Arc::new(RwLock::new(TtlCache::new(1024 * 8))),
             actor_id_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
             blocks: Arc::new(RwLock::new(blocks)),

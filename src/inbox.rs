@@ -1,10 +1,11 @@
 use crate::{
-    accepted,
     apub::{AcceptedActors, AcceptedObjects, ValidTypes},
+    config::{Config, UrlKind},
     db::Db,
     error::MyError,
     requests::Requests,
-    state::{State, UrlKind},
+    responses::accepted,
+    state::State,
 };
 use activitystreams::{
     activity::{Accept, Announce, Follow, Undo},
@@ -22,6 +23,7 @@ use std::convert::TryInto;
 pub async fn inbox(
     db: web::Data<Db>,
     state: web::Data<State>,
+    config: web::Data<Config>,
     client: web::Data<Requests>,
     input: web::Json<AcceptedObjects>,
     verified: SignatureVerified,
@@ -58,19 +60,20 @@ pub async fn inbox(
 
     match input.kind {
         ValidTypes::Announce | ValidTypes::Create => {
-            handle_announce(&state, &client, input, actor).await
+            handle_announce(&state, &config, &client, input, actor).await
         }
-        ValidTypes::Follow => handle_follow(&db, &state, &client, input, actor, is_listener).await,
+        ValidTypes::Follow => handle_follow(&db, &config, &client, input, actor, is_listener).await,
         ValidTypes::Delete | ValidTypes::Update => {
             handle_forward(&state, &client, input, actor).await
         }
-        ValidTypes::Undo => handle_undo(&db, &state, &client, input, actor).await,
+        ValidTypes::Undo => handle_undo(&db, &state, &config, &client, input, actor).await,
     }
 }
 
 async fn handle_undo(
     db: &Db,
     state: &State,
+    config: &Config,
     client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
@@ -88,7 +91,7 @@ async fn handle_undo(
         return handle_forward(state, client, input, actor).await;
     }
 
-    let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
+    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
     if !input.object.child_object_is(&my_id) && !input.object.child_object_is(&public()) {
         return Err(MyError::WrongActor(input.object.id().to_string()));
@@ -97,7 +100,7 @@ async fn handle_undo(
     let inbox = actor.inbox().to_owned();
     db.remove_listener(inbox).await?;
 
-    let undo = generate_undo_follow(state, &actor.id, &my_id)?;
+    let undo = generate_undo_follow(config, &actor.id, &my_id)?;
 
     let client2 = client.clone();
     let inbox = actor.inbox().clone();
@@ -125,6 +128,7 @@ async fn handle_forward(
 
 async fn handle_announce(
     state: &State,
+    config: &Config,
     client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
@@ -135,9 +139,9 @@ async fn handle_announce(
         return Err(MyError::Duplicate);
     }
 
-    let activity_id: XsdAnyUri = state.generate_url(UrlKind::Activity).parse()?;
+    let activity_id: XsdAnyUri = config.generate_url(UrlKind::Activity).parse()?;
 
-    let announce = generate_announce(state, &activity_id, object_id)?;
+    let announce = generate_announce(config, &activity_id, object_id)?;
     let inboxes = get_inboxes(state, &actor, &object_id).await?;
     client.deliver_many(inboxes, announce.clone());
 
@@ -148,13 +152,13 @@ async fn handle_announce(
 
 async fn handle_follow(
     db: &Db,
-    state: &State,
+    config: &Config,
     client: &Requests,
     input: AcceptedObjects,
     actor: AcceptedActors,
     is_listener: bool,
 ) -> Result<HttpResponse, MyError> {
-    let my_id: XsdAnyUri = state.generate_url(UrlKind::Actor).parse()?;
+    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
     if !input.object.is(&my_id) && !input.object.is(&public()) {
         return Err(MyError::WrongActor(input.object.id().to_string()));
@@ -166,7 +170,7 @@ async fn handle_follow(
 
         // if following relay directly, not just following 'public', followback
         if input.object.is(&my_id) {
-            let follow = generate_follow(state, &actor.id, &my_id)?;
+            let follow = generate_follow(config, &actor.id, &my_id)?;
             let client2 = client.clone();
             let inbox = actor.inbox().clone();
             let follow2 = follow.clone();
@@ -176,7 +180,7 @@ async fn handle_follow(
         }
     }
 
-    let accept = generate_accept_follow(state, &actor.id, &input.id, &my_id)?;
+    let accept = generate_accept_follow(config, &actor.id, &input.id, &my_id)?;
 
     let client2 = client.clone();
     let inbox = actor.inbox().clone();
@@ -190,7 +194,7 @@ async fn handle_follow(
 
 // Generate a type that says "I want to stop following you"
 fn generate_undo_follow(
-    state: &State,
+    config: &Config,
     actor_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
 ) -> Result<Undo, MyError> {
@@ -203,7 +207,7 @@ fn generate_undo_follow(
 
             follow
                 .object_props
-                .set_id(state.generate_url(UrlKind::Activity))?;
+                .set_id(config.generate_url(UrlKind::Activity))?;
             follow
                 .follow_props
                 .set_actor_xsd_any_uri(actor_id.clone())?
@@ -212,12 +216,12 @@ fn generate_undo_follow(
             follow
         })?;
 
-    prepare_activity(undo, state.generate_url(UrlKind::Actor), actor_id.clone())
+    prepare_activity(undo, config.generate_url(UrlKind::Actor), actor_id.clone())
 }
 
 // Generate a type that says "Look at this object"
 fn generate_announce(
-    state: &State,
+    config: &Config,
     activity_id: &XsdAnyUri,
     object_id: &XsdAnyUri,
 ) -> Result<Announce, MyError> {
@@ -226,18 +230,18 @@ fn generate_announce(
     announce
         .announce_props
         .set_object_xsd_any_uri(object_id.clone())?
-        .set_actor_xsd_any_uri(state.generate_url(UrlKind::Actor))?;
+        .set_actor_xsd_any_uri(config.generate_url(UrlKind::Actor))?;
 
     prepare_activity(
         announce,
         activity_id.clone(),
-        state.generate_url(UrlKind::Followers),
+        config.generate_url(UrlKind::Followers),
     )
 }
 
 // Generate a type that says "I want to follow you"
 fn generate_follow(
-    state: &State,
+    config: &Config,
     actor_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
 ) -> Result<Follow, MyError> {
@@ -250,14 +254,14 @@ fn generate_follow(
 
     prepare_activity(
         follow,
-        state.generate_url(UrlKind::Activity),
+        config.generate_url(UrlKind::Activity),
         actor_id.clone(),
     )
 }
 
 // Generate a type that says "I accept your follow request"
 fn generate_accept_follow(
-    state: &State,
+    config: &Config,
     actor_id: &XsdAnyUri,
     input_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
@@ -281,7 +285,7 @@ fn generate_accept_follow(
 
     prepare_activity(
         accept,
-        state.generate_url(UrlKind::Activity),
+        config.generate_url(UrlKind::Activity),
         actor_id.clone(),
     )
 }
