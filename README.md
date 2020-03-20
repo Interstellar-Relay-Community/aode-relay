@@ -45,7 +45,7 @@ VALIDATE_SIGNATURES=false
 HTTPS=false
 DATABASE_URL=
 ```
-To run this server in product, you'll likely want to set most of them
+To run this server in production, you'll likely want to set most of them
 ```env
 HOSTNAME=relay.my.tld
 ADDR=0.0.0.0
