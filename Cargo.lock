@@ -582,6 +582,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
+name = "bytecount"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0017894339f586ccb943b01b9555de56770c11cda818e7e3d8bd93f4ed7f46e"
+
+[[package]]
 name = "byteorder"
 version = "1.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1161,6 +1167,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1437,6 +1452,17 @@ name = "num-iter"
 version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfb0800a0291891dd9f4fe7bd9c19384f98f7fbe0cd0f39a2c6b88b9868bbc00"
+dependencies = [
+ "autocfg 1.0.0",
+ "num-integer",
+ "num-traits 0.2.11",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
 dependencies = [
  "autocfg 1.0.0",
  "num-integer",
@@ -1764,12 +1790,14 @@ dependencies = [
  "http-signature-normalization-actix",
  "log",
  "lru",
+ "mime",
  "num_cpus",
  "pretty_env_logger",
  "rand",
  "rsa",
  "rsa-magic-public-key",
  "rsa-pem",
+ "ructe",
  "serde 1.0.105",
  "serde_json",
  "sha2",
@@ -1848,6 +1876,35 @@ dependencies = [
  "rsa",
  "thiserror",
  "yasna",
+]
+
+[[package]]
+name = "rsass"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53314103d427bab245db7b3d1602faf509d2dd03db85b32421d1748e93bb4475"
+dependencies = [
+ "bytecount",
+ "lazy_static",
+ "nom",
+ "num-rational",
+ "num-traits 0.2.11",
+ "rand",
+]
+
+[[package]]
+name = "ructe"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c85620b8046f88a870d93d90fa56904dec76cc79139bfcc22e71e87f0cd2169f"
+dependencies = [
+ "base64 0.11.0",
+ "bytecount",
+ "itertools",
+ "md5",
+ "mime",
+ "nom",
+ "rsass",
 ]
 
 [[package]]

@@ -1,0 +1,64 @@
+@use crate::{config::{Config, UrlKind}, templates::statics::index_css};
+@use activitystreams::primitives::XsdAnyUri;
+
+@(listeners: &[XsdAnyUri], config: &Config)
+
+<!doctype html>
+<html>
+    <head lang="en">
+        <meta charset="utf-8"/>
+        <title>@config.hostname() | ActivityPub Relay</title>
+        <link rel="stylesheet" href="/static/@index_css.name" type="text/css" />
+    </head>
+    <body>
+        <header>
+            <h1>Welcome to @config.software_name() on @config.hostname()</h1>
+        </header>
+        <main>
+            <section>
+                <h3>Connected Servers:</h3>
+                @if listeners.is_empty() {
+                    <p>There are no connected servers at this time.</p>
+                } else {
+                    <ul>
+                        @for listener in listeners {
+                            @if let Some(domain) = listener.as_url().domain() {
+                                <li>@domain</li>
+                            }
+                        }
+                    </ul>
+                }
+            </section>
+            <section>
+                <h3>Joining</h3>
+                <p>
+                    If you are the admin of a server that supports activitypub relays, you can add
+                    this relay to your server.
+                </p>
+                <h4>Mastodon</h4>
+                <p>
+                    Mastodon admins can add this relay by adding
+                    <pre>@config.generate_url(UrlKind::Inbox)</pre> in their relay settings.
+                </p>
+                <h4>Pleroma</h4>
+                <p>
+                    Pleroma admins can add this relay by adding
+                    <pre>@config.generate_url(UrlKind::Actor)</pre>
+                    to their relay settings (I don't actually know how pleroma handles adding
+                    relays, is it still a mix command?).
+                </p>
+                <h4>Others</h4>
+                <p>
+                    Consult the documentation for your server. It's likely that it follows either
+                    Mastodon or Pleroma's relay formatting.
+                </p>
+            </section>
+        </main>
+        <footer>
+            <p>
+                The source code for this project can be found at
+                <a href="@config.source_code()">@config.source_code()</a>
+            </p>
+        </footer>
+    </body>
+</html>

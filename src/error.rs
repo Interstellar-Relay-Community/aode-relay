@@ -64,6 +64,9 @@ pub enum MyError {
     #[error("Too many CPUs, {0}")]
     CpuCount(#[from] std::num::TryFromIntError),
 
+    #[error("Couldn't flush buffer")]
+    FlushBuffer,
+
     #[error("Timed out while waiting on db pool")]
     DbTimeout,
 

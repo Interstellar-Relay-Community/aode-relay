@@ -1,5 +1,14 @@
-use actix_web::{middleware::Logger, web, App, HttpServer, Responder};
+use actix_web::{
+    http::header::{ContentType, Expires},
+    middleware::Logger,
+    web, App, HttpResponse, HttpServer,
+};
 use bb8_postgres::tokio_postgres;
+use log::error;
+use std::{
+    io::BufWriter,
+    time::{Duration, SystemTime},
+};
 
 mod actor;
 mod apub;
@@ -17,32 +26,42 @@ mod state;
 mod verifier;
 mod webfinger;
 
-use self::{args::Args, config::Config, db::Db, state::State, webfinger::RelayResolver};
+use self::{
+    args::Args, config::Config, db::Db, error::MyError, state::State,
+    templates::statics::StaticFile, webfinger::RelayResolver,
+};
 
-async fn index(state: web::Data<State>, config: web::Data<Config>) -> impl Responder {
-    let mut s = String::new();
-    s.push_str(&format!("Welcome to the relay on {}\n", config.hostname()));
-
+async fn index(
+    state: web::Data<State>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, MyError> {
     let listeners = state.listeners().await;
-    if listeners.is_empty() {
-        s.push_str("There are no currently connected servers\n");
+
+    let mut buf = BufWriter::new(Vec::new());
+
+    templates::index(&mut buf, &listeners, &config)?;
+    let buf = buf.into_inner().map_err(|e| {
+        error!("Error rendering template, {}", e.error());
+        MyError::FlushBuffer
+    })?;
+
+    Ok(HttpResponse::Ok().content_type("text/html").body(buf))
+}
+
+static FAR: Duration = Duration::from_secs(60 * 60 * 24);
+
+async fn static_file(filename: web::Path<String>) -> HttpResponse {
+    if let Some(data) = StaticFile::get(&filename.into_inner()) {
+        let far_expires = SystemTime::now() + FAR;
+        HttpResponse::Ok()
+            .set(Expires(far_expires.into()))
+            .set(ContentType(data.mime.clone()))
+            .body(data.content)
     } else {
-        s.push_str("Here are the currently connected servers:\n");
-        s.push_str("\n");
+        HttpResponse::NotFound()
+            .reason("No such static file.")
+            .finish()
     }
-
-    for listener in listeners {
-        if let Some(domain) = listener.as_url().domain() {
-            s.push_str(&format!("{}\n", domain));
-        }
-    }
-    s.push_str("\n");
-    s.push_str(&format!(
-        "The source code for this project can be found at {}\n",
-        config.source_code()
-    ));
-
-    s
 }
 
 #[actix_rt::main]
@@ -107,9 +126,12 @@ async fn main() -> Result<(), anyhow::Error> {
                     .service(actix_webfinger::scoped::<_, RelayResolver>())
                     .service(web::resource("/nodeinfo").route(web::get().to(nodeinfo::well_known))),
             )
+            .service(web::resource("/static/{filename}").route(web::get().to(static_file)))
     })
     .bind(bind_address)?
     .run()
     .await?;
     Ok(())
 }
+
+include!(concat!(env!("OUT_DIR"), "/templates.rs"));
