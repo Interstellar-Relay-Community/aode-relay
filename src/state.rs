@@ -7,7 +7,7 @@ use crate::{
 };
 use activitystreams::primitives::XsdAnyUri;
 use actix_web::web;
-use futures::try_join;
+use futures::{join, try_join};
 use log::info;
 use lru::LruCache;
 use rand::thread_rng;
@@ -133,6 +133,31 @@ impl State {
     pub async fn cache_listener(&self, listener: XsdAnyUri) {
         let mut write_guard = self.listeners.write().await;
         write_guard.insert(listener);
+    }
+
+    pub async fn rehydrate(&self, db: &Db) -> Result<(), MyError> {
+        let f1 = db.hydrate_blocks();
+        let f2 = db.hydrate_whitelists();
+        let f3 = db.hydrate_listeners();
+
+        let (blocks, whitelists, listeners) = try_join!(f1, f2, f3)?;
+
+        join!(
+            async move {
+                let mut write_guard = self.listeners.write().await;
+                *write_guard = listeners;
+            },
+            async move {
+                let mut write_guard = self.whitelists.write().await;
+                *write_guard = whitelists;
+            },
+            async move {
+                let mut write_guard = self.blocks.write().await;
+                *write_guard = blocks;
+            }
+        );
+
+        Ok(())
     }
 
     pub async fn hydrate(config: Config, db: &Db) -> Result<Self, MyError> {

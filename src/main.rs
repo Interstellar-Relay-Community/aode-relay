@@ -10,6 +10,7 @@ mod error;
 mod inbox;
 mod nodeinfo;
 mod notify;
+mod rehydrate;
 mod requests;
 mod responses;
 mod state;
@@ -79,6 +80,8 @@ async fn main() -> Result<(), anyhow::Error> {
     }
 
     let state = State::hydrate(config.clone(), &db).await?;
+
+    rehydrate::spawn(db.clone(), state.clone());
 
     let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
 
