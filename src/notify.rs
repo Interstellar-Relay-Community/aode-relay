@@ -6,12 +6,15 @@ use futures::{
     future::ready,
     stream::{poll_fn, StreamExt},
 };
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use tokio::sync::mpsc;
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct Notify(Notification);
+pub enum Notify {
+    Msg(Notification),
+    Done,
+}
 
 pub struct NotifyHandler {
     client: Option<Client>,
@@ -37,6 +40,7 @@ impl Actor for NotifyHandler {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        info!("Starting notify handler");
         let config = self.config.clone();
 
         let fut = async move {
@@ -51,7 +55,7 @@ impl Actor for NotifyHandler {
             let mut stream = poll_fn(move |cx| conn.poll_message(cx)).filter_map(|m| match m {
                 Ok(AsyncMessage::Notification(n)) => {
                     debug!("Handling Notification, {:?}", n);
-                    ready(Some(Notify(n)))
+                    ready(Some(Notify::Msg(n)))
                 }
                 Ok(AsyncMessage::Notice(e)) => {
                     debug!("Handling Notice, {:?}", e);
@@ -77,7 +81,8 @@ impl Actor for NotifyHandler {
                         _ => (),
                     };
                 }
-                debug!("Stream handler ended");
+                warn!("Stream handler ended");
+                let _ = tx.send(Notify::Done).await;
             });
 
             Ok((client, rx))
@@ -116,7 +121,16 @@ impl Actor for NotifyHandler {
 }
 
 impl StreamHandler<Notify> for NotifyHandler {
-    fn handle(&mut self, Notify(notif): Notify, ctx: &mut Self::Context) {
+    fn handle(&mut self, notify: Notify, ctx: &mut Self::Context) {
+        let notif = match notify {
+            Notify::Msg(notif) => notif,
+            Notify::Done => {
+                warn!("Stopping notify handler");
+                ctx.stop();
+                return;
+            }
+        };
+
         let state = self.state.clone();
 
         let fut = async move {

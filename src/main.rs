@@ -56,7 +56,11 @@ async fn main() -> Result<(), anyhow::Error> {
         std::env::set_var("RUST_LOG", "info")
     }
 
-    pretty_env_logger::init();
+    if config.pretty_log() {
+        pretty_env_logger::init();
+    } else {
+        env_logger::init();
+    }
 
     let pg_config: tokio_postgres::Config = config.database_url().parse()?;
     let db = Db::build(pg_config.clone()).await?;

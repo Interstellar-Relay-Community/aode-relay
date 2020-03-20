@@ -58,6 +58,7 @@ WHITELIST_MODE=false
 VALIDATE_SIGNATURES=false
 HTTPS=false
 DATABASE_URL=
+PRETTY_LOG=true
 ```
 To run this server in production, you'll likely want to set most of them
 ```env
@@ -69,6 +70,7 @@ WHITELIST_MODE=false
 VALIDATE_SIGNATURES=true
 HTTPS=true
 DATABASE_URL=postgres://pg_user:pg_pass@pg_host:pg_port/pg_database
+PRETTY_LOG=false
 ```
 
 ### Contributing

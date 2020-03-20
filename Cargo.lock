@@ -1759,6 +1759,7 @@ dependencies = [
  "bb8-postgres",
  "config",
  "dotenv",
+ "env_logger",
  "futures",
  "http-signature-normalization-actix",
  "log",

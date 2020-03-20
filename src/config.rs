@@ -15,6 +15,7 @@ pub struct Config {
     validate_signatures: bool,
     https: bool,
     database_url: String,
+    pretty_log: bool,
 }
 
 pub enum UrlKind {
@@ -39,9 +40,14 @@ impl Config {
             .set_default("whitelist_mode", false)?
             .set_default("validate_signatures", false)?
             .set_default("https", false)?
+            .set_default("pretty_log", true)?
             .merge(Environment::new())?;
 
         Ok(config.try_into()?)
+    }
+
+    pub fn pretty_log(&self) -> bool {
+        self.pretty_log
     }
 
     pub fn validate_signatures(&self) -> bool {
