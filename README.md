@@ -3,20 +3,20 @@ _A simple and efficient activitypub relay_
 
 ### USAGE
 To simply run the server, the command is as follows
-```
+```bash
 $ ./relay
 ```
 
 To add domains to the blocklist, use the `-b` flag and pass a list of domains
-```
+```bash
 $ ./relay -b asonix.dog blimps.xyz
 ```
 To remove domains from the blocklist, simply pass the `-u` flag along with `-b`
-```
+```bash
 $ ./relay -ub asonix.dog blimps.xyz
 ```
 The same rules apply for whitelisting domains, although domains are whitelisted with the `-w` flag
-```
+```bash
 $ ./relay -w asonix.dog blimps.xyz
 $ ./relay -uw asonix.dog blimps.xyz
 ```
