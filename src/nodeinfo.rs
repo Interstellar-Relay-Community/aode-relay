@@ -53,6 +53,7 @@ pub struct Software {
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Protocol {
     ActivityPub,
 }
