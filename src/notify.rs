@@ -119,34 +119,33 @@ impl StreamHandler<Notify> for NotifyHandler {
     fn handle(&mut self, Notify(notif): Notify, ctx: &mut Self::Context) {
         let state = self.state.clone();
 
-        info!("Handling notification in {}", notif.channel());
         let fut = async move {
             match notif.channel() {
                 "new_blocks" => {
-                    debug!("Caching block of {}", notif.payload());
+                    info!("Caching block of {}", notif.payload());
                     state.cache_block(notif.payload().to_owned()).await;
                 }
                 "new_whitelists" => {
-                    debug!("Caching whitelist of {}", notif.payload());
+                    info!("Caching whitelist of {}", notif.payload());
                     state.cache_whitelist(notif.payload().to_owned()).await;
                 }
                 "new_listeners" => {
                     if let Ok(uri) = notif.payload().parse::<XsdAnyUri>() {
-                        debug!("Caching listener {}", uri);
+                        info!("Caching listener {}", uri);
                         state.cache_listener(uri).await;
                     }
                 }
                 "rm_blocks" => {
-                    debug!("Busting block cache for {}", notif.payload());
+                    info!("Busting block cache for {}", notif.payload());
                     state.bust_block(notif.payload()).await;
                 }
                 "rm_whitelists" => {
-                    debug!("Busting whitelist cache for {}", notif.payload());
+                    info!("Busting whitelist cache for {}", notif.payload());
                     state.bust_whitelist(notif.payload()).await;
                 }
                 "rm_listeners" => {
                     if let Ok(uri) = notif.payload().parse::<XsdAnyUri>() {
-                        debug!("Busting listener cache for {}", uri);
+                        info!("Busting listener cache for {}", uri);
                         state.bust_listener(&uri).await;
                     }
                 }

@@ -18,7 +18,7 @@ bb8-postgres = "0.4.0"
 config = "0.10.1"
 dotenv = "0.15.0"
 futures = "0.3.4"
-http-signature-normalization-actix = { version = "0.3.0-alpha.5", default-features = false, features = ["sha-2"] }
+http-signature-normalization-actix = { version = "0.3.0-alpha.6", default-features = false, features = ["sha-2"] }
 log = "0.4"
 lru = "0.4.3"
 num_cpus = "1.12"
