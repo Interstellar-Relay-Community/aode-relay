@@ -380,40 +380,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "013a6e0a2cbe3d20f9c60b65458f7a7f7a5e636c5d0f45a5a6aee5d4b1f01785"
 
 [[package]]
-name = "ap-actix"
-version = "0.1.0"
-dependencies = [
- "activitystreams",
- "actix",
- "actix-rt",
- "actix-web",
- "actix-webfinger",
- "anyhow",
- "base64 0.12.0",
- "bb8-postgres",
- "config",
- "dotenv",
- "futures",
- "http-signature-normalization-actix",
- "log",
- "lru",
- "num_cpus",
- "pretty_env_logger",
- "rand",
- "rsa",
- "rsa-magic-public-key",
- "rsa-pem",
- "serde 1.0.105",
- "serde_json",
- "sha2",
- "structopt",
- "thiserror",
- "tokio",
- "ttl_cache",
- "uuid",
-]
-
-[[package]]
 name = "arc-swap"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1778,6 +1744,40 @@ name = "regex-syntax"
 version = "0.6.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fe5bd57d1d7414c6b5ed48563a2c855d995ff777729dcd91c369ec7fea395ae"
+
+[[package]]
+name = "relay"
+version = "0.1.0"
+dependencies = [
+ "activitystreams",
+ "actix",
+ "actix-rt",
+ "actix-web",
+ "actix-webfinger",
+ "anyhow",
+ "base64 0.12.0",
+ "bb8-postgres",
+ "config",
+ "dotenv",
+ "futures",
+ "http-signature-normalization-actix",
+ "log",
+ "lru",
+ "num_cpus",
+ "pretty_env_logger",
+ "rand",
+ "rsa",
+ "rsa-magic-public-key",
+ "rsa-pem",
+ "serde 1.0.105",
+ "serde_json",
+ "sha2",
+ "structopt",
+ "thiserror",
+ "tokio",
+ "ttl_cache",
+ "uuid",
+]
 
 [[package]]
 name = "resolv-conf"

@@ -1,11 +1,11 @@
 [package]
-name = "ap-actix"
+name = "relay"
 description = "A simple activitypub relay"
 version = "0.1.0"
 authors = ["asonix <asonix@asonix.dog>"]
 license-file = "LICENSE"
 readme = "README.md"
-repository = "https://git.asonix.dog/asonix/ap-actix"
+repository = "https://git.asonix.dog/asonix/ap-relay"
 keywords = ["activitypub", "relay"]
 edition = "2018"
 
