@@ -1,4 +1,4 @@
-# AodeRleay
+# AodeRelay
 _A simple and efficient activitypub relay_
 
 ### USAGE
