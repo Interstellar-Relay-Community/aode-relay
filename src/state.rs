@@ -37,9 +37,10 @@ impl State {
             self.private_key.clone(),
             self.actor_cache.clone(),
             format!(
-                "{} {}",
+                "Actix Web 3.0.0-alpha.1 ({}/{}; +{})",
                 self.config.software_name(),
-                self.config.software_version()
+                self.config.software_version(),
+                self.config.generate_url(UrlKind::Index),
             ),
         )
     }

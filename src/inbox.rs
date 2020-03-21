@@ -50,7 +50,7 @@ pub async fn inbox(
         return Err(MyError::Whitelist(actor.id.to_string()));
     }
 
-    if input.kind != ValidTypes::Follow && !is_listener {
+    if !is_listener && !valid_without_listener(&input) {
         return Err(MyError::NotSubscribed(actor.inbox().to_string()));
     }
 
@@ -78,7 +78,17 @@ pub async fn inbox(
         ValidTypes::Delete | ValidTypes::Update => {
             handle_forward(&state, &jobs, input, actor).await
         }
-        ValidTypes::Undo => handle_undo(&db, &state, &config, &jobs, input, actor).await,
+        ValidTypes::Undo => {
+            handle_undo(&db, &state, &config, &jobs, input, actor, is_listener).await
+        }
+    }
+}
+
+fn valid_without_listener(input: &AcceptedObjects) -> bool {
+    match input.kind {
+        ValidTypes::Follow => true,
+        ValidTypes::Undo if input.object.is_kind("Follow") => true,
+        _ => false,
     }
 }
 
@@ -139,6 +149,7 @@ async fn handle_undo(
     jobs: &JobServer,
     input: AcceptedObjects,
     actor: AcceptedActors,
+    is_listener: bool,
 ) -> Result<HttpResponse, MyError> {
     match input.object.kind() {
         Some("Follow") | Some("Announce") | Some("Create") => (),
@@ -150,13 +161,23 @@ async fn handle_undo(
     }
 
     if !input.object.is_kind("Follow") {
-        return handle_forward(state, jobs, input, actor).await;
+        if is_listener {
+            return handle_forward(state, jobs, input, actor).await;
+        } else {
+            return Err(MyError::Kind(
+                input.object.kind().unwrap_or("unknown").to_owned(),
+            ));
+        }
     }
 
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
     if !input.object.child_object_is(&my_id) && !input.object.child_object_is(&public()) {
         return Err(MyError::WrongActor(input.object.id().to_string()));
+    }
+
+    if !is_listener {
+        return Ok(accepted(serde_json::json!({})));
     }
 
     let inbox = actor.inbox().to_owned();
