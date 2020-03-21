@@ -33,6 +33,8 @@ ecample, if the server is `https://relay.my.tld`, the correct URL would be
 `https://relay.my.tld/actor`.
 
 ### Supported Activities
+- Accept Follow {self}, this is a no-op
+- Reject Follow {self}, an Undo Follow is sent back
 - Announce {anything}, {anything} is Announced to listening servers
 - Create {anything}, {anything} is Announced to listening servers
 - Follow {self}, become a listener of the relay, a Follow will be sent back

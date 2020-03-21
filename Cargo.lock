@@ -453,6 +453,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "background-jobs"
+version = "0.8.0-alpha.0"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#3144b71abb5991643353d8e9f046a173ce9d6d4e"
+dependencies = [
+ "background-jobs-actix",
+ "background-jobs-core",
+]
+
+[[package]]
+name = "background-jobs-actix"
+version = "0.7.0-alpha.0"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#3144b71abb5991643353d8e9f046a173ce9d6d4e"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "background-jobs-core",
+ "chrono",
+ "log",
+ "num_cpus",
+ "rand",
+ "serde 1.0.105",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "background-jobs-core"
+version = "0.7.0"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#3144b71abb5991643353d8e9f046a173ce9d6d4e"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "futures",
+ "log",
+ "serde 1.0.105",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -628,6 +672,7 @@ checksum = "80094f509cf8b5ae86a4966a39b3ff66cd7e2a3e594accec3743ff3fabeab5b2"
 dependencies = [
  "num-integer",
  "num-traits 0.2.11",
+ "serde 1.0.105",
  "time 0.1.42",
 ]
 
@@ -1781,6 +1826,7 @@ dependencies = [
  "actix-web",
  "actix-webfinger",
  "anyhow",
+ "background-jobs",
  "base64 0.12.0",
  "bb8-postgres",
  "config",
@@ -2102,9 +2148,9 @@ dependencies = [
 
 [[package]]
 name = "siphasher"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83da420ee8d1a89e640d0948c646c1c088758d3a3c538f943bfa97bdac17929d"
+checksum = "8e88f89a550c01e4cd809f3df4f52dc9e939f3273a2017eabd5c6d12fd98bb23"
 
 [[package]]
 name = "slab"
@@ -2251,9 +2297,9 @@ checksum = "7c65d530b10ccaeac294f349038a597e435b18fb456aadd0840a623f83b9e941"
 
 [[package]]
 name = "syn"
-version = "1.0.16"
+version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "123bd9499cfb380418d509322d7a6d52e5315f064fe4b3ad18a53d6b92c07859"
+checksum = "0df0eb663f387145cab623dea85b09c2c5b4b0aef44e945d928e682fce71bb03"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2303,18 +2349,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.11"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee14bf8e6767ab4c687c9e8bc003879e042a96fd67a3ba5934eadb6536bef4db"
+checksum = "268c0f167625b8b0cc90a91787b158a372b4edadb31d6e20479dc787309defad"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.11"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7b51e1fbc44b5a0840be594fbc0f960be09050f2617e61e6aa43bef97cd3ef4"
+checksum = "9a3ecbaa927a1d5a73d14a20af52463fa433c0727d07ef5e208f0546841d2efd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2427,7 +2473,7 @@ dependencies = [
  "postgres-protocol",
  "postgres-types",
  "tokio",
- "tokio-util 0.3.0",
+ "tokio-util 0.3.1",
 ]
 
 [[package]]
@@ -2458,9 +2504,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af67cdce2b40f8dffb0ee04c853a24217b5d0d3e358f0f5ccc0b5332174ed9a8"
+checksum = "be8242891f2b6cbef26a2d7e8605133c2c554cd35b3e4948ea892d6d68436499"
 dependencies = [
  "bytes",
  "futures-core",

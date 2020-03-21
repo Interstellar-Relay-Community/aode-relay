@@ -17,6 +17,7 @@ mod config;
 mod db;
 mod error;
 mod inbox;
+mod jobs;
 mod nodeinfo;
 mod notify;
 mod rehydrate;
@@ -27,8 +28,14 @@ mod verifier;
 mod webfinger;
 
 use self::{
-    args::Args, config::Config, db::Db, error::MyError, state::State,
-    templates::statics::StaticFile, webfinger::RelayResolver,
+    args::Args,
+    config::Config,
+    db::Db,
+    error::MyError,
+    jobs::{create_server, create_workers},
+    state::State,
+    templates::statics::StaticFile,
+    webfinger::RelayResolver,
 };
 
 async fn index(
@@ -102,16 +109,21 @@ async fn main() -> Result<(), anyhow::Error> {
 
     rehydrate::spawn(db.clone(), state.clone());
 
+    let job_server = create_server();
+
     let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {
+        create_workers(state.clone(), job_server.clone());
+
         App::new()
             .wrap(Logger::default())
             .data(db.clone())
             .data(state.clone())
             .data(state.requests())
             .data(config.clone())
+            .data(job_server.clone())
             .service(web::resource("/").route(web::get().to(index)))
             .service(
                 web::resource("/inbox")

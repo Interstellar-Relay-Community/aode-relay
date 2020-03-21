@@ -3,6 +3,8 @@ use crate::{
     config::{Config, UrlKind},
     db::Db,
     error::MyError,
+    jobs::JobServer,
+    jobs::{Deliver, DeliverMany},
     requests::Requests,
     responses::accepted,
     state::State,
@@ -25,6 +27,7 @@ pub async fn inbox(
     state: web::Data<State>,
     config: web::Data<Config>,
     client: web::Data<Requests>,
+    jobs: web::Data<JobServer>,
     input: web::Json<AcceptedObjects>,
     verified: Option<SignatureVerified>,
     digest_verified: Option<DigestVerified>,
@@ -66,22 +69,74 @@ pub async fn inbox(
     }
 
     match input.kind {
+        ValidTypes::Accept => handle_accept(&config, input).await,
+        ValidTypes::Reject => handle_reject(&db, &config, &jobs, input, actor).await,
         ValidTypes::Announce | ValidTypes::Create => {
-            handle_announce(&state, &config, &client, input, actor).await
+            handle_announce(&state, &config, &jobs, input, actor).await
         }
-        ValidTypes::Follow => handle_follow(&db, &config, &client, input, actor, is_listener).await,
+        ValidTypes::Follow => handle_follow(&db, &config, &jobs, input, actor, is_listener).await,
         ValidTypes::Delete | ValidTypes::Update => {
-            handle_forward(&state, &client, input, actor).await
+            handle_forward(&state, &jobs, input, actor).await
         }
-        ValidTypes::Undo => handle_undo(&db, &state, &config, &client, input, actor).await,
+        ValidTypes::Undo => handle_undo(&db, &state, &config, &jobs, input, actor).await,
     }
+}
+
+async fn handle_accept(config: &Config, input: AcceptedObjects) -> Result<HttpResponse, MyError> {
+    if !input.object.is_kind("Follow") {
+        return Err(MyError::Kind(
+            input.object.kind().unwrap_or("unknown").to_owned(),
+        ));
+    }
+
+    if !input
+        .object
+        .child_actor_is(&config.generate_url(UrlKind::Actor).parse()?)
+    {
+        return Err(MyError::WrongActor(input.object.id().to_string()));
+    }
+
+    Ok(accepted(serde_json::json!({})))
+}
+
+async fn handle_reject(
+    db: &Db,
+    config: &Config,
+    jobs: &JobServer,
+    input: AcceptedObjects,
+    actor: AcceptedActors,
+) -> Result<HttpResponse, MyError> {
+    if !input.object.is_kind("Follow") {
+        return Err(MyError::Kind(
+            input.object.kind().unwrap_or("unknown").to_owned(),
+        ));
+    }
+
+    if !input
+        .object
+        .child_actor_is(&config.generate_url(UrlKind::Actor).parse()?)
+    {
+        return Err(MyError::WrongActor(input.object.id().to_string()));
+    }
+
+    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
+
+    let inbox = actor.inbox().to_owned();
+    db.remove_listener(inbox).await?;
+
+    let undo = generate_undo_follow(config, &actor.id, &my_id)?;
+
+    let inbox = actor.inbox().to_owned();
+    jobs.queue(Deliver::new(inbox, undo.clone())?)?;
+
+    Ok(accepted(undo))
 }
 
 async fn handle_undo(
     db: &Db,
     state: &State,
     config: &Config,
-    client: &Requests,
+    jobs: &JobServer,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
@@ -95,7 +150,7 @@ async fn handle_undo(
     }
 
     if !input.object.is_kind("Follow") {
-        return handle_forward(state, client, input, actor).await;
+        return handle_forward(state, jobs, input, actor).await;
     }
 
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
@@ -109,26 +164,22 @@ async fn handle_undo(
 
     let undo = generate_undo_follow(config, &actor.id, &my_id)?;
 
-    let client2 = client.clone();
-    let inbox = actor.inbox().clone();
-    let undo2 = undo.clone();
-    actix::Arbiter::spawn(async move {
-        let _ = client2.deliver(inbox, &undo2).await;
-    });
+    let inbox = actor.inbox().to_owned();
+    jobs.queue(Deliver::new(inbox, undo.clone())?)?;
 
     Ok(accepted(undo))
 }
 
 async fn handle_forward(
     state: &State,
-    client: &Requests,
+    jobs: &JobServer,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
     let object_id = input.object.id();
 
     let inboxes = get_inboxes(state, &actor, &object_id).await?;
-    client.deliver_many(inboxes, input.clone());
+    jobs.queue(DeliverMany::new(inboxes, input.clone())?)?;
 
     Ok(accepted(input))
 }
@@ -136,7 +187,7 @@ async fn handle_forward(
 async fn handle_announce(
     state: &State,
     config: &Config,
-    client: &Requests,
+    jobs: &JobServer,
     input: AcceptedObjects,
     actor: AcceptedActors,
 ) -> Result<HttpResponse, MyError> {
@@ -150,7 +201,7 @@ async fn handle_announce(
 
     let announce = generate_announce(config, &activity_id, object_id)?;
     let inboxes = get_inboxes(state, &actor, &object_id).await?;
-    client.deliver_many(inboxes, announce.clone());
+    jobs.queue(DeliverMany::new(inboxes, announce.clone())?)?;
 
     state.cache(object_id.to_owned(), activity_id).await;
 
@@ -160,7 +211,7 @@ async fn handle_announce(
 async fn handle_follow(
     db: &Db,
     config: &Config,
-    client: &Requests,
+    jobs: &JobServer,
     input: AcceptedObjects,
     actor: AcceptedActors,
     is_listener: bool,
@@ -178,23 +229,15 @@ async fn handle_follow(
         // if following relay directly, not just following 'public', followback
         if input.object.is(&my_id) {
             let follow = generate_follow(config, &actor.id, &my_id)?;
-            let client2 = client.clone();
-            let inbox = actor.inbox().clone();
-            let follow2 = follow.clone();
-            actix::Arbiter::spawn(async move {
-                let _ = client2.deliver(inbox, &follow2).await;
-            });
+            let inbox = actor.inbox().to_owned();
+            jobs.queue(Deliver::new(inbox, follow)?)?;
         }
     }
 
     let accept = generate_accept_follow(config, &actor.id, &input.id, &my_id)?;
 
-    let client2 = client.clone();
-    let inbox = actor.inbox().clone();
-    let accept2 = accept.clone();
-    actix::Arbiter::spawn(async move {
-        let _ = client2.deliver(inbox, &accept2).await;
-    });
+    let inbox = actor.inbox().to_owned();
+    jobs.queue(Deliver::new(inbox, accept.clone())?)?;
 
     Ok(accepted(accept))
 }

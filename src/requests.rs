@@ -1,8 +1,6 @@
 use crate::{apub::AcceptedActors, error::MyError, state::ActorCache};
 use activitystreams::primitives::XsdAnyUri;
-use actix::Arbiter;
 use actix_web::client::Client;
-use futures::stream::StreamExt;
 use http_signature_normalization_actix::prelude::*;
 use log::error;
 use rsa::{hash::Hashes, padding::PaddingScheme, RSAPrivateKey};
@@ -67,37 +65,21 @@ impl Requests {
             })?;
 
         if !res.status().is_success() {
-            error!("Invalid status code for fetch, {}", res.status());
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
-                    error!("Response, {}", s);
+                    if !s.is_empty() {
+                        error!("Response, {}", s);
+                    }
                 }
             }
 
-            return Err(MyError::Status);
+            return Err(MyError::Status(res.status()));
         }
 
         res.json().await.map_err(|e| {
             error!("Coudn't fetch json from {}, {}", url, e);
             MyError::ReceiveResponse
         })
-    }
-
-    pub fn deliver_many<T>(&self, inboxes: Vec<XsdAnyUri>, item: T)
-    where
-        T: serde::ser::Serialize + 'static,
-    {
-        let this = self.clone();
-
-        Arbiter::spawn(async move {
-            let mut unordered = futures::stream::FuturesUnordered::new();
-
-            for inbox in inboxes {
-                unordered.push(this.deliver(inbox, &item));
-            }
-
-            while let Some(_) = unordered.next().await {}
-        });
     }
 
     pub async fn deliver<T>(&self, inbox: XsdAnyUri, item: &T) -> Result<(), MyError>
@@ -129,19 +111,20 @@ impl Requests {
             })?;
 
         if !res.status().is_success() {
-            error!("Invalid response status from {}, {}", inbox, res.status());
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
-                    error!("Response, {}", s);
+                    if !s.is_empty() {
+                        error!("Response, {}", s);
+                    }
                 }
             }
-            return Err(MyError::Status);
+            return Err(MyError::Status(res.status()));
         }
 
         Ok(())
     }
 
-    fn sign(&self, signing_string: &str) -> Result<String, crate::error::MyError> {
+    fn sign(&self, signing_string: &str) -> Result<String, MyError> {
         let hashed = Sha256::digest(signing_string.as_bytes());
         let bytes =
             self.private_key

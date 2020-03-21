@@ -19,6 +19,7 @@ actix-rt = "1.0.0"
 actix-web = { version = "3.0.0-alpha.1", features = ["rustls"] }
 actix-webfinger = "0.3.0-alpha.3"
 activitystreams = "0.5.0-alpha.11"
+background-jobs = { version = "0.8.0-alpha.0", git = "https://git.asonix.dog/Aardwolf/background-jobs", default-features = false, features = ["background-jobs-actix"] }
 base64 = "0.12"
 bb8-postgres = "0.4.0"
 config = "0.10.1"

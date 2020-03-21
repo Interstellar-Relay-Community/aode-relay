@@ -37,10 +37,12 @@ pub struct AnyExistingObject {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub enum ValidTypes {
+    Accept,
     Announce,
     Create,
     Delete,
     Follow,
+    Reject,
     Undo,
     Update,
 }
@@ -133,19 +135,48 @@ impl ValidObjects {
         }
     }
 
-    pub fn child_object_is(&self, uri: &XsdAnyUri) -> bool {
+    pub fn child_object_id(&self) -> Option<XsdAnyUri> {
         match self {
-            ValidObjects::Id(_) => false,
+            ValidObjects::Id(_) => None,
             ValidObjects::Object(AnyExistingObject { ext, .. }) => {
                 if let Some(o) = ext.get("object") {
                     if let Ok(child_uri) = serde_json::from_value::<XsdAnyUri>(o.clone()) {
-                        return child_uri == *uri;
+                        return Some(child_uri);
                     }
                 }
 
-                false
+                None
             }
         }
+    }
+
+    pub fn child_object_is(&self, uri: &XsdAnyUri) -> bool {
+        if let Some(child_object_id) = self.child_object_id() {
+            return *uri == child_object_id;
+        }
+        false
+    }
+
+    pub fn child_actor_id(&self) -> Option<XsdAnyUri> {
+        match self {
+            ValidObjects::Id(_) => None,
+            ValidObjects::Object(AnyExistingObject { ext, .. }) => {
+                if let Some(o) = ext.get("actor") {
+                    if let Ok(child_uri) = serde_json::from_value::<XsdAnyUri>(o.clone()) {
+                        return Some(child_uri);
+                    }
+                }
+
+                None
+            }
+        }
+    }
+
+    pub fn child_actor_is(&self, uri: &XsdAnyUri) -> bool {
+        if let Some(child_actor_id) = self.child_actor_id() {
+            return *uri == child_actor_id;
+        }
+        false
     }
 }
 

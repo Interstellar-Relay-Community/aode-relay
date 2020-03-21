@@ -10,6 +10,9 @@ use std::{convert::Infallible, fmt::Debug, io::Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum MyError {
+    #[error("Error queueing job, {0}")]
+    Queue(anyhow::Error),
+
     #[error("Error in configuration, {0}")]
     Config(#[from] config::ConfigError),
 
@@ -82,8 +85,8 @@ pub enum MyError {
     #[error("Couldn't receive request response")]
     ReceiveResponse,
 
-    #[error("Response has invalid status code")]
-    Status,
+    #[error("Response has invalid status code, {0}")]
+    Status(StatusCode),
 
     #[error("URI is missing domain field")]
     Domain,
