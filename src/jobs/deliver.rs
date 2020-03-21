@@ -1,7 +1,7 @@
 use crate::{error::MyError, jobs::JobState};
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
-use background_jobs::{Job, Processor};
+use background_jobs::{Backoff, Job, Processor};
 use std::{future::Future, pin::Pin};
 use tokio::sync::oneshot;
 
@@ -53,4 +53,5 @@ impl Processor for DeliverProcessor {
 
     const NAME: &'static str = "DeliverProcessor";
     const QUEUE: &'static str = "default";
+    const BACKOFF_STRATEGY: Backoff = Backoff::Exponential(8);
 }
