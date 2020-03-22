@@ -1,0 +1,30 @@
+FROM arm64v8/alpine:3.11.3 AS build
+
+COPY relay /relay
+
+RUN \
+ apk add binutils && \
+ strip /relay
+
+FROM arm64v8/alpine:3.11.3
+
+ARG UID=991
+ARG GID=991
+
+RUN \
+ apk add tini && \
+ echo "Etc/UTC" > /etc/localtime && \
+ mkdir -p /opt/relay && \
+ addgroup --gid $GID relay && \
+ adduser -D -u $UID -G relay -h /opt/relay relay && \
+ echo "relay:`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 24 | mkpasswd -s -m sha-256`" | chpasswd && \
+ chown -R relay:relay /opt/relay
+
+COPY --from=build /relay /usr/bin/relay
+
+USER relay
+
+EXPOSE 8080
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["relay"]
