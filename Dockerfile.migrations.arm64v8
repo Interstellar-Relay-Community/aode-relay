@@ -1,0 +1,5 @@
+FROM asonix/diesel-cli:v1.4.0-r0-arm64v8
+
+COPY migrations /migrations
+
+CMD ["diesel", "migration", "run", "--migration-dir", "/migrations"]

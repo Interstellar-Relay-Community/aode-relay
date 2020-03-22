@@ -455,7 +455,7 @@ dependencies = [
 [[package]]
 name = "background-jobs"
 version = "0.8.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#3144b71abb5991643353d8e9f046a173ce9d6d4e"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#799391811c795f0918e0df2b1a1b5fc44f55f89f"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -464,7 +464,7 @@ dependencies = [
 [[package]]
 name = "background-jobs-actix"
 version = "0.7.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#3144b71abb5991643353d8e9f046a173ce9d6d4e"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#799391811c795f0918e0df2b1a1b5fc44f55f89f"
 dependencies = [
  "actix",
  "actix-rt",
@@ -479,12 +479,13 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
 name = "background-jobs-core"
 version = "0.7.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#3144b71abb5991643353d8e9f046a173ce9d6d4e"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#799391811c795f0918e0df2b1a1b5fc44f55f89f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -494,6 +495,7 @@ dependencies = [
  "serde 1.0.105",
  "serde_json",
  "thiserror",
+ "uuid",
 ]
 
 [[package]]
@@ -1664,8 +1666,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e634590e8812c500088d88db721195979223dabb05149f43cb50931d0ff5865d"
 dependencies = [
  "bytes",
+ "chrono",
  "fallible-iterator",
  "postgres-protocol",
+ "serde 1.0.105",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -1712,14 +1718,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro-hack"
-version = "0.5.12"
+version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f918f2b601f93baa836c1c2945faef682ba5b6d4828ecb45eeb7cc3c71b811b4"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
+checksum = "fcfdefadc3d57ca21cf17990a28ef4c0f7c61383a28cb7604cf4a18e6ede1420"
 
 [[package]]
 name = "proc-macro-nested"
@@ -1826,7 +1827,9 @@ dependencies = [
  "actix-web",
  "actix-webfinger",
  "anyhow",
+ "async-trait",
  "background-jobs",
+ "background-jobs-core",
  "base64 0.12.0",
  "bb8-postgres",
  "config",
@@ -2640,6 +2643,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11"
 dependencies = [
  "rand",
+ "serde 1.0.105",
 ]
 
 [[package]]

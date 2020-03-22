@@ -78,7 +78,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let config = Config::build()?;
 
     if config.debug() {
-        std::env::set_var("RUST_LOG", "debug")
+        std::env::set_var("RUST_LOG", "debug,tokio_postgres=info")
     } else {
         std::env::set_var("RUST_LOG", "info")
     }
@@ -109,7 +109,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     rehydrate::spawn(db.clone(), state.clone());
 
-    let job_server = create_server();
+    let job_server = create_server(db.clone());
 
     let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
 

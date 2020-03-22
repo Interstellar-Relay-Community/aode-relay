@@ -1,17 +1,19 @@
 mod deliver;
 mod deliver_many;
+mod storage;
 pub use self::{deliver::Deliver, deliver_many::DeliverMany};
 
 use crate::{
+    db::Db,
     error::MyError,
-    jobs::{deliver::DeliverProcessor, deliver_many::DeliverManyProcessor},
+    jobs::{deliver::DeliverProcessor, deliver_many::DeliverManyProcessor, storage::Storage},
     requests::Requests,
     state::State,
 };
-use background_jobs::{memory_storage::Storage, Job, QueueHandle, WorkerConfig};
+use background_jobs::{Job, QueueHandle, WorkerConfig};
 
-pub fn create_server() -> JobServer {
-    JobServer::new(background_jobs::create_server(Storage::new()))
+pub fn create_server(db: Db) -> JobServer {
+    JobServer::new(background_jobs::create_server(Storage::new(db)))
 }
 
 pub fn create_workers(state: State, job_server: JobServer) {

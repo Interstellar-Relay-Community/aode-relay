@@ -33,6 +33,10 @@ impl Db {
         Ok(Db { pool })
     }
 
+    pub fn pool(&self) -> &Pool {
+        &self.pool
+    }
+
     pub async fn remove_listener(&self, inbox: XsdAnyUri) -> Result<(), MyError> {
         let conn = self.pool.get().await?;
 

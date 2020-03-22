@@ -32,6 +32,7 @@ cross build \
 
 mkdir -p artifacts
 cp ./target/aarch64-unknown-linux-musl/release/relay artifacts/relay
+cp -r ./migrations artifacts/migrations
 
 # from `sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes`
 docker build \
@@ -39,10 +40,21 @@ docker build \
     --no-cache \
     --build-arg BUILD_DATE="${BUILD_DATE}" \
     --build-arg TAG="${TAG}" \
-    -f "Dockerfile.arm64v8" \
+    -f Dockerfile.arm64v8 \
     -t "asonix/relay:${VERSION}-arm64v8" \
     -t "asonix/relay:latest-arm64v8" \
     -t "asonix/relay:latest" \
+    ./artifacts
+
+docker build \
+    --pull \
+    --no-cache \
+    --build-arg BUILD_DATE="${BUILD_DATE}" \
+    --build-arg TAG="${TAG}" \
+    -f Dockerfile.migrations.arm64v8 \
+    -t "asonix/relay-migrations:${VERSION}-arm64v8" \
+    -t "asonix/relay-migrations:latest-arm64v8" \
+    -t "asonix/relay-migrations:latest" \
     ./artifacts
 
 docker push "asonix/relay:${VERSION}-arm64v8"
