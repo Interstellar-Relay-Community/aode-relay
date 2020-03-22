@@ -2,6 +2,7 @@
 
 BUILD_DATE=$(date)
 VERSION=$1
+MIGRATIONS=$2
 
 function require() {
     if [ "$1" = "" ]; then
@@ -15,10 +16,11 @@ function print_help() {
     echo "build.sh"
     echo ""
     echo "Usage:"
-    echo "      build.sh [version]"
+    echo "      build.sh [version] [migrations]"
     echo ""
     echo "Args:"
     echo "      version: The version of the current container"
+    echo "      migrations: (optional) Whether to build the migrations container as well"
 }
 
 require "$VERSION" "version"
@@ -46,17 +48,23 @@ docker build \
     -t "asonix/relay:latest" \
     ./artifacts
 
-docker build \
-    --pull \
-    --no-cache \
-    --build-arg BUILD_DATE="${BUILD_DATE}" \
-    --build-arg TAG="${TAG}" \
-    -f Dockerfile.migrations.arm64v8 \
-    -t "asonix/relay-migrations:${VERSION}-arm64v8" \
-    -t "asonix/relay-migrations:latest-arm64v8" \
-    -t "asonix/relay-migrations:latest" \
-    ./artifacts
-
 docker push "asonix/relay:${VERSION}-arm64v8"
 docker push "asonix/relay:latest-arm64v8"
 docker push "asonix/relay:latest"
+
+if [ "${MIGRATIONS}" = "" ]; then
+    docker build \
+        --pull \
+        --no-cache \
+        --build-arg BUILD_DATE="${BUILD_DATE}" \
+        --build-arg TAG="${TAG}" \
+        -f Dockerfile.migrations.arm64v8 \
+        -t "asonix/relay-migrations:${VERSION}-arm64v8" \
+        -t "asonix/relay-migrations:latest-arm64v8" \
+        -t "asonix/relay-migrations:latest" \
+        ./artifacts
+
+    docker push "asonix/relay-migrations:${VERSION}-arm64v8"
+    docker push "asonix/relay-migrations:latest-arm64v8"
+    docker push "asonix/relay-migrations:latest"
+fi
