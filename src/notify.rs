@@ -1,4 +1,4 @@
-use crate::{db::listen, state::State};
+use crate::{db::listen, error::MyError, state::State};
 use activitystreams::primitives::XsdAnyUri;
 use actix::clock::{delay_for, Duration};
 use bb8_postgres::tokio_postgres::{tls::NoTls, AsyncMessage, Config, Notification};
@@ -43,7 +43,9 @@ async fn handle_notification(state: &State, notif: Notification) {
     };
 }
 
-pub fn notify_loop(state: State, config: Config) {
+pub fn spawn(state: State, config: &crate::config::Config) -> Result<(), MyError> {
+    let config: Config = config.database_url().parse()?;
+
     actix::spawn(async move {
         let mut client;
 
@@ -93,4 +95,5 @@ pub fn notify_loop(state: State, config: Config) {
             warn!("Restarting listener task");
         }
     });
+    Ok(())
 }

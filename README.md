@@ -63,6 +63,7 @@ HTTPS=false
 DATABASE_URL=
 PRETTY_LOG=true
 PUBLISH_BLOCKS=false
+CONNECTIONS_PER_CORE=2 # how many postgres connections should be made for each core on the host
 ```
 To run this server in production, you'll likely want to set most of them
 ```env
@@ -76,6 +77,7 @@ HTTPS=true
 DATABASE_URL=postgres://pg_user:pg_pass@pg_host:pg_port/pg_database
 PRETTY_LOG=false
 PUBLISH_BLOCKS=true
+CONNECTIONS_PER_CORE=4
 ```
 
 ### Contributing

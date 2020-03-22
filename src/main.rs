@@ -3,7 +3,6 @@ use actix_web::{
     middleware::Logger,
     web, App, HttpResponse, HttpServer,
 };
-use bb8_postgres::tokio_postgres;
 use log::error;
 use std::{
     io::BufWriter,
@@ -33,7 +32,6 @@ use self::{
     db::Db,
     error::MyError,
     jobs::{create_server, create_workers},
-    notify::notify_loop,
     state::State,
     templates::statics::StaticFile,
     webfinger::RelayResolver,
@@ -90,8 +88,7 @@ async fn main() -> Result<(), anyhow::Error> {
         env_logger::init();
     }
 
-    let pg_config: tokio_postgres::Config = config.database_url().parse()?;
-    let db = Db::build(pg_config.clone()).await?;
+    let db = Db::build(&config).await?;
 
     let args = Args::new();
 
@@ -109,10 +106,9 @@ async fn main() -> Result<(), anyhow::Error> {
     let state = State::hydrate(config.clone(), &db).await?;
 
     rehydrate::spawn(db.clone(), state.clone());
+    notify::spawn(state.clone(), &config)?;
 
     let job_server = create_server(db.clone());
-
-    let _ = notify_loop(state.clone(), pg_config.clone());
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {

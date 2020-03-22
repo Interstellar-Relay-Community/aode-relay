@@ -17,6 +17,7 @@ pub struct Config {
     database_url: String,
     pretty_log: bool,
     publish_blocks: bool,
+    connections_per_core: u32,
 }
 
 pub enum UrlKind {
@@ -44,6 +45,7 @@ impl Config {
             .set_default("https", false)?
             .set_default("pretty_log", true)?
             .set_default("publish_blocks", false)?
+            .set_default("connections_per_core", 2)?
             .merge(Environment::new())?;
 
         Ok(config.try_into()?)
@@ -51,6 +53,10 @@ impl Config {
 
     pub fn pretty_log(&self) -> bool {
         self.pretty_log
+    }
+
+    pub fn connections_per_core(&self) -> u32 {
+        self.connections_per_core
     }
 
     pub fn validate_signatures(&self) -> bool {

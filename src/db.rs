@@ -22,11 +22,15 @@ pub struct Db {
 }
 
 impl Db {
-    pub async fn build(config: Config) -> Result<Self, MyError> {
+    pub async fn build(config: &crate::config::Config) -> Result<Self, MyError> {
+        let cpus: u32 = num_cpus::get().try_into()?;
+        let max_conns = cpus * config.connections_per_core();
+
+        let config: Config = config.database_url().parse()?;
         let manager = PostgresConnectionManager::new(config, NoTls);
 
         let pool = bb8::Pool::builder()
-            .max_size((num_cpus::get() * 4).try_into()?)
+            .max_size(max_conns)
             .build(manager)
             .await?;
 
