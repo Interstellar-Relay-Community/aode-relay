@@ -33,6 +33,7 @@ use self::{
     db::Db,
     error::MyError,
     jobs::{create_server, create_workers},
+    notify::notify_loop,
     state::State,
     templates::statics::StaticFile,
     webfinger::RelayResolver,
@@ -111,7 +112,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let job_server = create_server(db.clone());
 
-    let _ = notify::NotifyHandler::start_handler(state.clone(), pg_config.clone());
+    let _ = notify_loop(state.clone(), pg_config.clone());
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {

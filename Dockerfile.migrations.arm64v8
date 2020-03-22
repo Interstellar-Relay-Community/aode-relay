@@ -1,5 +1,11 @@
-FROM asonix/diesel-cli:v1.4.0-r0-arm64v8
+FROM asonix/diesel-cli:v1.4.0-r1-arm64v8
 
 COPY migrations /migrations
+USER root
+RUN \
+ apt-get install -y tini && \
+ chown -R diesel:diesel /migrations
 
+USER diesel
+ENTRYPOINT ["/usr/bin/tini"]
 CMD ["diesel", "migration", "run", "--migration-dir", "/migrations"]
