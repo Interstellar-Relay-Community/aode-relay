@@ -16,6 +16,7 @@ pub struct Config {
     https: bool,
     database_url: String,
     pretty_log: bool,
+    publish_blocks: bool,
 }
 
 pub enum UrlKind {
@@ -42,6 +43,7 @@ impl Config {
             .set_default("validate_signatures", false)?
             .set_default("https", false)?
             .set_default("pretty_log", true)?
+            .set_default("publish_blocks", false)?
             .merge(Environment::new())?;
 
         Ok(config.try_into()?)
@@ -77,6 +79,10 @@ impl Config {
 
     pub fn debug(&self) -> bool {
         self.debug
+    }
+
+    pub fn publish_blocks(&self) -> bool {
+        self.publish_blocks
     }
 
     pub fn whitelist_mode(&self) -> bool {

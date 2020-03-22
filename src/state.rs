@@ -65,6 +65,11 @@ impl State {
         read_guard.iter().cloned().collect()
     }
 
+    pub async fn blocks(&self) -> Vec<String> {
+        let read_guard = self.blocks.read().await;
+        read_guard.iter().cloned().collect()
+    }
+
     pub async fn listeners_without(&self, inbox: &XsdAnyUri, domain: &str) -> Vec<XsdAnyUri> {
         let read_guard = self.listeners.read().await;
 

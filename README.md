@@ -21,7 +21,8 @@ $ ./relay -w asonix.dog blimps.xyz
 $ ./relay -uw asonix.dog blimps.xyz
 ```
 
-Whitelisted domains are only checked against incoming activities if `WHITELIST_MODE` is enabled
+Whitelisted domains are only checked against incoming activities if `WHITELIST_MODE` is enabled.
+Blocks can be published in the nodeinfo metadata by settings `PUBLISH_BLOCKS` to true
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.
@@ -61,6 +62,7 @@ VALIDATE_SIGNATURES=false
 HTTPS=false
 DATABASE_URL=
 PRETTY_LOG=true
+PUBLISH_BLOCKS=false
 ```
 To run this server in production, you'll likely want to set most of them
 ```env
@@ -73,6 +75,7 @@ VALIDATE_SIGNATURES=true
 HTTPS=true
 DATABASE_URL=postgres://pg_user:pg_pass@pg_host:pg_port/pg_database
 PRETTY_LOG=false
+PUBLISH_BLOCKS=true
 ```
 
 ### Contributing

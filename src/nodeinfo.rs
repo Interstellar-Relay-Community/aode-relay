@@ -4,20 +4,22 @@ use crate::{
 };
 use actix_web::{web, Responder};
 use actix_webfinger::Link;
-use serde_json::json;
 
 pub async fn well_known(config: web::Data<Config>) -> impl Responder {
-    web::Json(json!({
-        "links": [
-            Link {
-                rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
-                href: Some(config.generate_url(UrlKind::NodeInfo)),
-                template: None,
-                kind: None,
-            }
-        ]
-    }))
+    web::Json(Links {
+        links: vec![Link {
+            rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
+            href: Some(config.generate_url(UrlKind::NodeInfo)),
+            template: None,
+            kind: None,
+        }],
+    })
     .with_header("Content-Type", "application/jrd+json")
+}
+
+#[derive(serde::Serialize)]
+struct Links {
+    links: Vec<Link>,
 }
 
 pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::Json<NodeInfo> {
@@ -50,6 +52,11 @@ pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::J
                 .filter_map(|listener| listener.as_url().domain())
                 .map(|s| s.to_owned())
                 .collect(),
+            blocks: if config.publish_blocks() {
+                Some(state.blocks().await)
+            } else {
+                None
+            },
         },
     })
 }
@@ -102,6 +109,9 @@ pub struct Usage {
 #[derive(Clone, Debug, Default, serde::Serialize)]
 pub struct Metadata {
     peers: Vec<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    blocks: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize)]
