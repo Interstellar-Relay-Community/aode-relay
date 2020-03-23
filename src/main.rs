@@ -66,6 +66,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let actors = ActorCache::new(db.clone());
     let job_server = create_server(db.clone());
 
+    actors
+        .re_seed(&state.listeners().await, &state.requests())
+        .await?;
+
     notify::spawn(state.clone(), actors.clone(), job_server.clone(), &config)?;
 
     if args.jobs_only() {

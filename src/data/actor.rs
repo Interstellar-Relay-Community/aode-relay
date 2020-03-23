@@ -1,6 +1,6 @@
 use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
 use activitystreams::primitives::XsdAnyUri;
-use log::error;
+use log::{error, info, warn};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
@@ -26,6 +26,34 @@ impl ActorCache {
         cache.spawn_rehydrate();
 
         cache
+    }
+
+    pub async fn re_seed(
+        &self,
+        listeners: &[XsdAnyUri],
+        requests: &Requests,
+    ) -> Result<(), MyError> {
+        info!("Seeding actors with {:?}", listeners);
+        for listener in listeners {
+            let mut listener = listener.clone();
+            listener.as_url_mut().set_path("/actor");
+
+            let actor = match self.get(&listener, requests).await {
+                Ok(actor) => actor,
+                Err(e) => {
+                    warn!("Couldn't seed {} due to {}, continuing", e, listener);
+                    continue;
+                }
+            };
+
+            match self.save(actor).await {
+                Ok(_) => (),
+                Err(e) => {
+                    warn!("Coudn't seed {} due to {}, continuing", listener, e);
+                }
+            }
+        }
+        Ok(())
     }
 
     pub async fn is_following(&self, id: &XsdAnyUri) -> bool {
