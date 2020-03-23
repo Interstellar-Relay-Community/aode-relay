@@ -1,4 +1,9 @@
-use crate::{db::listen, error::MyError, state::State};
+use crate::{
+    db::listen,
+    error::MyError,
+    jobs::{JobServer, QueryInstance, QueryNodeinfo},
+    state::State,
+};
 use activitystreams::primitives::XsdAnyUri;
 use actix::clock::{delay_for, Duration};
 use bb8_postgres::tokio_postgres::{tls::NoTls, AsyncMessage, Config, Notification};
@@ -9,7 +14,7 @@ use futures::{
 use log::{debug, error, info, warn};
 use std::sync::Arc;
 
-async fn handle_notification(state: State, notif: Notification) {
+async fn handle_notification(state: State, job_server: JobServer, notif: Notification) {
     match notif.channel() {
         "new_blocks" => {
             info!("Caching block of {}", notif.payload());
@@ -22,7 +27,9 @@ async fn handle_notification(state: State, notif: Notification) {
         "new_listeners" => {
             if let Ok(uri) = notif.payload().parse::<XsdAnyUri>() {
                 info!("Caching listener {}", uri);
-                state.cache_listener(uri).await;
+                state.cache_listener(uri.clone()).await;
+                let _ = job_server.queue_local(QueryInstance::new(uri.clone()));
+                let _ = job_server.queue_local(QueryNodeinfo::new(uri));
             }
         }
         "rm_blocks" => {
@@ -43,12 +50,14 @@ async fn handle_notification(state: State, notif: Notification) {
     };
 }
 
-pub fn spawn(state: State, config: &crate::config::Config) -> Result<(), MyError> {
+pub fn spawn(
+    state: State,
+    job_server: JobServer,
+    config: &crate::config::Config,
+) -> Result<(), MyError> {
     let config: Config = config.database_url().parse()?;
 
     actix::spawn(async move {
-        let mut client;
-
         loop {
             let (new_client, mut conn) = match config.connect(NoTls).await {
                 Ok((client, conn)) => (client, conn),
@@ -59,7 +68,7 @@ pub fn spawn(state: State, config: &crate::config::Config) -> Result<(), MyError
                 }
             };
 
-            client = Arc::new(new_client);
+            let client = Arc::new(new_client);
             let new_client = client.clone();
 
             actix::spawn(async move {
@@ -88,7 +97,7 @@ pub fn spawn(state: State, config: &crate::config::Config) -> Result<(), MyError
             });
 
             while let Some(n) = stream.next().await {
-                actix::spawn(handle_notification(state.clone(), n));
+                actix::spawn(handle_notification(state.clone(), job_server.clone(), n));
             }
 
             drop(client);

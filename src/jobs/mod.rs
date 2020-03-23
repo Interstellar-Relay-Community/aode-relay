@@ -1,66 +1,105 @@
 mod deliver;
 mod deliver_many;
+mod instance;
+mod nodeinfo;
+mod process_listeners;
 mod storage;
-pub use self::{deliver::Deliver, deliver_many::DeliverMany};
+pub use self::{
+    deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance, nodeinfo::QueryNodeinfo,
+};
 
 use crate::{
     db::Db,
     error::MyError,
-    jobs::{deliver::DeliverProcessor, deliver_many::DeliverManyProcessor, storage::Storage},
+    jobs::{
+        deliver::DeliverProcessor,
+        deliver_many::DeliverManyProcessor,
+        instance::InstanceProcessor,
+        nodeinfo::NodeinfoProcessor,
+        process_listeners::{Listeners, ListenersProcessor},
+        storage::Storage,
+    },
+    node::NodeCache,
     requests::Requests,
     state::State,
 };
-use background_jobs::{Job, QueueHandle, WorkerConfig};
+use background_jobs::{memory_storage::Storage as MemoryStorage, Job, QueueHandle, WorkerConfig};
+use std::time::Duration;
 
 pub fn create_server(db: Db) -> JobServer {
-    JobServer::new(background_jobs::create_server(Storage::new(db)))
+    let local = background_jobs::create_server(MemoryStorage::new());
+    let shared = background_jobs::create_server(Storage::new(db));
+
+    local.every(Duration::from_secs(60 * 5), Listeners);
+
+    JobServer::new(shared, local)
 }
 
 pub fn create_workers(state: State, job_server: JobServer) {
-    let queue_handle = job_server.queue_handle();
+    let state2 = state.clone();
+    let job_server2 = job_server.clone();
 
-    WorkerConfig::new(move || JobState::new(state.requests(), job_server.clone()))
+    let remote_handle = job_server.remote.clone();
+    let local_handle = job_server.local.clone();
+
+    WorkerConfig::new(move || JobState::new(state.clone(), job_server.clone()))
         .register(DeliverProcessor)
         .register(DeliverManyProcessor)
         .set_processor_count("default", 4)
-        .start(queue_handle);
+        .start(remote_handle);
+
+    WorkerConfig::new(move || JobState::new(state2.clone(), job_server2.clone()))
+        .register(NodeinfoProcessor)
+        .register(InstanceProcessor)
+        .register(ListenersProcessor)
+        .set_processor_count("default", 4)
+        .start(local_handle);
 }
 
 #[derive(Clone)]
 pub struct JobState {
     requests: Requests,
+    state: State,
+    node_cache: NodeCache,
     job_server: JobServer,
 }
 
 #[derive(Clone)]
 pub struct JobServer {
-    inner: QueueHandle,
+    remote: QueueHandle,
+    local: QueueHandle,
 }
 
 impl JobState {
-    fn new(requests: Requests, job_server: JobServer) -> Self {
+    fn new(state: State, job_server: JobServer) -> Self {
         JobState {
-            requests,
+            requests: state.requests(),
+            node_cache: state.node_cache(),
+            state,
             job_server,
         }
     }
 }
 
 impl JobServer {
-    fn new(queue_handle: QueueHandle) -> Self {
+    fn new(remote_handle: QueueHandle, local_handle: QueueHandle) -> Self {
         JobServer {
-            inner: queue_handle,
+            remote: remote_handle,
+            local: local_handle,
         }
-    }
-
-    pub fn queue_handle(&self) -> QueueHandle {
-        self.inner.clone()
     }
 
     pub fn queue<J>(&self, job: J) -> Result<(), MyError>
     where
         J: Job,
     {
-        self.inner.queue(job).map_err(MyError::Queue)
+        self.remote.queue(job).map_err(MyError::Queue)
+    }
+
+    pub fn queue_local<J>(&self, job: J) -> Result<(), MyError>
+    where
+        J: Job,
+    {
+        self.local.queue(job).map_err(MyError::Queue)
     }
 }

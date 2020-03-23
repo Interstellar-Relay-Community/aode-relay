@@ -1,7 +1,6 @@
-@use crate::{config::{Config, UrlKind}, templates::statics::index_css};
-@use activitystreams::primitives::XsdAnyUri;
+@use crate::{config::{Config, UrlKind}, templates::statics::index_css, node::Node};
 
-@(listeners: &[XsdAnyUri], config: &Config)
+@(nodes: &[Node], config: &Config)
 
 <!doctype html>
 <html>
@@ -17,13 +16,23 @@
         <main>
             <section>
                 <h3>Connected Servers:</h3>
-                @if listeners.is_empty() {
+                @if nodes.is_empty() {
                     <p>There are no connected servers at this time.</p>
                 } else {
                     <ul>
-                        @for listener in listeners {
-                            @if let Some(domain) = listener.as_url().domain() {
-                                <li>@domain</li>
+                        @for node in nodes {
+                            @if let Some(domain) = node.base.as_url().domain() {
+                                <li>
+                                    <p><a href="@node.base">@domain</a></p>
+                                    @if let Some(info) = node.info.as_ref() {
+                                        <p>Running @info.software version @info.version</p>
+                                        @if info.reg {
+                                            <p>Registration is open</p>
+                                        } else {
+                                            <p>Registration is closed</p>
+                                        }
+                                    }
+                                </li>
                             }
                         }
                     </ul>

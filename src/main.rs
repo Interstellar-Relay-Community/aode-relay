@@ -18,6 +18,7 @@ mod db;
 mod error;
 mod inbox;
 mod jobs;
+mod node;
 mod nodeinfo;
 mod notify;
 mod rehydrate;
@@ -42,11 +43,11 @@ async fn index(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, MyError> {
-    let listeners = state.listeners().await;
+    let nodes = state.node_cache().nodes().await;
 
     let mut buf = BufWriter::new(Vec::new());
 
-    templates::index(&mut buf, &listeners, &config)?;
+    templates::index(&mut buf, &nodes, &config)?;
     let buf = buf.into_inner().map_err(|e| {
         error!("Error rendering template, {}", e.error());
         MyError::FlushBuffer
@@ -111,11 +112,10 @@ async fn main() -> Result<(), anyhow::Error> {
     }
 
     let state = State::hydrate(config.clone(), &db).await?;
+    let job_server = create_server(db.clone());
 
     rehydrate::spawn(db.clone(), state.clone());
-    notify::spawn(state.clone(), &config)?;
-
-    let job_server = create_server(db.clone());
+    notify::spawn(state.clone(), job_server.clone(), &config)?;
 
     if args.jobs_only() {
         for _ in 0..num_cpus::get() {

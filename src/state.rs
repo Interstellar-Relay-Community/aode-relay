@@ -3,6 +3,7 @@ use crate::{
     config::{Config, UrlKind},
     db::Db,
     error::MyError,
+    node::NodeCache,
     requests::Requests,
 };
 use activitystreams::primitives::XsdAnyUri;
@@ -28,9 +29,14 @@ pub struct State {
     blocks: Arc<RwLock<HashSet<String>>>,
     whitelists: Arc<RwLock<HashSet<String>>>,
     listeners: Arc<RwLock<HashSet<XsdAnyUri>>>,
+    node_cache: NodeCache,
 }
 
 impl State {
+    pub fn node_cache(&self) -> NodeCache {
+        self.node_cache.clone()
+    }
+
     pub fn requests(&self) -> Requests {
         Requests::new(
             self.config.generate_url(UrlKind::MainKey),
@@ -191,6 +197,7 @@ impl State {
         let (blocks, whitelists, listeners, private_key) = try_join!(f1, f2, f3, f4)?;
 
         let public_key = private_key.to_public_key();
+        let listeners = Arc::new(RwLock::new(listeners));
 
         Ok(State {
             public_key,
@@ -200,7 +207,8 @@ impl State {
             actor_id_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
             blocks: Arc::new(RwLock::new(blocks)),
             whitelists: Arc::new(RwLock::new(whitelists)),
-            listeners: Arc::new(RwLock::new(listeners)),
+            listeners: listeners.clone(),
+            node_cache: NodeCache::new(listeners),
         })
     }
 }
