@@ -1,4 +1,4 @@
-use crate::{error::MyError, requests::Requests, verifier::MyVerify};
+use crate::{error::MyError, middleware::MyVerify, requests::Requests};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};

@@ -7,9 +7,10 @@ use crate::{
     requests::Requests,
 };
 use activitystreams::primitives::XsdAnyUri;
+use actix::clock::{interval_at, Duration, Instant};
 use actix_web::web;
 use futures::{join, try_join};
-use log::info;
+use log::{error, info};
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RSAPrivateKey, RSAPublicKey};
@@ -199,7 +200,7 @@ impl State {
         let public_key = private_key.to_public_key();
         let listeners = Arc::new(RwLock::new(listeners));
 
-        Ok(State {
+        let state = State {
             public_key,
             private_key,
             config,
@@ -209,6 +210,29 @@ impl State {
             whitelists: Arc::new(RwLock::new(whitelists)),
             listeners: listeners.clone(),
             node_cache: NodeCache::new(listeners),
-        })
+        };
+
+        state.spawn_rehydrate(db.clone());
+
+        Ok(state)
+    }
+
+    fn spawn_rehydrate(&self, db: Db) {
+        let state = self.clone();
+        actix::spawn(async move {
+            let start = Instant::now();
+            let duration = Duration::from_secs(60 * 10);
+
+            let mut interval = interval_at(start, duration);
+
+            loop {
+                interval.tick().await;
+
+                match state.rehydrate(&db).await {
+                    Err(e) => error!("Error rehydrating, {}", e),
+                    _ => (),
+                }
+            }
+        });
     }
 }

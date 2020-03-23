@@ -6,7 +6,7 @@ use crate::{
     jobs::JobServer,
     jobs::{Deliver, DeliverMany},
     requests::Requests,
-    responses::accepted,
+    routes::accepted,
     state::State,
 };
 use activitystreams::{
@@ -22,7 +22,7 @@ use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerif
 use log::error;
 use std::convert::TryInto;
 
-pub async fn inbox(
+pub async fn route(
     db: web::Data<Db>,
     state: web::Data<State>,
     config: web::Data<Config>,

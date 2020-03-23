@@ -1,76 +1,28 @@
 use actix::Arbiter;
-use actix_web::{
-    http::header::{ContentType, Expires},
-    middleware::Logger,
-    web, App, HttpResponse, HttpServer,
-};
-use log::error;
-use std::{
-    io::BufWriter,
-    time::{Duration, SystemTime},
-};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 
-mod actor;
 mod apub;
 mod args;
 mod config;
 mod db;
 mod error;
-mod inbox;
 mod jobs;
+mod middleware;
 mod node;
-mod nodeinfo;
 mod notify;
-mod rehydrate;
 mod requests;
-mod responses;
+mod routes;
 mod state;
-mod verifier;
-mod webfinger;
 
 use self::{
     args::Args,
     config::Config,
     db::Db,
-    error::MyError,
     jobs::{create_server, create_workers},
+    middleware::RelayResolver,
+    routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
     state::State,
-    templates::statics::StaticFile,
-    webfinger::RelayResolver,
 };
-
-async fn index(
-    state: web::Data<State>,
-    config: web::Data<Config>,
-) -> Result<HttpResponse, MyError> {
-    let nodes = state.node_cache().nodes().await;
-
-    let mut buf = BufWriter::new(Vec::new());
-
-    templates::index(&mut buf, &nodes, &config)?;
-    let buf = buf.into_inner().map_err(|e| {
-        error!("Error rendering template, {}", e.error());
-        MyError::FlushBuffer
-    })?;
-
-    Ok(HttpResponse::Ok().content_type("text/html").body(buf))
-}
-
-static FAR: Duration = Duration::from_secs(60 * 60 * 24);
-
-async fn static_file(filename: web::Path<String>) -> HttpResponse {
-    if let Some(data) = StaticFile::get(&filename.into_inner()) {
-        let far_expires = SystemTime::now() + FAR;
-        HttpResponse::Ok()
-            .set(Expires(far_expires.into()))
-            .set(ContentType(data.mime.clone()))
-            .body(data.content)
-    } else {
-        HttpResponse::NotFound()
-            .reason("No such static file.")
-            .finish()
-    }
-}
 
 #[actix_rt::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -114,7 +66,6 @@ async fn main() -> Result<(), anyhow::Error> {
     let state = State::hydrate(config.clone(), &db).await?;
     let job_server = create_server(db.clone());
 
-    rehydrate::spawn(db.clone(), state.clone());
     notify::spawn(state.clone(), job_server.clone(), &config)?;
 
     if args.jobs_only() {
@@ -150,16 +101,16 @@ async fn main() -> Result<(), anyhow::Error> {
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
                     .wrap(config.signature_middleware(state.requests()))
-                    .route(web::post().to(inbox::inbox)),
+                    .route(web::post().to(inbox)),
             )
-            .service(web::resource("/actor").route(web::get().to(actor::route)))
-            .service(web::resource("/nodeinfo/2.0.json").route(web::get().to(nodeinfo::route)))
+            .service(web::resource("/actor").route(web::get().to(actor)))
+            .service(web::resource("/nodeinfo/2.0.json").route(web::get().to(nodeinfo)))
             .service(
                 web::scope("/.well-known")
                     .service(actix_webfinger::scoped::<_, RelayResolver>())
-                    .service(web::resource("/nodeinfo").route(web::get().to(nodeinfo::well_known))),
+                    .service(web::resource("/nodeinfo").route(web::get().to(nodeinfo_meta))),
             )
-            .service(web::resource("/static/{filename}").route(web::get().to(static_file)))
+            .service(web::resource("/static/{filename}").route(web::get().to(statics)))
     })
     .bind(bind_address)?
     .run()

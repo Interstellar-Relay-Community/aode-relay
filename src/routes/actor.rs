@@ -2,7 +2,7 @@ use crate::{
     apub::PublicKey,
     config::{Config, UrlKind},
     error::MyError,
-    responses::ok,
+    routes::ok,
     state::State,
 };
 use activitystreams::{
