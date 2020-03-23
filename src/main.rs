@@ -1,3 +1,4 @@
+use actix::Arbiter;
 use actix_web::{
     http::header::{ContentType, Expires},
     middleware::Logger,
@@ -92,6 +93,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let args = Args::new();
 
+    if args.jobs_only() && args.no_jobs() {
+        return Err(anyhow::Error::msg(
+            "Either the server or the jobs must be run",
+        ));
+    }
+
     if !args.blocks().is_empty() || !args.whitelists().is_empty() {
         if args.undo() {
             db.remove_blocks(args.blocks()).await?;
@@ -110,9 +117,26 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let job_server = create_server(db.clone());
 
+    if args.jobs_only() {
+        for _ in 0..num_cpus::get() {
+            let state = state.clone();
+            let job_server = job_server.clone();
+
+            Arbiter::new().exec_fn(move || {
+                create_workers(state, job_server);
+            });
+        }
+        actix_rt::signal::ctrl_c().await?;
+        return Ok(());
+    }
+
+    let no_jobs = args.no_jobs();
+
     let bind_address = config.bind_address();
     HttpServer::new(move || {
-        create_workers(state.clone(), job_server.clone());
+        if !no_jobs {
+            create_workers(state.clone(), job_server.clone());
+        }
 
         App::new()
             .wrap(Logger::default())

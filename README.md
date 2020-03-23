@@ -7,6 +7,27 @@ To simply run the server, the command is as follows
 $ ./relay
 ```
 
+To learn about any other tasks, the `--help` flag can be passed
+```bash
+$ ./relay --help
+relay 0.1.0
+An activitypub relay
+
+USAGE:
+    relay [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help         Prints help information
+    -j, --jobs-only    Only process background jobs, do not start the relay server
+    -n, --no-jobs      Only run the relay server, do not process background jobs
+    -u, --undo         Undo whitelisting or blocking domains
+    -V, --version      Prints version information
+
+OPTIONS:
+    -b <blocks>...            A list of domains that should be blocked
+    -w <whitelists>...        A list of domains that should be whitelisted
+```
+
 To add domains to the blocklist, use the `-b` flag and pass a list of domains
 ```bash
 $ ./relay -b asonix.dog blimps.xyz
@@ -22,7 +43,12 @@ $ ./relay -uw asonix.dog blimps.xyz
 ```
 
 Whitelisted domains are only checked against incoming activities if `WHITELIST_MODE` is enabled.
-Blocks can be published in the nodeinfo metadata by settings `PUBLISH_BLOCKS` to true
+Blocks can be published in the nodeinfo metadata by setting `PUBLISH_BLOCKS` to true
+
+For advanced setups, it may be useful to run the relay API and the background tasks in separate
+processes, possibly on separate hosts. The `-j` and `-n` flags have been provided for this purpose.
+By passing `-n`, a relay can be spawned that handles no deliveries. By passing `-j`, a relay will
+not be spawned, but any deliveries existing in the database will be processed.
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.

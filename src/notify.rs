@@ -9,7 +9,7 @@ use futures::{
 use log::{debug, error, info, warn};
 use std::sync::Arc;
 
-async fn handle_notification(state: &State, notif: Notification) {
+async fn handle_notification(state: State, notif: Notification) {
     match notif.channel() {
         "new_blocks" => {
             info!("Caching block of {}", notif.payload());
@@ -88,7 +88,7 @@ pub fn spawn(state: State, config: &crate::config::Config) -> Result<(), MyError
             });
 
             while let Some(n) = stream.next().await {
-                handle_notification(&state, n).await;
+                actix::spawn(handle_notification(state.clone(), n));
             }
 
             drop(client);
