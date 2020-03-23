@@ -129,20 +129,17 @@ impl Db {
 }
 
 pub async fn listen(client: &Client) -> Result<(), Error> {
-    info!("LISTEN new_blocks;");
-    info!("LISTEN new_whitelists;");
-    info!("LISTEN new_listeners;");
-    info!("LISTEN rm_blocks;");
-    info!("LISTEN rm_whitelists;");
-    info!("LISTEN rm_listeners;");
+    info!("LISTEN new_blocks, new_whitelists, new_listeners, new_actors, rm_blocks, rm_whitelists, rm_listeners, rm_actors");
     client
         .batch_execute(
             "LISTEN new_blocks;
              LISTEN new_whitelists;
              LISTEN new_listeners;
+             LISTEN new_actors;
              LISTEN rm_blocks;
              LISTEN rm_whitelists;
-             LISTEN rm_listeners;",
+             LISTEN rm_listeners;
+             LISTEN rm_actors;",
         )
         .await?;
 

@@ -1,4 +1,4 @@
-use crate::{error::MyError, middleware::MyVerify, requests::Requests};
+use crate::{data::ActorCache, error::MyError, middleware::MyVerify, requests::Requests};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};
@@ -71,11 +71,15 @@ impl Config {
         }
     }
 
-    pub fn signature_middleware(&self, requests: Requests) -> VerifySignature<MyVerify> {
+    pub fn signature_middleware(
+        &self,
+        requests: Requests,
+        actors: ActorCache,
+    ) -> VerifySignature<MyVerify> {
         if self.validate_signatures {
-            VerifySignature::new(MyVerify(requests), Default::default())
+            VerifySignature::new(MyVerify(requests, actors), Default::default())
         } else {
-            VerifySignature::new(MyVerify(requests), Default::default()).optional()
+            VerifySignature::new(MyVerify(requests, actors), Default::default()).optional()
         }
     }
 

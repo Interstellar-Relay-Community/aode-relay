@@ -1,13 +1,13 @@
 use crate::{
-    apub::{AcceptedActors, AcceptedObjects, ValidTypes},
+    apub::{AcceptedObjects, ValidTypes},
     config::{Config, UrlKind},
+    data::{Actor, ActorCache, State},
     db::Db,
     error::MyError,
     jobs::JobServer,
     jobs::{Deliver, DeliverMany},
     requests::Requests,
     routes::accepted,
-    state::State,
 };
 use activitystreams::{
     activity::{Accept, Announce, Follow, Undo},
@@ -25,6 +25,7 @@ use std::convert::TryInto;
 pub async fn route(
     db: web::Data<Db>,
     state: web::Data<State>,
+    actors: web::Data<ActorCache>,
     config: web::Data<Config>,
     client: web::Data<Requests>,
     jobs: web::Data<JobServer>,
@@ -34,12 +35,12 @@ pub async fn route(
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
-    let actor = client.fetch_actor(&input.actor).await?;
+    let actor = actors.get(&input.actor, &client).await?;
 
     let (is_blocked, is_whitelisted, is_listener) = join!(
         state.is_blocked(&actor.id),
         state.is_whitelisted(&actor.id),
-        state.is_listener(actor.inbox())
+        state.is_listener(&actor.inbox)
     );
 
     if is_blocked {
@@ -51,17 +52,17 @@ pub async fn route(
     }
 
     if !is_listener && !valid_without_listener(&input) {
-        return Err(MyError::NotSubscribed(actor.inbox().to_string()));
+        return Err(MyError::NotSubscribed(actor.inbox.to_string()));
     }
 
     if config.validate_signatures() && (digest_verified.is_none() || verified.is_none()) {
-        return Err(MyError::NoSignature(actor.public_key.id.to_string()));
+        return Err(MyError::NoSignature(actor.public_key_id.to_string()));
     } else if config.validate_signatures() {
         if let Some(verified) = verified {
-            if actor.public_key.id.as_str() != verified.key_id() {
+            if actor.public_key_id.as_str() != verified.key_id() {
                 error!("Bad actor, more info: {:?}", input);
                 return Err(MyError::BadActor(
-                    actor.public_key.id.to_string(),
+                    actor.public_key_id.to_string(),
                     verified.key_id().to_owned(),
                 ));
             }
@@ -70,16 +71,28 @@ pub async fn route(
 
     match input.kind {
         ValidTypes::Accept => handle_accept(&config, input).await,
-        ValidTypes::Reject => handle_reject(&db, &config, &jobs, input, actor).await,
+        ValidTypes::Reject => handle_reject(&db, &actors, &config, &jobs, input, actor).await,
         ValidTypes::Announce | ValidTypes::Create => {
             handle_announce(&state, &config, &jobs, input, actor).await
         }
-        ValidTypes::Follow => handle_follow(&db, &config, &jobs, input, actor, is_listener).await,
+        ValidTypes::Follow => {
+            handle_follow(&db, &actors, &config, &jobs, input, actor, is_listener).await
+        }
         ValidTypes::Delete | ValidTypes::Update => {
             handle_forward(&state, &jobs, input, actor).await
         }
         ValidTypes::Undo => {
-            handle_undo(&db, &state, &config, &jobs, input, actor, is_listener).await
+            handle_undo(
+                &db,
+                &state,
+                &actors,
+                &config,
+                &jobs,
+                input,
+                actor,
+                is_listener,
+            )
+            .await
         }
     }
 }
@@ -111,10 +124,11 @@ async fn handle_accept(config: &Config, input: AcceptedObjects) -> Result<HttpRe
 
 async fn handle_reject(
     db: &Db,
+    actors: &ActorCache,
     config: &Config,
     jobs: &JobServer,
     input: AcceptedObjects,
-    actor: AcceptedActors,
+    actor: Actor,
 ) -> Result<HttpResponse, MyError> {
     if !input.object.is_kind("Follow") {
         return Err(MyError::Kind(
@@ -131,13 +145,13 @@ async fn handle_reject(
 
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
-    let inbox = actor.inbox().to_owned();
-    db.remove_listener(inbox).await?;
+    if let Some(_) = actors.unfollower(&actor).await? {
+        db.remove_listener(actor.inbox.clone()).await?;
+    }
 
     let undo = generate_undo_follow(config, &actor.id, &my_id)?;
 
-    let inbox = actor.inbox().to_owned();
-    jobs.queue(Deliver::new(inbox, undo.clone())?)?;
+    jobs.queue(Deliver::new(actor.inbox, undo.clone())?)?;
 
     Ok(accepted(undo))
 }
@@ -145,10 +159,11 @@ async fn handle_reject(
 async fn handle_undo(
     db: &Db,
     state: &State,
+    actors: &ActorCache,
     config: &Config,
     jobs: &JobServer,
     input: AcceptedObjects,
-    actor: AcceptedActors,
+    actor: Actor,
     is_listener: bool,
 ) -> Result<HttpResponse, MyError> {
     match input.object.kind() {
@@ -180,22 +195,27 @@ async fn handle_undo(
         return Ok(accepted(serde_json::json!({})));
     }
 
-    let inbox = actor.inbox().to_owned();
-    db.remove_listener(inbox).await?;
+    let was_following = actors.is_following(&actor.id).await;
 
-    let undo = generate_undo_follow(config, &actor.id, &my_id)?;
+    if let Some(_) = actors.unfollower(&actor).await? {
+        db.remove_listener(actor.inbox.clone()).await?;
+    }
 
-    let inbox = actor.inbox().to_owned();
-    jobs.queue(Deliver::new(inbox, undo.clone())?)?;
+    if was_following {
+        let undo = generate_undo_follow(config, &actor.id, &my_id)?;
+        jobs.queue(Deliver::new(actor.inbox, undo.clone())?)?;
 
-    Ok(accepted(undo))
+        return Ok(accepted(undo));
+    }
+
+    Ok(accepted(serde_json::json!({})))
 }
 
 async fn handle_forward(
     state: &State,
     jobs: &JobServer,
     input: AcceptedObjects,
-    actor: AcceptedActors,
+    actor: Actor,
 ) -> Result<HttpResponse, MyError> {
     let object_id = input.object.id();
 
@@ -210,7 +230,7 @@ async fn handle_announce(
     config: &Config,
     jobs: &JobServer,
     input: AcceptedObjects,
-    actor: AcceptedActors,
+    actor: Actor,
 ) -> Result<HttpResponse, MyError> {
     let object_id = input.object.id();
 
@@ -231,10 +251,11 @@ async fn handle_announce(
 
 async fn handle_follow(
     db: &Db,
+    actors: &ActorCache,
     config: &Config,
     jobs: &JobServer,
     input: AcceptedObjects,
-    actor: AcceptedActors,
+    actor: Actor,
     is_listener: bool,
 ) -> Result<HttpResponse, MyError> {
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
@@ -244,21 +265,20 @@ async fn handle_follow(
     }
 
     if !is_listener {
-        let inbox = actor.inbox().to_owned();
-        db.add_listener(inbox).await?;
-
-        // if following relay directly, not just following 'public', followback
-        if input.object.is(&my_id) {
-            let follow = generate_follow(config, &actor.id, &my_id)?;
-            let inbox = actor.inbox().to_owned();
-            jobs.queue(Deliver::new(inbox, follow)?)?;
-        }
+        db.add_listener(actor.inbox.clone()).await?;
     }
+
+    // if following relay directly, not just following 'public', followback
+    if input.object.is(&my_id) && !actors.is_following(&actor.id).await {
+        let follow = generate_follow(config, &actor.id, &my_id)?;
+        jobs.queue(Deliver::new(actor.inbox.clone(), follow)?)?;
+    }
+
+    actors.follower(&actor).await?;
 
     let accept = generate_accept_follow(config, &actor.id, &input.id, &my_id)?;
 
-    let inbox = actor.inbox().to_owned();
-    jobs.queue(Deliver::new(inbox, accept.clone())?)?;
+    jobs.queue(Deliver::new(actor.inbox, accept.clone())?)?;
 
     Ok(accepted(accept))
 }
@@ -379,7 +399,7 @@ where
 
 async fn get_inboxes(
     state: &State,
-    actor: &AcceptedActors,
+    actor: &Actor,
     object_id: &XsdAnyUri,
 ) -> Result<Vec<XsdAnyUri>, MyError> {
     let domain = object_id
@@ -388,7 +408,5 @@ async fn get_inboxes(
         .ok_or(MyError::Domain)?
         .to_string();
 
-    let inbox = actor.inbox();
-
-    Ok(state.listeners_without(&inbox, &domain).await)
+    Ok(state.listeners_without(&actor.inbox, &domain).await)
 }

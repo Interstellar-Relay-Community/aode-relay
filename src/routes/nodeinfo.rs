@@ -1,6 +1,6 @@
 use crate::{
     config::{Config, UrlKind},
-    state::State,
+    data::State,
 };
 use actix_web::{web, Responder};
 use actix_webfinger::Link;

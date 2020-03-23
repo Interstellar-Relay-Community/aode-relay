@@ -1,4 +1,4 @@
-use crate::{config::Config, error::MyError, state::State};
+use crate::{config::Config, data::State, error::MyError};
 use actix_web::{web, HttpResponse};
 use log::error;
 use std::io::BufWriter;

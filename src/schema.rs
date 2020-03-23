@@ -1,4 +1,16 @@
 table! {
+    actors (id) {
+        id -> Uuid,
+        actor_id -> Text,
+        public_key -> Text,
+        public_key_id -> Text,
+        listener_id -> Uuid,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     blocks (id) {
         id -> Uuid,
         domain_name -> Text,
@@ -32,6 +44,18 @@ table! {
 }
 
 table! {
+    nodes (id) {
+        id -> Uuid,
+        listener_id -> Uuid,
+        nodeinfo -> Nullable<Jsonb>,
+        instance -> Nullable<Jsonb>,
+        contact -> Nullable<Jsonb>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     settings (id) {
         id -> Uuid,
         key -> Text,
@@ -50,10 +74,15 @@ table! {
     }
 }
 
+joinable!(actors -> listeners (listener_id));
+joinable!(nodes -> listeners (listener_id));
+
 allow_tables_to_appear_in_same_query!(
+    actors,
     blocks,
     jobs,
     listeners,
+    nodes,
     settings,
     whitelists,
 );

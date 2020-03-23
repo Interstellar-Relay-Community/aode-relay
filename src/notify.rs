@@ -1,8 +1,8 @@
 use crate::{
+    data::{ActorCache, State},
     db::listen,
     error::MyError,
     jobs::{JobServer, QueryInstance, QueryNodeinfo},
-    state::State,
 };
 use activitystreams::primitives::XsdAnyUri;
 use actix::clock::{delay_for, Duration};
@@ -14,7 +14,12 @@ use futures::{
 use log::{debug, error, info, warn};
 use std::sync::Arc;
 
-async fn handle_notification(state: State, job_server: JobServer, notif: Notification) {
+async fn handle_notification(
+    state: State,
+    actors: ActorCache,
+    job_server: JobServer,
+    notif: Notification,
+) {
     match notif.channel() {
         "new_blocks" => {
             info!("Caching block of {}", notif.payload());
@@ -32,6 +37,12 @@ async fn handle_notification(state: State, job_server: JobServer, notif: Notific
                 let _ = job_server.queue_local(QueryNodeinfo::new(uri));
             }
         }
+        "new_actors" => {
+            if let Ok(uri) = notif.payload().parse::<XsdAnyUri>() {
+                info!("Caching follower {}", uri);
+                actors.cache_follower(uri).await;
+            }
+        }
         "rm_blocks" => {
             info!("Busting block cache for {}", notif.payload());
             state.bust_block(notif.payload()).await;
@@ -46,12 +57,19 @@ async fn handle_notification(state: State, job_server: JobServer, notif: Notific
                 state.bust_listener(&uri).await;
             }
         }
+        "rm_actors" => {
+            if let Ok(uri) = notif.payload().parse::<XsdAnyUri>() {
+                info!("Busting follower cache for {}", uri);
+                actors.bust_follower(&uri).await;
+            }
+        }
         _ => (),
     };
 }
 
 pub fn spawn(
     state: State,
+    actors: ActorCache,
     job_server: JobServer,
     config: &crate::config::Config,
 ) -> Result<(), MyError> {
@@ -97,7 +115,12 @@ pub fn spawn(
             });
 
             while let Some(n) = stream.next().await {
-                actix::spawn(handle_notification(state.clone(), job_server.clone(), n));
+                actix::spawn(handle_notification(
+                    state.clone(),
+                    actors.clone(),
+                    job_server.clone(),
+                    n,
+                ));
             }
 
             drop(client);

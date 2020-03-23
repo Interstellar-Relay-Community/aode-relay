@@ -1,9 +1,9 @@
 use crate::{
     apub::PublicKey,
     config::{Config, UrlKind},
+    data::State,
     error::MyError,
     routes::ok,
-    state::State,
 };
 use activitystreams::{
     actor::Application, context, endpoint::EndpointProperties, ext::Extensible,

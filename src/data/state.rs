@@ -1,9 +1,8 @@
 use crate::{
-    apub::AcceptedActors,
     config::{Config, UrlKind},
+    data::NodeCache,
     db::Db,
     error::MyError,
-    node::NodeCache,
     requests::Requests,
 };
 use activitystreams::primitives::XsdAnyUri;
@@ -16,16 +15,12 @@ use rand::thread_rng;
 use rsa::{RSAPrivateKey, RSAPublicKey};
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
-use ttl_cache::TtlCache;
-
-pub type ActorCache = Arc<RwLock<TtlCache<XsdAnyUri, AcceptedActors>>>;
 
 #[derive(Clone)]
 pub struct State {
     pub public_key: RSAPublicKey,
     private_key: RSAPrivateKey,
     config: Config,
-    actor_cache: ActorCache,
     actor_id_cache: Arc<RwLock<LruCache<XsdAnyUri, XsdAnyUri>>>,
     blocks: Arc<RwLock<HashSet<String>>>,
     whitelists: Arc<RwLock<HashSet<String>>>,
@@ -42,7 +37,6 @@ impl State {
         Requests::new(
             self.config.generate_url(UrlKind::MainKey),
             self.private_key.clone(),
-            self.actor_cache.clone(),
             format!(
                 "Actix Web 3.0.0-alpha.1 ({}/{}; +{})",
                 self.config.software_name(),
@@ -204,7 +198,6 @@ impl State {
             public_key,
             private_key,
             config,
-            actor_cache: Arc::new(RwLock::new(TtlCache::new(1024 * 8))),
             actor_id_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
             blocks: Arc::new(RwLock::new(blocks)),
             whitelists: Arc::new(RwLock::new(whitelists)),

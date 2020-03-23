@@ -67,6 +67,9 @@ pub enum MyError {
     #[error("Too many CPUs, {0}")]
     CpuCount(#[from] std::num::TryFromIntError),
 
+    #[error("Hosts don't match, {0}, {1}")]
+    HostMismatch(String, String),
+
     #[error("Couldn't flush buffer")]
     FlushBuffer,
 

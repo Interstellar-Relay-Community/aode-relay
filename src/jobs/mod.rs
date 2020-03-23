@@ -9,6 +9,7 @@ pub use self::{
 };
 
 use crate::{
+    data::{ActorCache, NodeCache, State},
     db::Db,
     error::MyError,
     jobs::{
@@ -19,9 +20,7 @@ use crate::{
         process_listeners::{Listeners, ListenersProcessor},
         storage::Storage,
     },
-    node::NodeCache,
     requests::Requests,
-    state::State,
 };
 use background_jobs::{memory_storage::Storage as MemoryStorage, Job, QueueHandle, WorkerConfig};
 use std::time::Duration;
@@ -35,20 +34,21 @@ pub fn create_server(db: Db) -> JobServer {
     JobServer::new(shared, local)
 }
 
-pub fn create_workers(state: State, job_server: JobServer) {
+pub fn create_workers(state: State, actors: ActorCache, job_server: JobServer) {
     let state2 = state.clone();
+    let actors2 = actors.clone();
     let job_server2 = job_server.clone();
 
     let remote_handle = job_server.remote.clone();
     let local_handle = job_server.local.clone();
 
-    WorkerConfig::new(move || JobState::new(state.clone(), job_server.clone()))
+    WorkerConfig::new(move || JobState::new(state.clone(), actors.clone(), job_server.clone()))
         .register(DeliverProcessor)
         .register(DeliverManyProcessor)
         .set_processor_count("default", 4)
         .start(remote_handle);
 
-    WorkerConfig::new(move || JobState::new(state2.clone(), job_server2.clone()))
+    WorkerConfig::new(move || JobState::new(state2.clone(), actors2.clone(), job_server2.clone()))
         .register(NodeinfoProcessor)
         .register(InstanceProcessor)
         .register(ListenersProcessor)
@@ -60,6 +60,7 @@ pub fn create_workers(state: State, job_server: JobServer) {
 pub struct JobState {
     requests: Requests,
     state: State,
+    actors: ActorCache,
     node_cache: NodeCache,
     job_server: JobServer,
 }
@@ -71,10 +72,11 @@ pub struct JobServer {
 }
 
 impl JobState {
-    fn new(state: State, job_server: JobServer) -> Self {
+    fn new(state: State, actors: ActorCache, job_server: JobServer) -> Self {
         JobState {
             requests: state.requests(),
             node_cache: state.node_cache(),
+            actors,
             state,
             job_server,
         }

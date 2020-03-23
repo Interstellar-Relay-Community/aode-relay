@@ -1,6 +1,6 @@
 use crate::{
     config::{Config, UrlKind},
-    state::State,
+    data::State,
 };
 use activitystreams::context;
 use actix_web::web::Data;

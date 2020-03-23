@@ -1,4 +1,4 @@
-use crate::{apub::AcceptedActors, error::MyError, state::ActorCache};
+use crate::error::MyError;
 use activitystreams::primitives::XsdAnyUri;
 use actix_web::client::Client;
 use http_signature_normalization_actix::prelude::*;
@@ -11,38 +11,19 @@ pub struct Requests {
     client: Client,
     key_id: String,
     private_key: RSAPrivateKey,
-    actor_cache: ActorCache,
     config: Config,
     user_agent: String,
 }
 
 impl Requests {
-    pub fn new(
-        key_id: String,
-        private_key: RSAPrivateKey,
-        actor_cache: ActorCache,
-        user_agent: String,
-    ) -> Self {
+    pub fn new(key_id: String, private_key: RSAPrivateKey, user_agent: String) -> Self {
         Requests {
             client: Client::default(),
             key_id,
             private_key,
-            actor_cache,
             config: Config::default().dont_use_created_field(),
             user_agent,
         }
-    }
-
-    pub async fn fetch_actor(&self, actor_id: &XsdAnyUri) -> Result<AcceptedActors, MyError> {
-        if let Some(actor) = self.get_actor(actor_id).await {
-            return Ok(actor);
-        }
-
-        let actor: AcceptedActors = self.fetch(actor_id.as_str()).await?;
-
-        self.cache_actor(actor_id.to_owned(), actor.clone()).await;
-
-        Ok(actor)
     }
 
     pub async fn fetch<T>(&self, url: &str) -> Result<T, MyError>
@@ -130,19 +111,5 @@ impl Requests {
             self.private_key
                 .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), &hashed)?;
         Ok(base64::encode(bytes))
-    }
-
-    async fn get_actor(&self, actor_id: &XsdAnyUri) -> Option<AcceptedActors> {
-        let cache = self.actor_cache.clone();
-
-        let read_guard = cache.read().await;
-        read_guard.get(actor_id).cloned()
-    }
-
-    async fn cache_actor(&self, actor_id: XsdAnyUri, actor: AcceptedActors) {
-        let cache = self.actor_cache.clone();
-
-        let mut write_guard = cache.write().await;
-        write_guard.insert(actor_id, actor, std::time::Duration::from_secs(3600));
     }
 }
