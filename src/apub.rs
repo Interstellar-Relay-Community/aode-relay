@@ -81,15 +81,7 @@ pub struct AcceptedActors {
 
     pub inbox: XsdAnyUri,
 
-    pub endpoints: Endpoints,
-
     pub public_key: PublicKey,
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Endpoints {
-    shared_inbox: Option<XsdAnyUri>,
 }
 
 impl PublicKey {
@@ -182,6 +174,6 @@ impl ValidObjects {
 
 impl AcceptedActors {
     pub fn inbox(&self) -> &XsdAnyUri {
-        self.endpoints.shared_inbox.as_ref().unwrap_or(&self.inbox)
+        &self.inbox
     }
 }
