@@ -10,7 +10,7 @@ use futures::{
     future::ready,
     stream::{poll_fn, StreamExt},
 };
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 
@@ -119,7 +119,7 @@ impl Listener for NewBlocks {
     }
 
     fn execute(&self, payload: &str) {
-        info!("Caching block of {}", payload);
+        debug!("Caching block of {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
         actix::spawn(async move { state.cache_block(payload).await });
@@ -132,7 +132,7 @@ impl Listener for NewWhitelists {
     }
 
     fn execute(&self, payload: &str) {
-        info!("Caching whitelist of {}", payload);
+        debug!("Caching whitelist of {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
         actix::spawn(async move { state.cache_whitelist(payload.to_owned()).await });
@@ -146,7 +146,7 @@ impl Listener for NewListeners {
 
     fn execute(&self, payload: &str) {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
-            info!("Caching listener {}", uri);
+            debug!("Caching listener {}", uri);
             let state = self.0.clone();
             let _ = self.1.queue(QueryInstance::new(uri.clone()));
             let _ = self.1.queue(QueryNodeinfo::new(uri.clone()));
@@ -164,7 +164,7 @@ impl Listener for NewActors {
 
     fn execute(&self, payload: &str) {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
-            info!("Caching actor {}", uri);
+            debug!("Caching actor {}", uri);
             let actors = self.0.clone();
             actix::spawn(async move { actors.cache_follower(uri).await });
         } else {
@@ -180,7 +180,7 @@ impl Listener for NewNodes {
 
     fn execute(&self, payload: &str) {
         if let Ok(uuid) = payload.parse::<Uuid>() {
-            info!("Caching node {}", uuid);
+            debug!("Caching node {}", uuid);
             let nodes = self.0.clone();
             actix::spawn(async move { nodes.cache_by_id(uuid).await });
         } else {
@@ -195,7 +195,7 @@ impl Listener for RmBlocks {
     }
 
     fn execute(&self, payload: &str) {
-        info!("Busting block cache for {}", payload);
+        debug!("Busting block cache for {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
         actix::spawn(async move { state.bust_block(&payload).await });
@@ -208,7 +208,7 @@ impl Listener for RmWhitelists {
     }
 
     fn execute(&self, payload: &str) {
-        info!("Busting whitelist cache for {}", payload);
+        debug!("Busting whitelist cache for {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
         actix::spawn(async move { state.bust_whitelist(&payload).await });
@@ -222,7 +222,7 @@ impl Listener for RmListeners {
 
     fn execute(&self, payload: &str) {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
-            info!("Busting listener cache for {}", uri);
+            debug!("Busting listener cache for {}", uri);
             let state = self.0.clone();
             actix::spawn(async move { state.bust_listener(&uri).await });
         } else {
@@ -238,7 +238,7 @@ impl Listener for RmActors {
 
     fn execute(&self, payload: &str) {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
-            info!("Busting actor cache for {}", uri);
+            debug!("Busting actor cache for {}", uri);
             let actors = self.0.clone();
             actix::spawn(async move { actors.bust_follower(&uri).await });
         } else {
@@ -254,7 +254,7 @@ impl Listener for RmNodes {
 
     fn execute(&self, payload: &str) {
         if let Ok(uuid) = payload.parse::<Uuid>() {
-            info!("Caching node {}", uuid);
+            debug!("Caching node {}", uuid);
             let nodes = self.0.clone();
             actix::spawn(async move { nodes.bust_by_id(uuid).await });
         } else {
