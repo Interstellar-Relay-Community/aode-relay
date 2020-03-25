@@ -28,7 +28,7 @@ config = "0.10.1"
 dotenv = "0.15.0"
 env_logger = "0.7.1"
 futures = "0.3.4"
-http-signature-normalization-actix = { version = "0.3.0-alpha.7", default-features = false, features = ["sha-2"] }
+http-signature-normalization-actix = { version = "0.3.0-alpha.8", default-features = false, features = ["sha-2"] }
 log = "0.4"
 lru = "0.4.3"
 mime = "0.3.16"
