@@ -1,7 +1,7 @@
 use crate::{db::Db, error::MyError};
 use activitystreams::primitives::XsdAnyUri;
 use bb8_postgres::tokio_postgres::types::Json;
-use log::error;
+use log::{error, info};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -63,13 +63,19 @@ impl NodeCache {
         let read_guard = self.nodes.read().await;
 
         let node = match read_guard.get(listener) {
-            None => return true,
+            None => {
+                info!("No node for listener {}", listener);
+                return true;
+            }
             Some(node) => node,
         };
 
         match node.contact.as_ref() {
             Some(contact) => contact.outdated(),
-            None => true,
+            None => {
+                info!("No contact for node {}", node.base);
+                true
+            }
         }
     }
 
@@ -77,13 +83,19 @@ impl NodeCache {
         let read_guard = self.nodes.read().await;
 
         let node = match read_guard.get(listener) {
-            None => return true,
+            None => {
+                info!("No node for listener {}", listener);
+                return true;
+            }
             Some(node) => node,
         };
 
         match node.instance.as_ref() {
             Some(instance) => instance.outdated(),
-            None => true,
+            None => {
+                info!("No instance for node {}", node.base);
+                true
+            }
         }
     }
 
@@ -190,7 +202,7 @@ impl NodeCache {
             .entry(listener.clone())
             .or_insert(Node::new(listener.clone()));
         node.set_info(software, version, reg);
-        self.save(listener, &*node).await?;
+        self.save(listener, node).await?;
         Ok(())
     }
 
@@ -214,7 +226,7 @@ impl NodeCache {
             .entry(listener.clone())
             .or_insert(Node::new(listener.clone()));
         node.set_instance(title, description, version, reg, requires_approval);
-        self.save(listener, &*node).await?;
+        self.save(listener, node).await?;
         Ok(())
     }
 
@@ -237,7 +249,7 @@ impl NodeCache {
             .entry(listener.clone())
             .or_insert(Node::new(listener.clone()));
         node.set_contact(username, display_name, url, avatar);
-        self.save(listener, &*node).await?;
+        self.save(listener, node).await?;
         Ok(())
     }
 
