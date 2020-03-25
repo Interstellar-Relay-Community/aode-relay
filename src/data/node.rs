@@ -1,7 +1,7 @@
 use crate::{db::Db, error::MyError};
 use activitystreams::primitives::XsdAnyUri;
 use bb8_postgres::tokio_postgres::types::Json;
-use log::{error, info};
+use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -49,13 +49,19 @@ impl NodeCache {
         let read_guard = self.nodes.read().await;
 
         let node = match read_guard.get(listener) {
-            None => return true,
+            None => {
+                debug!("No node for listener {}", listener);
+                return true;
+            }
             Some(node) => node,
         };
 
         match node.info.as_ref() {
             Some(nodeinfo) => nodeinfo.outdated(),
-            None => true,
+            None => {
+                debug!("No info for node {}", node.base);
+                true
+            }
         }
     }
 
@@ -64,7 +70,7 @@ impl NodeCache {
 
         let node = match read_guard.get(listener) {
             None => {
-                info!("No node for listener {}", listener);
+                debug!("No node for listener {}", listener);
                 return true;
             }
             Some(node) => node,
@@ -73,7 +79,7 @@ impl NodeCache {
         match node.contact.as_ref() {
             Some(contact) => contact.outdated(),
             None => {
-                info!("No contact for node {}", node.base);
+                debug!("No contact for node {}", node.base);
                 true
             }
         }
@@ -84,7 +90,7 @@ impl NodeCache {
 
         let node = match read_guard.get(listener) {
             None => {
-                info!("No node for listener {}", listener);
+                debug!("No node for listener {}", listener);
                 return true;
             }
             Some(node) => node,
@@ -93,7 +99,7 @@ impl NodeCache {
         match node.instance.as_ref() {
             Some(instance) => instance.outdated(),
             None => {
-                info!("No instance for node {}", node.base);
+                debug!("No instance for node {}", node.base);
                 true
             }
         }
