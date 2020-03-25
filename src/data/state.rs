@@ -202,7 +202,7 @@ impl State {
             blocks: Arc::new(RwLock::new(blocks)),
             whitelists: Arc::new(RwLock::new(whitelists)),
             listeners: listeners.clone(),
-            node_cache: NodeCache::new(listeners),
+            node_cache: NodeCache::new(db.clone(), listeners),
         };
 
         state.spawn_rehydrate(db.clone());

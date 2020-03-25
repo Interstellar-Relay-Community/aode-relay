@@ -66,7 +66,18 @@ async fn main() -> Result<(), anyhow::Error> {
     let actors = ActorCache::new(db.clone());
     let job_server = create_server(db.clone());
 
-    notify::spawn(state.clone(), actors.clone(), job_server.clone(), &config)?;
+    notify::Notifier::new(config.database_url().parse()?)
+        .register(notify::NewBlocks(state.clone()))
+        .register(notify::NewWhitelists(state.clone()))
+        .register(notify::NewListeners(state.clone(), job_server.clone()))
+        .register(notify::NewActors(actors.clone()))
+        .register(notify::NewNodes(state.node_cache()))
+        .register(notify::RmBlocks(state.clone()))
+        .register(notify::RmWhitelists(state.clone()))
+        .register(notify::RmListeners(state.clone()))
+        .register(notify::RmActors(actors.clone()))
+        .register(notify::RmNodes(state.node_cache()))
+        .start();
 
     if args.jobs_only() {
         for _ in 0..num_cpus::get() {

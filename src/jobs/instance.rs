@@ -2,6 +2,7 @@ use crate::jobs::JobState;
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
 use background_jobs::{Job, Processor};
+use futures::join;
 use std::{future::Future, pin::Pin};
 use tokio::sync::oneshot;
 
@@ -17,6 +18,15 @@ impl QueryInstance {
 
     async fn perform(mut self, state: JobState) -> Result<(), Error> {
         let listener = self.listener.clone();
+
+        let (o1, o2) = join!(
+            state.node_cache.is_contact_outdated(&listener),
+            state.node_cache.is_instance_outdated(&listener),
+        );
+
+        if !(o1 || o2) {
+            return Ok(());
+        }
 
         let url = self.listener.as_url_mut();
         url.set_fragment(None);
@@ -38,26 +48,26 @@ impl QueryInstance {
             state
                 .node_cache
                 .set_contact(
-                    listener.clone(),
+                    &listener,
                     contact.username,
                     contact.display_name,
                     contact.url,
                     contact.avatar,
                 )
-                .await;
+                .await?;
         }
 
         state
             .node_cache
             .set_instance(
-                listener,
+                &listener,
                 instance.title,
                 description,
                 instance.version,
                 instance.registrations,
                 instance.approval_required,
             )
-            .await;
+            .await?;
 
         Ok(())
     }

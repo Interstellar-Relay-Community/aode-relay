@@ -15,8 +15,8 @@ impl Listeners {
         for listener in state.state.listeners().await {
             state
                 .job_server
-                .queue_local(QueryInstance::new(listener.clone()))?;
-            state.job_server.queue_local(QueryNodeinfo::new(listener))?;
+                .queue(QueryInstance::new(listener.clone()))?;
+            state.job_server.queue(QueryNodeinfo::new(listener))?;
         }
 
         Ok(())

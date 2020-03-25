@@ -136,10 +136,12 @@ pub async fn listen(client: &Client) -> Result<(), Error> {
              LISTEN new_whitelists;
              LISTEN new_listeners;
              LISTEN new_actors;
+             LISTEN new_nodes;
              LISTEN rm_blocks;
              LISTEN rm_whitelists;
              LISTEN rm_listeners;
-             LISTEN rm_actors;",
+             LISTEN rm_actors;
+             LISTEN rm_nodes",
         )
         .await?;
 

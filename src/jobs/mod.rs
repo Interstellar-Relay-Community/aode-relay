@@ -22,38 +22,28 @@ use crate::{
     },
     requests::Requests,
 };
-use background_jobs::{memory_storage::Storage as MemoryStorage, Job, QueueHandle, WorkerConfig};
+use background_jobs::{Job, QueueHandle, WorkerConfig};
 use std::time::Duration;
 
 pub fn create_server(db: Db) -> JobServer {
-    let local = background_jobs::create_server(MemoryStorage::new());
     let shared = background_jobs::create_server(Storage::new(db));
 
-    local.every(Duration::from_secs(60 * 5), Listeners);
+    shared.every(Duration::from_secs(60 * 5), Listeners);
 
-    JobServer::new(shared, local)
+    JobServer::new(shared)
 }
 
 pub fn create_workers(state: State, actors: ActorCache, job_server: JobServer) {
-    let state2 = state.clone();
-    let actors2 = actors.clone();
-    let job_server2 = job_server.clone();
-
     let remote_handle = job_server.remote.clone();
-    let local_handle = job_server.local.clone();
 
     WorkerConfig::new(move || JobState::new(state.clone(), actors.clone(), job_server.clone()))
         .register(DeliverProcessor)
         .register(DeliverManyProcessor)
-        .set_processor_count("default", 4)
-        .start(remote_handle);
-
-    WorkerConfig::new(move || JobState::new(state2.clone(), actors2.clone(), job_server2.clone()))
         .register(NodeinfoProcessor)
         .register(InstanceProcessor)
         .register(ListenersProcessor)
         .set_processor_count("default", 4)
-        .start(local_handle);
+        .start(remote_handle);
 }
 
 #[derive(Clone)]
@@ -68,7 +58,6 @@ pub struct JobState {
 #[derive(Clone)]
 pub struct JobServer {
     remote: QueueHandle,
-    local: QueueHandle,
 }
 
 impl JobState {
@@ -84,10 +73,9 @@ impl JobState {
 }
 
 impl JobServer {
-    fn new(remote_handle: QueueHandle, local_handle: QueueHandle) -> Self {
+    fn new(remote_handle: QueueHandle) -> Self {
         JobServer {
             remote: remote_handle,
-            local: local_handle,
         }
     }
 
@@ -96,12 +84,5 @@ impl JobServer {
         J: Job,
     {
         self.remote.queue(job).map_err(MyError::Queue)
-    }
-
-    pub fn queue_local<J>(&self, job: J) -> Result<(), MyError>
-    where
-        J: Job,
-    {
-        self.local.queue(job).map_err(MyError::Queue)
     }
 }

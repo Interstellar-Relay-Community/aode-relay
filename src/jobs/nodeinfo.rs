@@ -18,6 +18,10 @@ impl QueryNodeinfo {
     async fn perform(mut self, state: JobState) -> Result<(), Error> {
         let listener = self.listener.clone();
 
+        if !state.node_cache.is_nodeinfo_outdated(&listener).await {
+            return Ok(());
+        }
+
         let url = self.listener.as_url_mut();
         url.set_fragment(None);
         url.set_query(None);
@@ -39,12 +43,12 @@ impl QueryNodeinfo {
         state
             .node_cache
             .set_info(
-                listener,
+                &listener,
                 nodeinfo.software.name,
                 nodeinfo.software.version,
                 nodeinfo.open_registrations,
             )
-            .await;
+            .await?;
         Ok(())
     }
 }
