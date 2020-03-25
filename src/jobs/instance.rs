@@ -108,6 +108,7 @@ struct Instance {
     registrations: bool,
     approval_required: bool,
 
+    #[serde(rename = "contact_account")]
     contact: Option<Contact>,
 }
 
