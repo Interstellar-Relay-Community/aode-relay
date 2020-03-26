@@ -30,6 +30,10 @@ header {
 
     h1 {
         margin: 0px;
+        .smaller {
+            font-size: 14px;
+            font-weight: 400;
+        }
     }
 
     p {
@@ -55,12 +59,15 @@ section {
     h3 {
         padding: 24px;
         margin: 0px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+    .info {
+        border-bottom: 1px solid #e5e5e5;
     }
 
     li {
         padding-top: 24px;
-        padding-bottom: 24px;
-        border-top: 1px solid #e5e5e5;
     }
 
     .padded {
@@ -69,7 +76,6 @@ section {
 
     .joining {
         padding: 24px;
-        border-top: 1px solid #e5e5e5;
     }
 }
 
