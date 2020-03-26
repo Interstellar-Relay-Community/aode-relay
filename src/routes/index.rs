@@ -1,13 +1,15 @@
 use crate::{config::Config, data::State, error::MyError};
 use actix_web::{web, HttpResponse};
 use log::error;
+use rand::{seq::SliceRandom, thread_rng};
 use std::io::BufWriter;
 
 pub async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, MyError> {
-    let nodes = state.node_cache().nodes().await;
+    let mut nodes = state.node_cache().nodes().await;
+    nodes.shuffle(&mut thread_rng());
     let mut buf = BufWriter::new(Vec::new());
 
     crate::templates::index(&mut buf, &nodes, &config)?;

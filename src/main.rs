@@ -35,7 +35,7 @@ async fn main() -> Result<(), anyhow::Error> {
     if config.debug() {
         std::env::set_var(
             "RUST_LOG",
-            "debug,tokio_postgres=info,h2=info,trust_dns_resolver=info,trust_dns_proto=info,rustls=info",
+            "debug,tokio_postgres=info,h2=info,trust_dns_resolver=info,trust_dns_proto=info,rustls=info,html5ever=info",
         )
     } else {
         std::env::set_var("RUST_LOG", "info")
