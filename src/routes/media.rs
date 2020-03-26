@@ -20,7 +20,10 @@ pub async fn route(
             .store_bytes(uuid, content_type.clone(), bytes.clone())
             .await;
 
-        return Ok(HttpResponse::Ok().content_type(content_type).body(bytes));
+        return Ok(HttpResponse::Ok()
+            .content_type(content_type)
+            .header("Cache-Control", "public, max-age=1200, immutable")
+            .body(bytes));
     }
 
     Ok(HttpResponse::NotFound().finish())

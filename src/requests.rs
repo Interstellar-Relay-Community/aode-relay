@@ -3,7 +3,7 @@ use activitystreams::primitives::XsdAnyUri;
 use actix_web::client::Client;
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
-use log::error;
+use log::{error, info};
 use rsa::{hash::Hashes, padding::PaddingScheme, RSAPrivateKey};
 use sha2::{Digest, Sha256};
 
@@ -65,6 +65,7 @@ impl Requests {
     }
 
     pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
+        info!("Fetching bytes for {}", url);
         let mut res = self
             .client
             .get(url)
