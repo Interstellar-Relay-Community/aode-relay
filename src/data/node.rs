@@ -118,9 +118,11 @@ impl NodeCache {
     }
 
     async fn do_bust_by_id(&self, id: Uuid) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
                 "SELECT ls.actor_id
                  FROM listeners AS ls
@@ -140,16 +142,17 @@ impl NodeCache {
         let listener: String = row.try_get(0)?;
         let listener: XsdAnyUri = listener.parse()?;
 
-        let mut write_guard = self.nodes.write().await;
-        write_guard.remove(&listener);
+        self.nodes.write().await.remove(&listener);
 
         Ok(())
     }
 
     async fn do_cache_by_id(&self, id: Uuid) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
                 "SELECT ls.actor_id, nd.nodeinfo, nd.instance, nd.contact
                  FROM nodes AS nd
@@ -172,19 +175,21 @@ impl NodeCache {
         let instance: Option<Json<Instance>> = row.try_get(2)?;
         let contact: Option<Json<Contact>> = row.try_get(3)?;
 
-        let mut write_guard = self.nodes.write().await;
-        let node = write_guard
-            .entry(listener.clone())
-            .or_insert(Node::new(listener));
+        {
+            let mut write_guard = self.nodes.write().await;
+            let node = write_guard
+                .entry(listener.clone())
+                .or_insert(Node::new(listener));
 
-        if let Some(info) = info {
-            node.info = Some(info.0);
-        }
-        if let Some(instance) = instance {
-            node.instance = Some(instance.0);
-        }
-        if let Some(contact) = contact {
-            node.contact = Some(contact.0);
+            if let Some(info) = info {
+                node.info = Some(info.0);
+            }
+            if let Some(instance) = instance {
+                node.instance = Some(instance.0);
+            }
+            if let Some(contact) = contact {
+                node.contact = Some(contact.0);
+            }
         }
 
         Ok(())
@@ -203,12 +208,15 @@ impl NodeCache {
             return Ok(());
         }
 
-        let mut write_guard = self.nodes.write().await;
-        let node = write_guard
-            .entry(listener.clone())
-            .or_insert(Node::new(listener.clone()));
-        node.set_info(software, version, reg);
-        self.save(listener, node).await?;
+        let node = {
+            let mut write_guard = self.nodes.write().await;
+            let node = write_guard
+                .entry(listener.clone())
+                .or_insert(Node::new(listener.clone()));
+            node.set_info(software, version, reg);
+            node.clone()
+        };
+        self.save(listener, &node).await?;
         Ok(())
     }
 
@@ -227,12 +235,15 @@ impl NodeCache {
             return Ok(());
         }
 
-        let mut write_guard = self.nodes.write().await;
-        let node = write_guard
-            .entry(listener.clone())
-            .or_insert(Node::new(listener.clone()));
-        node.set_instance(title, description, version, reg, requires_approval);
-        self.save(listener, node).await?;
+        let node = {
+            let mut write_guard = self.nodes.write().await;
+            let node = write_guard
+                .entry(listener.clone())
+                .or_insert(Node::new(listener.clone()));
+            node.set_instance(title, description, version, reg, requires_approval);
+            node.clone()
+        };
+        self.save(listener, &node).await?;
         Ok(())
     }
 
@@ -250,19 +261,24 @@ impl NodeCache {
             return Ok(());
         }
 
-        let mut write_guard = self.nodes.write().await;
-        let node = write_guard
-            .entry(listener.clone())
-            .or_insert(Node::new(listener.clone()));
-        node.set_contact(username, display_name, url, avatar);
-        self.save(listener, node).await?;
+        let node = {
+            let mut write_guard = self.nodes.write().await;
+            let node = write_guard
+                .entry(listener.clone())
+                .or_insert(Node::new(listener.clone()));
+            node.set_contact(username, display_name, url, avatar);
+            node.clone()
+        };
+        self.save(listener, &node).await?;
         Ok(())
     }
 
     pub async fn save(&self, listener: &XsdAnyUri, node: &Node) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
                 "SELECT id FROM listeners WHERE actor_id = $1::TEXT LIMIT 1;",
                 &[&listener.as_str()],
@@ -275,8 +291,12 @@ impl NodeCache {
             return Err(MyError::NotSubscribed(listener.as_str().to_owned()));
         };
 
-        conn.execute(
-            "INSERT INTO nodes (
+        self.db
+            .pool()
+            .get()
+            .await?
+            .execute(
+                "INSERT INTO nodes (
                 listener_id,
                 nodeinfo,
                 instance,
@@ -295,14 +315,14 @@ impl NodeCache {
                 nodeinfo = $2::JSONB,
                 instance = $3::JSONB,
                 contact = $4::JSONB;",
-            &[
-                &id,
-                &Json(&node.info),
-                &Json(&node.instance),
-                &Json(&node.contact),
-            ],
-        )
-        .await?;
+                &[
+                    &id,
+                    &Json(&node.info),
+                    &Json(&node.instance),
+                    &Json(&node.contact),
+                ],
+            )
+            .await?;
         Ok(())
     }
 }

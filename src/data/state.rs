@@ -47,34 +47,29 @@ impl State {
     }
 
     pub async fn bust_whitelist(&self, whitelist: &str) {
-        let mut write_guard = self.whitelists.write().await;
-        write_guard.remove(whitelist);
+        self.whitelists.write().await.remove(whitelist);
     }
 
     pub async fn bust_block(&self, block: &str) {
-        let mut write_guard = self.blocks.write().await;
-        write_guard.remove(block);
+        self.blocks.write().await.remove(block);
     }
 
     pub async fn bust_listener(&self, inbox: &XsdAnyUri) {
-        let mut write_guard = self.listeners.write().await;
-        write_guard.remove(inbox);
+        self.listeners.write().await.remove(inbox);
     }
 
     pub async fn listeners(&self) -> Vec<XsdAnyUri> {
-        let read_guard = self.listeners.read().await;
-        read_guard.iter().cloned().collect()
+        self.listeners.read().await.iter().cloned().collect()
     }
 
     pub async fn blocks(&self) -> Vec<String> {
-        let read_guard = self.blocks.read().await;
-        read_guard.iter().cloned().collect()
+        self.blocks.read().await.iter().cloned().collect()
     }
 
     pub async fn listeners_without(&self, inbox: &XsdAnyUri, domain: &str) -> Vec<XsdAnyUri> {
-        let read_guard = self.listeners.read().await;
-
-        read_guard
+        self.listeners
+            .read()
+            .await
             .iter()
             .filter_map(|listener| {
                 if let Some(dom) = listener.as_url().domain() {
@@ -94,8 +89,7 @@ impl State {
         }
 
         if let Some(host) = actor_id.as_url().host() {
-            let read_guard = self.whitelists.read().await;
-            return read_guard.contains(&host.to_string());
+            self.whitelists.read().await.contains(&host.to_string());
         }
 
         false
@@ -103,43 +97,34 @@ impl State {
 
     pub async fn is_blocked(&self, actor_id: &XsdAnyUri) -> bool {
         if let Some(host) = actor_id.as_url().host() {
-            let read_guard = self.blocks.read().await;
-            return read_guard.contains(&host.to_string());
+            self.blocks.read().await.contains(&host.to_string());
         }
 
         true
     }
 
     pub async fn is_listener(&self, actor_id: &XsdAnyUri) -> bool {
-        let read_guard = self.listeners.read().await;
-        read_guard.contains(actor_id)
+        self.listeners.read().await.contains(actor_id)
     }
 
     pub async fn is_cached(&self, object_id: &XsdAnyUri) -> bool {
-        let cache = self.actor_id_cache.clone();
-
-        let read_guard = cache.read().await;
-        read_guard.contains(object_id)
+        self.actor_id_cache.read().await.contains(object_id)
     }
 
     pub async fn cache(&self, object_id: XsdAnyUri, actor_id: XsdAnyUri) {
-        let mut write_guard = self.actor_id_cache.write().await;
-        write_guard.put(object_id, actor_id);
+        self.actor_id_cache.write().await.put(object_id, actor_id);
     }
 
     pub async fn cache_block(&self, host: String) {
-        let mut write_guard = self.blocks.write().await;
-        write_guard.insert(host);
+        self.blocks.write().await.insert(host);
     }
 
     pub async fn cache_whitelist(&self, host: String) {
-        let mut write_guard = self.whitelists.write().await;
-        write_guard.insert(host);
+        self.whitelists.write().await.insert(host);
     }
 
     pub async fn cache_listener(&self, listener: XsdAnyUri) {
-        let mut write_guard = self.listeners.write().await;
-        write_guard.insert(listener);
+        self.listeners.write().await.insert(listener);
     }
 
     pub async fn rehydrate(&self, db: &Db) -> Result<(), MyError> {
@@ -151,16 +136,13 @@ impl State {
 
         join!(
             async move {
-                let mut write_guard = self.listeners.write().await;
-                *write_guard = listeners;
+                *self.listeners.write().await = listeners;
             },
             async move {
-                let mut write_guard = self.whitelists.write().await;
-                *write_guard = whitelists;
+                *self.whitelists.write().await = whitelists;
             },
             async move {
-                let mut write_guard = self.blocks.write().await;
-                *write_guard = blocks;
+                *self.blocks.write().await = blocks;
             }
         );
 

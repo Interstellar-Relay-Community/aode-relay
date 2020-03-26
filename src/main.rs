@@ -68,7 +68,7 @@ async fn main() -> Result<(), anyhow::Error> {
         return Ok(());
     }
 
-    let media = Media::new();
+    let media = Media::new(db.clone());
     let state = State::hydrate(config.clone(), &db).await?;
     let actors = ActorCache::new(db.clone());
     let job_server = create_server(db.clone());

@@ -44,6 +44,16 @@ table! {
 }
 
 table! {
+    media (id) {
+        id -> Uuid,
+        media_id -> Uuid,
+        url -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     nodes (id) {
         id -> Uuid,
         listener_id -> Uuid,
@@ -82,6 +92,7 @@ allow_tables_to_appear_in_same_query!(
     blocks,
     jobs,
     listeners,
+    media,
     nodes,
     settings,
     whitelists,

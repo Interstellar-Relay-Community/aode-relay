@@ -13,7 +13,7 @@ pub async fn route(
         return Ok(HttpResponse::Ok().content_type(content_type).body(bytes));
     }
 
-    if let Some(url) = media.get_url(uuid).await {
+    if let Some(url) = media.get_url(uuid).await? {
         let (content_type, bytes) = requests.fetch_bytes(url.as_str()).await?;
 
         media

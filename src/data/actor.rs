@@ -92,11 +92,15 @@ impl ActorCache {
     }
 
     pub async fn unfollower(&self, actor: &Actor) -> Result<Option<Uuid>, MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
-                "DELETE FROM actors WHERE actor_id = $1::TEXT RETURNING listener_id;",
+                "DELETE FROM actors
+                 WHERE actor_id = $1::TEXT
+                 RETURNING listener_id;",
                 &[&actor.id.as_str()],
             )
             .await?;
@@ -109,9 +113,14 @@ impl ActorCache {
 
         let listener_id: Uuid = row.try_get(0)?;
 
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
-                "SELECT FROM actors WHERE listener_id = $1::UUID;",
+                "SELECT FROM actors
+                WHERE listener_id = $1::UUID;",
                 &[&listener_id],
             )
             .await?;
@@ -124,9 +133,11 @@ impl ActorCache {
     }
 
     async fn lookup(&self, id: &XsdAnyUri) -> Result<Option<Actor>, MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
                 "SELECT listeners.actor_id, actors.public_key, actors.public_key_id
                  FROM listeners
@@ -158,9 +169,11 @@ impl ActorCache {
     }
 
     async fn save(&self, actor: Actor) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let row_opt = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
                 "SELECT id FROM listeners WHERE actor_id = $1::TEXT LIMIT 1;",
                 &[&actor.inbox.as_str()],
@@ -175,14 +188,35 @@ impl ActorCache {
 
         let listener_id: Uuid = row.try_get(0)?;
 
-        conn.execute(
-            "INSERT INTO actors (actor_id, public_key, public_key_id, listener_id, created_at, updated_at)
-             VALUES ($1::TEXT, $2::TEXT, $3::TEXT, $4::UUID, 'now', 'now')
-             ON CONFLICT (actor_id)
-             DO UPDATE SET public_key = $2::TEXT;",
-            &[&actor.id.as_str(), &actor.public_key, &actor.public_key_id.as_str(), &listener_id],
-        )
-        .await?;
+        self.db
+            .pool()
+            .get()
+            .await?
+            .execute(
+                "INSERT INTO actors (
+                    actor_id,
+                    public_key,
+                    public_key_id,
+                    listener_id,
+                    created_at,
+                    updated_at
+                 ) VALUES (
+                    $1::TEXT,
+                    $2::TEXT,
+                    $3::TEXT,
+                    $4::UUID,
+                    'now',
+                    'now'
+                 ) ON CONFLICT (actor_id)
+                 DO UPDATE SET public_key = $2::TEXT;",
+                &[
+                    &actor.id.as_str(),
+                    &actor.public_key,
+                    &actor.public_key_id.as_str(),
+                    &listener_id,
+                ],
+            )
+            .await?;
         Ok(())
     }
 
@@ -192,15 +226,17 @@ impl ActorCache {
         public_key: &str,
         public_key_id: &XsdAnyUri,
     ) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
-
-        conn.execute(
-            "UPDATE actors
-             SET public_key = $2::TEXT, public_key_id = $3::TEXT
-             WHERE actor_id = $1::TEXT;",
-            &[&id.as_str(), &public_key, &public_key_id.as_str()],
-        )
-        .await?;
+        self.db
+            .pool()
+            .get()
+            .await?
+            .execute(
+                "UPDATE actors
+                 SET public_key = $2::TEXT, public_key_id = $3::TEXT
+                 WHERE actor_id = $1::TEXT;",
+                &[&id.as_str(), &public_key, &public_key_id.as_str()],
+            )
+            .await?;
 
         Ok(())
     }
@@ -223,9 +259,13 @@ impl ActorCache {
     }
 
     async fn rehydrate(&self) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
-
-        let rows = conn.query("SELECT actor_id FROM actors;", &[]).await?;
+        let rows = self
+            .db
+            .pool()
+            .get()
+            .await?
+            .query("SELECT actor_id FROM actors;", &[])
+            .await?;
 
         let actor_ids = rows
             .into_iter()
