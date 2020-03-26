@@ -28,6 +28,7 @@ pub enum UrlKind {
     Inbox,
     Index,
     MainKey,
+    Media(Uuid),
     NodeInfo,
     Outbox,
 }
@@ -136,6 +137,7 @@ impl Config {
             UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
             UrlKind::Index => format!("{}://{}/", scheme, self.hostname),
             UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
+            UrlKind::Media(uuid) => format!("{}://{}/media/{}", scheme, self.hostname, uuid),
             UrlKind::NodeInfo => format!("{}://{}/nodeinfo/2.0.json", scheme, self.hostname),
             UrlKind::Outbox => format!("{}://{}/outbox", scheme, self.hostname),
         }

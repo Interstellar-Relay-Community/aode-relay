@@ -1,4 +1,4 @@
-use crate::jobs::JobState;
+use crate::{config::UrlKind, jobs::JobState};
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
 use background_jobs::{Job, Processor};
@@ -44,7 +44,14 @@ impl QueryInstance {
             instance.description
         };
 
-        if let Some(contact) = instance.contact {
+        if let Some(mut contact) = instance.contact {
+            if let Some(uuid) = state.media.get_uuid(&contact.avatar).await {
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).parse()?;
+            } else {
+                let uuid = state.media.store_url(&contact.avatar).await;
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).parse()?;
+            }
+
             state
                 .node_cache
                 .set_contact(
@@ -56,6 +63,8 @@ impl QueryInstance {
                 )
                 .await?;
         }
+
+        let description = ammonia::clean(&description);
 
         state
             .node_cache

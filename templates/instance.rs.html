@@ -1,0 +1,32 @@
+@use crate::{data::{Contact, Instance}, templates::admin};
+@use activitystreams::primitives::XsdAnyUri;
+
+@(instance: &Instance, software: Option<&str>, contact: Option<&Contact>, base: &XsdAnyUri)
+
+<article class="instance">
+    <h4 class="padded"><a href="@base">@instance.title</a></h4>
+    <p class="padded">
+        @if let Some(software) = software {
+            Running @software, version @instance.version.
+        }
+        @if instance.reg {
+            <br>Registration is open.
+            @if instance.requires_approval {
+                Accounts must be approved by an admin.
+            }
+        } else{
+            Registration is closed
+        }
+    </p>
+    <div class="instance-info">
+        <h4 class="instance-description">Description:</h4>
+        <div class="description">
+            <div class="please-stay">
+                @Html(&instance.description)
+            </div>
+        </div>
+        @if let Some(contact) = contact {
+            @:admin(contact)
+        }
+    </div>
+</article>

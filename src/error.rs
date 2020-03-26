@@ -70,6 +70,9 @@ pub enum MyError {
     #[error("Hosts don't match, {0}, {1}")]
     HostMismatch(String, String),
 
+    #[error("Invalid or missing content type")]
+    ContentType,
+
     #[error("Couldn't flush buffer")]
     FlushBuffer,
 

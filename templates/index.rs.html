@@ -1,4 +1,8 @@
-@use crate::{config::{Config, UrlKind}, templates::statics::index_css, data::Node};
+@use crate::{
+    config::{Config, UrlKind},
+    data::Node,
+    templates::{info, instance, statics::index_css},
+};
 
 @(nodes: &[Node], config: &Config)
 
@@ -11,28 +15,29 @@
     </head>
     <body>
         <header>
-            <h1>Welcome to @config.software_name() on @config.hostname()</h1>
+            <div class="header-text">
+                <h1>@config.software_name()</h1>
+                <p>on @config.hostname()</p>
+            </div>
         </header>
         <main>
             <section>
-                <h3>Connected Servers:</h3>
+                <h3>Connected Servers</h3>
                 @if nodes.is_empty() {
                     <p>There are no connected servers at this time.</p>
                 } else {
                     <ul>
                         @for node in nodes {
-                            @if let Some(domain) = node.base.as_url().domain() {
+                            @if let Some(inst) = node.instance.as_ref() {
                                 <li>
-                                    <p><a href="@node.base">@domain</a></p>
-                                    @if let Some(info) = node.info.as_ref() {
-                                        <p>Running @info.software version @info.version</p>
-                                        @if info.reg {
-                                            <p>Registration is open</p>
-                                        } else {
-                                            <p>Registration is closed</p>
-                                        }
-                                    }
+                                    @:instance(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(), &node.base)
                                 </li>
+                            } else {
+                                @if let Some(inf) = node.info.as_ref() {
+                                    <li>
+                                        @:info(&inf, &node.base)
+                                    </li>
+                                }
                             }
                         }
                     </ul>
@@ -40,27 +45,29 @@
             </section>
             <section>
                 <h3>Joining</h3>
-                <p>
-                    If you are the admin of a server that supports activitypub relays, you can add
-                    this relay to your server.
-                </p>
-                <h4>Mastodon</h4>
-                <p>
-                    Mastodon admins can add this relay by adding
-                    <pre>@config.generate_url(UrlKind::Inbox)</pre> in their relay settings.
-                </p>
-                <h4>Pleroma</h4>
-                <p>
-                    Pleroma admins can add this relay by adding
-                    <pre>@config.generate_url(UrlKind::Actor)</pre>
-                    to their relay settings (I don't actually know how pleroma handles adding
-                    relays, is it still a mix command?).
-                </p>
-                <h4>Others</h4>
-                <p>
-                    Consult the documentation for your server. It's likely that it follows either
-                    Mastodon or Pleroma's relay formatting.
-                </p>
+                <article class="joining">
+                    <p>
+                        If you are the admin of a server that supports activitypub relays, you can add
+                        this relay to your server.
+                    </p>
+                    <h4>Mastodon</h4>
+                    <p>
+                        Mastodon admins can add this relay by adding
+                        <pre>@config.generate_url(UrlKind::Inbox)</pre> in their relay settings.
+                    </p>
+                    <h4>Pleroma</h4>
+                    <p>
+                        Pleroma admins can add this relay by adding
+                        <pre>@config.generate_url(UrlKind::Actor)</pre>
+                        to their relay settings (I don't actually know how pleroma handles adding
+                        relays, is it still a mix command?).
+                    </p>
+                    <h4>Others</h4>
+                    <p>
+                        Consult the documentation for your server. It's likely that it follows either
+                        Mastodon or Pleroma's relay formatting.
+                    </p>
+                </article>
             </section>
         </main>
         <footer>

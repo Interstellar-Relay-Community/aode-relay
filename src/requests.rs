@@ -1,6 +1,7 @@
 use crate::error::MyError;
 use activitystreams::primitives::XsdAnyUri;
 use actix_web::client::Client;
+use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
 use log::error;
 use rsa::{hash::Hashes, padding::PaddingScheme, RSAPrivateKey};
@@ -61,6 +62,55 @@ impl Requests {
             error!("Coudn't fetch json from {}, {}", url, e);
             MyError::ReceiveResponse
         })
+    }
+
+    pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
+        let mut res = self
+            .client
+            .get(url)
+            .header("Accept", "application/activity+json")
+            .header("User-Agent", self.user_agent.as_str())
+            .signature(&self.config, &self.key_id, |signing_string| {
+                self.sign(signing_string)
+            })?
+            .send()
+            .await
+            .map_err(|e| {
+                error!("Couldn't send request to {}, {}", url, e);
+                MyError::SendRequest
+            })?;
+
+        let content_type = if let Some(content_type) = res.headers().get("content-type") {
+            if let Ok(s) = content_type.to_str() {
+                s.to_owned()
+            } else {
+                return Err(MyError::ContentType);
+            }
+        } else {
+            return Err(MyError::ContentType);
+        };
+
+        if !res.status().is_success() {
+            if let Ok(bytes) = res.body().await {
+                if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
+                    if !s.is_empty() {
+                        error!("Response, {}", s);
+                    }
+                }
+            }
+
+            return Err(MyError::Status(res.status()));
+        }
+
+        let bytes = match res.body().limit(1024 * 1024 * 4).await {
+            Err(e) => {
+                error!("Coudn't fetch json from {}, {}", url, e);
+                return Err(MyError::ReceiveResponse);
+            }
+            Ok(bytes) => bytes,
+        };
+
+        Ok((content_type, bytes))
     }
 
     pub async fn deliver<T>(&self, inbox: XsdAnyUri, item: &T) -> Result<(), MyError>

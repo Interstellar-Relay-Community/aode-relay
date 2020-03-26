@@ -1,0 +1,15 @@
+@use crate::data::Contact;
+
+@(contact: &Contact)
+
+<div class="admin">
+    <div class="left">
+        <figure class="avatar">
+            <img src="@contact.avatar" alt="@contact.display_name's avatar">
+        </figure>
+    </div>
+    <div class="right">
+        <p class="display-name"><a href="@contact.url">@contact.display_name</a></p>
+        <p class="username">@@@contact.username</p>
+    </div>
+</div>

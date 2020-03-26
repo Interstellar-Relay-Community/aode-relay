@@ -8,7 +8,6 @@ pub async fn route(
     config: web::Data<Config>,
 ) -> Result<HttpResponse, MyError> {
     let nodes = state.node_cache().nodes().await;
-
     let mut buf = BufWriter::new(Vec::new());
 
     crate::templates::index(&mut buf, &nodes, &config)?;

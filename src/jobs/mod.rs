@@ -9,7 +9,8 @@ pub use self::{
 };
 
 use crate::{
-    data::{ActorCache, NodeCache, State},
+    config::Config,
+    data::{ActorCache, Media, NodeCache, State},
     db::Db,
     error::MyError,
     jobs::{
@@ -33,17 +34,31 @@ pub fn create_server(db: Db) -> JobServer {
     JobServer::new(shared)
 }
 
-pub fn create_workers(state: State, actors: ActorCache, job_server: JobServer) {
+pub fn create_workers(
+    state: State,
+    actors: ActorCache,
+    job_server: JobServer,
+    media: Media,
+    config: Config,
+) {
     let remote_handle = job_server.remote.clone();
 
-    WorkerConfig::new(move || JobState::new(state.clone(), actors.clone(), job_server.clone()))
-        .register(DeliverProcessor)
-        .register(DeliverManyProcessor)
-        .register(NodeinfoProcessor)
-        .register(InstanceProcessor)
-        .register(ListenersProcessor)
-        .set_processor_count("default", 4)
-        .start(remote_handle);
+    WorkerConfig::new(move || {
+        JobState::new(
+            state.clone(),
+            actors.clone(),
+            job_server.clone(),
+            media.clone(),
+            config.clone(),
+        )
+    })
+    .register(DeliverProcessor)
+    .register(DeliverManyProcessor)
+    .register(NodeinfoProcessor)
+    .register(InstanceProcessor)
+    .register(ListenersProcessor)
+    .set_processor_count("default", 4)
+    .start(remote_handle);
 }
 
 #[derive(Clone)]
@@ -51,6 +66,8 @@ pub struct JobState {
     requests: Requests,
     state: State,
     actors: ActorCache,
+    config: Config,
+    media: Media,
     node_cache: NodeCache,
     job_server: JobServer,
 }
@@ -61,11 +78,19 @@ pub struct JobServer {
 }
 
 impl JobState {
-    fn new(state: State, actors: ActorCache, job_server: JobServer) -> Self {
+    fn new(
+        state: State,
+        actors: ActorCache,
+        job_server: JobServer,
+        media: Media,
+        config: Config,
+    ) -> Self {
         JobState {
             requests: state.requests(),
             node_cache: state.node_cache(),
             actors,
+            config,
+            media,
             state,
             job_server,
         }

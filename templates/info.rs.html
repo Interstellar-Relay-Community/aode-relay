@@ -1,0 +1,16 @@
+@use crate::data::Info;
+@use activitystreams::primitives::XsdAnyUri;
+
+@(info: &Info, base: &XsdAnyUri)
+
+<article class="info">
+    @if let Some(domain) = base.as_url().domain() {
+        <h4 class="padded"><a href="@base">@domain</a></h4>
+    }
+    <p class="padded">
+        Running @info.software, version @info.version.
+        @if info.reg {
+            Registration is open
+        }
+    </p>
+</article>

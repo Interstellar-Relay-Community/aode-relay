@@ -16,7 +16,7 @@ mod routes;
 use self::{
     args::Args,
     config::Config,
-    data::{ActorCache, State},
+    data::{ActorCache, Media, State},
     db::Db,
     jobs::{create_server, create_workers},
     middleware::RelayResolver,
@@ -62,6 +62,7 @@ async fn main() -> Result<(), anyhow::Error> {
         return Ok(());
     }
 
+    let media = Media::new();
     let state = State::hydrate(config.clone(), &db).await?;
     let actors = ActorCache::new(db.clone());
     let job_server = create_server(db.clone());
@@ -84,9 +85,11 @@ async fn main() -> Result<(), anyhow::Error> {
             let state = state.clone();
             let actors = actors.clone();
             let job_server = job_server.clone();
+            let media = media.clone();
+            let config = config.clone();
 
             Arbiter::new().exec_fn(move || {
-                create_workers(state, actors, job_server);
+                create_workers(state, actors, job_server, media, config);
             });
         }
         actix_rt::signal::ctrl_c().await?;
@@ -98,7 +101,13 @@ async fn main() -> Result<(), anyhow::Error> {
     let bind_address = config.bind_address();
     HttpServer::new(move || {
         if !no_jobs {
-            create_workers(state.clone(), actors.clone(), job_server.clone());
+            create_workers(
+                state.clone(),
+                actors.clone(),
+                job_server.clone(),
+                media.clone(),
+                config.clone(),
+            );
         }
 
         App::new()
@@ -109,7 +118,9 @@ async fn main() -> Result<(), anyhow::Error> {
             .data(actors.clone())
             .data(config.clone())
             .data(job_server.clone())
+            .data(media.clone())
             .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())

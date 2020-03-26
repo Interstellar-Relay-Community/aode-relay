@@ -1,6 +1,7 @@
 mod actor;
 mod inbox;
 mod index;
+mod media;
 mod nodeinfo;
 mod statics;
 
@@ -8,6 +9,7 @@ pub use self::{
     actor::route as actor,
     inbox::route as inbox,
     index::route as index,
+    media::route as media,
     nodeinfo::{route as nodeinfo, well_known as nodeinfo_meta},
     statics::route as statics,
 };
