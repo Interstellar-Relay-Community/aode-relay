@@ -1,5 +1,6 @@
 body {
-    background-color: #f5f5f5;
+    background-color: #333;
+    color: #f5f5f5;
     font-family: sans-serif;
     margin: 0;
     position: relative;
@@ -19,8 +20,6 @@ body * {
 }
 
 header {
-    background-color: #333;
-    color: #f5f5f5;
 
     .header-text {
         max-width: 700px;
@@ -45,6 +44,7 @@ header {
 
 section {
     background-color: #fff;
+    color: #333;
     border: 1px solid #e5e5e5;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
     border-radius: 3px;
@@ -64,10 +64,11 @@ section {
 
     .info {
         border-bottom: 1px solid #e5e5e5;
+        padding-bottom: 36px;
     }
 
     li {
-        padding-top: 24px;
+        padding-top: 36px;
     }
 
     .padded {
@@ -76,6 +77,15 @@ section {
 
     .joining {
         padding: 24px;
+    }
+
+    a {
+        &,
+        &:focus,
+        &:hover,
+        &:active {
+            color: #c92a60;
+        }
     }
 }
 
@@ -105,7 +115,7 @@ a {
     &:focus,
     &:hover,
     &:active {
-        color: #ea7fbc;
+        color: #f9a6c2;
     }
 }
 
@@ -135,7 +145,8 @@ footer {
         background-color: #f5f5f5;
         border-top: 1px solid #e5e5e5;
         border-bottom: 1px solid #e5e5e5;
-        padding: 32px;
+        padding: 24px;
+        padding-bottom: 36px;
 
         .instance-description {
             margin: 0;
@@ -192,5 +203,6 @@ footer {
     section {
         border-left: none;
         border-right: none;
+        border-radius: 0;
     }
 }
