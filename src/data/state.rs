@@ -88,16 +88,16 @@ impl State {
             return true;
         }
 
-        if let Some(host) = actor_id.as_url().host() {
-            self.whitelists.read().await.contains(&host.to_string());
+        if let Some(domain) = actor_id.as_url().domain() {
+            return self.whitelists.read().await.contains(domain);
         }
 
         false
     }
 
     pub async fn is_blocked(&self, actor_id: &XsdAnyUri) -> bool {
-        if let Some(host) = actor_id.as_url().host() {
-            self.blocks.read().await.contains(&host.to_string());
+        if let Some(domain) = actor_id.as_url().domain() {
+            return self.blocks.read().await.contains(domain);
         }
 
         true
