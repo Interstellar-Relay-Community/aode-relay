@@ -18,15 +18,20 @@
             Registration is closed
         }
     </p>
-    <div class="instance-info">
-        <h5 class="instance-description">Description:</h5>
-        <div class="description">
-            <div class="please-stay">
-                @Html(&instance.description)
-            </div>
+    @if !instance.description.trim().is_empty() || contact.is_some() {
+        <div class="instance-info">
+            @if !instance.description.trim().is_empty() {
+                <h5 class="instance-description">@instance.title's description:</h5>
+                <div class="description">
+                    <div class="please-stay">
+                        @Html(instance.description.trim())
+                    </div>
+                </div>
+            }
+            @if let Some(contact) = contact {
+                <h5 class="instance-admin">@instance.title's admin:</h5>
+                @:admin(contact, base)
+            }
         </div>
-        @if let Some(contact) = contact {
-            @:admin(contact)
-        }
-    </div>
+    }
 </article>

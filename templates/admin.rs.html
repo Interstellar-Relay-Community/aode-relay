@@ -1,6 +1,7 @@
 @use crate::data::Contact;
+@use activitystreams::primitives::XsdAnyUri;
 
-@(contact: &Contact)
+@(contact: &Contact, base: &XsdAnyUri)
 
 <div class="admin">
     <div class="left">
@@ -10,6 +11,10 @@
     </div>
     <div class="right">
         <p class="display-name"><a href="@contact.url">@contact.display_name</a></p>
-        <p class="username">@@@contact.username</p>
+        @if let Some(domain) = base.as_url().domain() {
+            <p class="username">@@@contact.username@@@domain</p>
+        } else {
+            <p class="username">@@@contact.username</p>
+        }
     </div>
 </div>
