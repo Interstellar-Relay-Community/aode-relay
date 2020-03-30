@@ -1,9 +1,8 @@
 use crate::jobs::JobState;
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
-use background_jobs::{Job, Processor};
+use background_jobs::{ActixJob, Processor};
 use std::{future::Future, pin::Pin};
-use tokio::sync::oneshot;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryNodeinfo {
@@ -56,19 +55,13 @@ impl QueryNodeinfo {
 #[derive(Clone, Debug)]
 pub struct NodeinfoProcessor;
 
-impl Job for QueryNodeinfo {
+impl ActixJob for QueryNodeinfo {
     type State = JobState;
     type Processor = NodeinfoProcessor;
-    type Future = Pin<Box<dyn Future<Output = Result<(), Error>> + Send>>;
+    type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
 
     fn run(self, state: Self::State) -> Self::Future {
-        let (tx, rx) = oneshot::channel();
-
-        actix::spawn(async move {
-            let _ = tx.send(self.perform(state).await);
-        });
-
-        Box::pin(async move { rx.await? })
+        Box::pin(self.perform(state))
     }
 }
 

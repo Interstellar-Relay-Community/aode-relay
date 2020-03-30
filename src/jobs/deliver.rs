@@ -1,9 +1,8 @@
 use crate::{error::MyError, jobs::JobState};
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
-use background_jobs::{Backoff, Job, Processor};
+use background_jobs::{ActixJob, Backoff, Processor};
 use std::{future::Future, pin::Pin};
-use tokio::sync::oneshot;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Deliver {
@@ -21,30 +20,22 @@ impl Deliver {
             data: serde_json::to_value(data)?,
         })
     }
-
-    async fn perform(self, state: JobState) -> Result<(), Error> {
-        state.requests.deliver(self.to, &self.data).await?;
-
-        Ok(())
-    }
 }
 
 #[derive(Clone, Debug)]
 pub struct DeliverProcessor;
 
-impl Job for Deliver {
+impl ActixJob for Deliver {
     type State = JobState;
     type Processor = DeliverProcessor;
-    type Future = Pin<Box<dyn Future<Output = Result<(), Error>> + Send>>;
+    type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
 
     fn run(self, state: Self::State) -> Self::Future {
-        let (tx, rx) = oneshot::channel();
+        Box::pin(async move {
+            state.requests.deliver(self.to, &self.data).await?;
 
-        actix::spawn(async move {
-            let _ = tx.send(self.perform(state).await);
-        });
-
-        Box::pin(async move { rx.await? })
+            Ok(())
+        })
     }
 }
 

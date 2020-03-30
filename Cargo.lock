@@ -470,7 +470,7 @@ dependencies = [
 [[package]]
 name = "background-jobs"
 version = "0.8.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#799391811c795f0918e0df2b1a1b5fc44f55f89f"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#ca1c07366692c44fce6ae351a4a6762089660a20"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -479,7 +479,7 @@ dependencies = [
 [[package]]
 name = "background-jobs-actix"
 version = "0.7.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#799391811c795f0918e0df2b1a1b5fc44f55f89f"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#ca1c07366692c44fce6ae351a4a6762089660a20"
 dependencies = [
  "actix",
  "actix-rt",
@@ -500,8 +500,9 @@ dependencies = [
 [[package]]
 name = "background-jobs-core"
 version = "0.7.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#799391811c795f0918e0df2b1a1b5fc44f55f89f"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#ca1c07366692c44fce6ae351a4a6762089660a20"
 dependencies = [
+ "actix",
  "anyhow",
  "async-trait",
  "chrono",
@@ -510,6 +511,7 @@ dependencies = [
  "serde 1.0.105",
  "serde_json",
  "thiserror",
+ "tokio",
  "uuid",
 ]
 
@@ -662,9 +664,9 @@ checksum = "130aac562c0dd69c56b3b1cc8ffd2e17be31d0b6c25b61c96b76231aa23e39e1"
 
 [[package]]
 name = "bytestring"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc267467f58ef6cc8874064c62a0423eb0d099362c8a23edd1c6d044f46eead4"
+checksum = "fc7c05fa5172da78a62d9949d662d2ac89d4cc7355d7b49adee5163f1fb3f363"
 dependencies = [
  "bytes",
 ]
