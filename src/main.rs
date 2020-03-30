@@ -93,9 +93,10 @@ async fn main() -> Result<(), anyhow::Error> {
             let job_server = job_server.clone();
             let media = media.clone();
             let config = config.clone();
+            let db = db.clone();
 
             Arbiter::new().exec_fn(move || {
-                create_workers(state, actors, job_server, media, config);
+                create_workers(db, state, actors, job_server, media, config);
             });
         }
         actix_rt::signal::ctrl_c().await?;
@@ -108,6 +109,7 @@ async fn main() -> Result<(), anyhow::Error> {
     HttpServer::new(move || {
         if !no_jobs {
             create_workers(
+                db.clone(),
                 state.clone(),
                 actors.clone(),
                 job_server.clone(),

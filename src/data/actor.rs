@@ -293,7 +293,7 @@ impl ActorCache {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Actor {
     pub id: XsdAnyUri,
     pub public_key: String,

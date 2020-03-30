@@ -1,9 +1,11 @@
+pub mod apub;
 mod deliver;
 mod deliver_many;
 mod instance;
 mod nodeinfo;
 mod process_listeners;
 mod storage;
+
 pub use self::{
     deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance, nodeinfo::QueryNodeinfo,
 };
@@ -35,6 +37,7 @@ pub fn create_server(db: Db) -> JobServer {
 }
 
 pub fn create_workers(
+    db: Db,
     state: State,
     actors: ActorCache,
     job_server: JobServer,
@@ -45,6 +48,7 @@ pub fn create_workers(
 
     WorkerConfig::new(move || {
         JobState::new(
+            db.clone(),
             state.clone(),
             actors.clone(),
             job_server.clone(),
@@ -57,12 +61,18 @@ pub fn create_workers(
     .register(NodeinfoProcessor)
     .register(InstanceProcessor)
     .register(ListenersProcessor)
+    .register(apub::AnnounceProcessor)
+    .register(apub::FollowProcessor)
+    .register(apub::ForwardProcessor)
+    .register(apub::RejectProcessor)
+    .register(apub::UndoProcessor)
     .set_processor_count("default", 4)
     .start(remote_handle);
 }
 
 #[derive(Clone)]
 pub struct JobState {
+    db: Db,
     requests: Requests,
     state: State,
     actors: ActorCache,
@@ -79,6 +89,7 @@ pub struct JobServer {
 
 impl JobState {
     fn new(
+        db: Db,
         state: State,
         actors: ActorCache,
         job_server: JobServer,
@@ -88,6 +99,7 @@ impl JobState {
         JobState {
             requests: state.requests(),
             node_cache: state.node_cache(),
+            db,
             actors,
             config,
             media,
