@@ -31,14 +31,19 @@ impl Requests {
     where
         T: serde::de::DeserializeOwned,
     {
+        let signer = self.signer();
+
         let mut res = self
             .client
             .get(url)
             .header("Accept", "application/activity+json")
             .header("User-Agent", self.user_agent.as_str())
-            .signature(&self.config, &self.key_id, |signing_string| {
-                self.sign(signing_string)
-            })?
+            .signature(
+                self.config.clone(),
+                self.key_id.clone(),
+                move |signing_string| signer.sign(signing_string),
+            )
+            .await?
             .send()
             .await
             .map_err(|e| {
@@ -50,7 +55,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        error!("Response, {}", s);
+                        error!("Response from {}, {}", url, s);
                     }
                 }
             }
@@ -66,14 +71,19 @@ impl Requests {
 
     pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
         info!("Fetching bytes for {}", url);
+        let signer = self.signer();
+
         let mut res = self
             .client
             .get(url)
             .header("Accept", "application/activity+json")
             .header("User-Agent", self.user_agent.as_str())
-            .signature(&self.config, &self.key_id, |signing_string| {
-                self.sign(signing_string)
-            })?
+            .signature(
+                self.config.clone(),
+                self.key_id.clone(),
+                move |signing_string| signer.sign(signing_string),
+            )
+            .await?
             .send()
             .await
             .map_err(|e| {
@@ -95,7 +105,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        error!("Response, {}", s);
+                        error!("Response from {}, {}", url, s);
                     }
                 }
             }
@@ -118,8 +128,7 @@ impl Requests {
     where
         T: serde::ser::Serialize,
     {
-        let mut digest = Sha256::new();
-
+        let signer = self.signer();
         let item_string = serde_json::to_string(item)?;
 
         let mut res = self
@@ -129,12 +138,13 @@ impl Requests {
             .header("Content-Type", "application/activity+json")
             .header("User-Agent", self.user_agent.as_str())
             .signature_with_digest(
-                &self.config,
-                &self.key_id,
-                &mut digest,
+                self.config.clone(),
+                self.key_id.clone(),
+                Sha256::new(),
                 item_string,
-                |signing_string| self.sign(signing_string),
-            )?
+                move |signing_string| signer.sign(signing_string),
+            )
+            .await?
             .send()
             .await
             .map_err(|e| {
@@ -146,7 +156,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        error!("Response, {}", s);
+                        error!("Response from {}, {}", inbox.as_str(), s);
                     }
                 }
             }
@@ -156,6 +166,18 @@ impl Requests {
         Ok(())
     }
 
+    fn signer(&self) -> Signer {
+        Signer {
+            private_key: self.private_key.clone(),
+        }
+    }
+}
+
+struct Signer {
+    private_key: RSAPrivateKey,
+}
+
+impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, MyError> {
         let hashed = Sha256::digest(signing_string.as_bytes());
         let bytes =

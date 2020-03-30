@@ -1,5 +1,6 @@
 use crate::{data::ActorCache, error::MyError, requests::Requests};
 use activitystreams::primitives::XsdAnyUri;
+use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::{error, warn};
 use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
@@ -33,15 +34,20 @@ impl MyVerify {
             }
         };
 
-        let decoded = base64::decode(signature)?;
-        let hashed = Sha256::digest(signing_string.as_bytes());
+        web::block(move || {
+            let decoded = base64::decode(signature)?;
+            let hashed = Sha256::digest(signing_string.as_bytes());
 
-        public_key.verify(
-            PaddingScheme::PKCS1v15,
-            Some(&Hashes::SHA2_256),
-            &hashed,
-            &decoded,
-        )?;
+            public_key.verify(
+                PaddingScheme::PKCS1v15,
+                Some(&Hashes::SHA2_256),
+                &hashed,
+                &decoded,
+            )?;
+
+            Ok(()) as Result<(), MyError>
+        })
+        .await?;
 
         Ok(true)
     }

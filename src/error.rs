@@ -28,7 +28,7 @@ pub enum MyError {
     #[error("Couldn't perform IO, {0}")]
     Io(#[from] Error),
 
-    #[error("Couldn't sign string")]
+    #[error("Couldn't sign string, {0}")]
     Rsa(rsa::errors::Error),
 
     #[error("Couldn't do the json thing")]
