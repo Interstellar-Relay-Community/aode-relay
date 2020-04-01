@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
 use uuid::Uuid;
 
-const REFETCH_DURATION: u64 = 60 * 2;
+const REFETCH_DURATION: Duration = Duration::from_secs(60 * 30);
 
 #[derive(Clone)]
 pub struct ActorCache {
@@ -38,11 +38,10 @@ impl ActorCache {
         }
 
         if let Some(actor) = self.lookup(id).await? {
-            self.cache.write().await.insert(
-                id.clone(),
-                actor.clone(),
-                Duration::from_secs(REFETCH_DURATION),
-            );
+            self.cache
+                .write()
+                .await
+                .insert(id.clone(), actor.clone(), REFETCH_DURATION);
             return Ok(actor);
         }
 
@@ -67,11 +66,10 @@ impl ActorCache {
             inbox,
         };
 
-        self.cache.write().await.insert(
-            id.clone(),
-            actor.clone(),
-            Duration::from_secs(REFETCH_DURATION),
-        );
+        self.cache
+            .write()
+            .await
+            .insert(id.clone(), actor.clone(), REFETCH_DURATION);
 
         self.update(id, &actor.public_key, &actor.public_key_id)
             .await?;
