@@ -1,5 +1,6 @@
 use crate::{db::Db, error::MyError};
 use background_jobs_core::{JobInfo, Stats};
+use bb8_postgres::tokio_postgres::types::Json;
 use log::debug;
 use uuid::Uuid;
 
@@ -24,17 +25,13 @@ impl background_jobs_core::Storage for Storage {
     }
 
     async fn save_job(&self, job: JobInfo) -> Result<(), MyError> {
-        let id = job.id();
-        let queue = job.queue().to_owned();
-        let timeout = job.timeout();
-        let updated = job.updated_at().naive_utc();
-        let status = job.status().to_string();
-        let next_queue = job.next_queue().map(|q| q.naive_utc());
-        let value = serde_json::to_value(job)?;
-
-        let conn = self.db.pool().get().await?;
-        debug!("Inserting job {} status {} for queue {}", id, status, queue);
-        conn.execute(
+        debug!(
+            "Inserting job {} status {} for queue {}",
+            job.id(),
+            job.status(),
+            job.queue()
+        );
+        self.db.pool().get().await?.execute(
             "INSERT INTO jobs
                 (job_id, job_queue, job_timeout, job_updated, job_status, job_next_run, job_value, created_at)
              VALUES
@@ -45,7 +42,7 @@ impl background_jobs_core::Storage for Storage {
                 job_status = $5::TEXT,
                 job_next_run = $6::TIMESTAMP,
                 job_value = $7::JSONB;",
-            &[&id, &queue, &timeout, &updated, &status, &next_queue, &value],
+            &[&job.id(), &job.queue(), &job.timeout(), &job.updated_at().naive_utc(), &job.status().to_string(), &job.next_queue().map(|q| q.naive_utc()), &Json(&job)],
         )
         .await?;
 
@@ -53,13 +50,16 @@ impl background_jobs_core::Storage for Storage {
     }
 
     async fn fetch_job(&self, id: Uuid) -> Result<Option<JobInfo>, MyError> {
-        let conn = self.db.pool().get().await?;
         debug!(
             "SELECT job_value FROM jobs WHERE job_id = $1::UUID LIMIT 1; [{}]",
             id
         );
-        let rows = conn
-            .query(
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
+            .query_opt(
                 "SELECT job_value
                  FROM jobs
                  WHERE job_id = $1::UUID
@@ -68,20 +68,23 @@ impl background_jobs_core::Storage for Storage {
             )
             .await?;
 
-        let row = if let Some(row) = rows.into_iter().next() {
+        let row = if let Some(row) = row_opt {
             row
         } else {
             return Ok(None);
         };
 
-        let value = row.try_get(0)?;
+        let value: Json<JobInfo> = row.try_get(0)?;
 
-        Ok(Some(serde_json::from_value(value)?))
+        Ok(Some(value.0))
     }
 
     async fn fetch_job_from_queue(&self, queue: &str) -> Result<Option<JobInfo>, MyError> {
-        let conn = self.db.pool().get().await?;
-        let row = conn
+        let row_opt = self
+            .db
+            .pool()
+            .get()
+            .await?
             .query_opt(
                 "UPDATE jobs
                  SET
@@ -117,15 +120,15 @@ impl background_jobs_core::Storage for Storage {
             )
             .await?;
 
-        let row = if let Some(row) = row {
+        let row = if let Some(row) = row_opt {
             row
         } else {
             return Ok(None);
         };
 
-        let value = row.try_get(0)?;
+        let value: Json<JobInfo> = row.try_get(0)?;
+        let job = value.0;
 
-        let job: JobInfo = serde_json::from_value(value)?;
         debug!("Found job {} in queue {}", job.id(), queue);
 
         Ok(Some(job))
@@ -142,9 +145,12 @@ impl background_jobs_core::Storage for Storage {
     }
 
     async fn delete_job(&self, id: Uuid) -> Result<(), MyError> {
-        let conn = self.db.pool().get().await?;
         debug!("Deleting job {}", id);
-        conn.execute("DELETE FROM jobs WHERE job_id = $1::UUID;", &[&id])
+        self.db
+            .pool()
+            .get()
+            .await?
+            .execute("DELETE FROM jobs WHERE job_id = $1::UUID;", &[&id])
             .await?;
 
         Ok(())
