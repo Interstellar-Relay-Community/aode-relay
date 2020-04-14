@@ -1,5 +1,8 @@
 use actix::Arbiter;
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_web::{
+    middleware::{Compress, Logger},
+    web, App, HttpServer,
+};
 
 mod apub;
 mod args;
@@ -116,6 +119,7 @@ async fn main() -> Result<(), anyhow::Error> {
         }
 
         App::new()
+            .wrap(Compress::default())
             .wrap(Logger::default())
             .data(db.clone())
             .data(state.clone())
