@@ -25,16 +25,17 @@ function print_help() {
 
 require "$VERSION" "version"
 
-if docker run --rm -it arm64v8/ubuntu:19.10 /bin/bash -c 'echo "docker is configured correctly"'; then
-    echo ""
-else
+if ! docker run --rm -it arm64v8/ubuntu:19.10 /bin/bash -c 'echo "docker is configured correctly"'; then
     echo "docker is not configured to run on qemu-emulated architectures, fixing will require sudo"
     sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 fi
 
+if ! which cross; then
+    cargo intall cross
+fi
+
 set -xe
 
-# from `cargo install cross`
 cross build \
     --target aarch64-unknown-linux-musl \
     --release
@@ -43,7 +44,6 @@ mkdir -p artifacts
 rm -rf artifacts/relay
 cp ./target/aarch64-unknown-linux-musl/release/relay artifacts/relay
 
-# from `sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes`
 docker build \
     --pull \
     --no-cache \
