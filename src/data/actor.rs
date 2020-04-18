@@ -47,8 +47,16 @@ impl ActorCache {
 
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
+        let input_host = id.as_url().host();
         let actor_host = accepted_actor.id.as_url().host();
         let inbox_host = accepted_actor.inbox().as_url().host();
+
+        if input_host != actor_host {
+            let input_host = input_host.map(|h| h.to_string()).unwrap_or(String::new());
+            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or(String::new());
+
+            return Err(MyError::HostMismatch(input_host, actor_host));
+        }
 
         if actor_host != inbox_host {
             let actor_host = actor_host.map(|h| h.to_string()).unwrap_or(String::new());
