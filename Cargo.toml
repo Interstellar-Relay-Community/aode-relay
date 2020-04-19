@@ -52,7 +52,7 @@ uuid = { version = "0.8", features = ["v4", "serde"] }
 [build-dependencies]
 anyhow = "1.0"
 dotenv = "0.15.0"
-ructe = { version = "0.9.2", features = ["sass", "mime03"] }
+ructe = { version = "0.10.0", features = ["sass", "mime03"] }
 
 [profile.dev.package.rsa]
 opt-level = 3
