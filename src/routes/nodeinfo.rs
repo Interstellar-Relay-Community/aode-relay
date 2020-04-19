@@ -26,7 +26,7 @@ pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::J
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {
-            name: config.software_name(),
+            name: config.software_name().to_lowercase(),
             version: config.software_version(),
         },
         protocols: vec![Protocol::ActivityPub],
