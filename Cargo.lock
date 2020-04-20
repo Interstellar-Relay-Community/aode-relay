@@ -2,9 +2,9 @@
 # It is not intended for manual editing.
 [[package]]
 name = "activitystreams"
-version = "0.5.0-alpha.17"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a3e57485166c50c32343d6233ca2482365a0162c2aa9c8286fca990fff541d8"
+checksum = "ae98a55a86fc3150f278b225644cd46b5359f4d75067eae6dc3a52b409c537fb"
 dependencies = [
  "activitystreams-derive",
  "chrono",
@@ -17,9 +17,9 @@ dependencies = [
 
 [[package]]
 name = "activitystreams-derive"
-version = "0.5.0-alpha.9"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af6ff5574624455ba6d9d258c9da9fb7ec2213a3a14ef4d4869643e52b771dfb"
+checksum = "20d0384ae423a1df266f216e351ce9b40e8d369467d9242c086121154b4327dd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -132,7 +132,7 @@ dependencies = [
  "serde_urlencoded",
  "sha-1",
  "slab",
- "time 0.2.9",
+ "time 0.2.10",
 ]
 
 [[package]]
@@ -302,7 +302,7 @@ dependencies = [
  "serde 1.0.106",
  "serde_json",
  "serde_urlencoded",
- "time 0.2.9",
+ "time 0.2.10",
  "url",
 ]
 
@@ -530,9 +530,9 @@ dependencies = [
 
 [[package]]
 name = "backtrace-sys"
-version = "0.1.35"
+version = "0.1.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7de8aba10a69c8e8d7622c5710229485ec32e9d55fdad160ea559c086fdcd118"
+checksum = "78848718ee1255a2485d1309ad9cdecfc2e7d0362dd11c6829364c6b35ae1bc7"
 dependencies = [
  "cc",
  "libc",
@@ -2312,9 +2312,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "standback"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96eca17d57aac1688897d4c5e519ed600fc6f28aeabc7b1abb188e945deb0732"
+checksum = "d747fd6d33f130039c9518cffa45a83d53986642ca4f872497df668e3f2b6b4d"
 
 [[package]]
 name = "static_assertions"
@@ -2561,9 +2561,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.2.9"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6329a7835505d46f5f3a9a2c237f8d6bf5ca6f0015decb3698ba57fcdbb609ba"
+checksum = "cacbd5ebf7b211db6d9500b8b033c20b6e333a68368a9e8d3a1d073bb1f0a12a"
 dependencies = [
  "cfg-if",
  "libc",
@@ -2586,13 +2586,14 @@ dependencies = [
 
 [[package]]
 name = "time-macros-impl"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e987cfe0537f575b5fc99909de6185f6c19c3ad8889e2275e686a873d0869ba1"
+checksum = "e5c3be1edfad6027c69f5491cf4cb310d1a71ecd6af742788c6ff8bced86b8fa"
 dependencies = [
  "proc-macro-hack",
  "proc-macro2",
  "quote",
+ "standback",
  "syn",
 ]
 
@@ -2949,9 +2950,9 @@ checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 
 [[package]]
 name = "winapi-util"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa515c5163a99cc82bab70fd3bfdd36d827be85de63737b40fcef2ce084a436e"
+checksum = "70ec6ce85bb158151cae5e5c87f95a8e97d2c0c4b001223f33a334e3ce5de178"
 dependencies = [
  "winapi 0.3.8",
 ]
