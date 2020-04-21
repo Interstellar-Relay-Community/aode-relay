@@ -2050,7 +2050,8 @@ dependencies = [
 [[package]]
 name = "rsa-magic-public-key"
 version = "0.1.0"
-source = "git+https://git.asonix.dog/Aardwolf/rsa-magic-public-key#82878d8274530c8184be8e82f0de36623b51d3f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfe89053790d2de7953814284a0d4b64edab2c9619103c6df7d133135fcfdafe"
 dependencies = [
  "base64 0.11.0",
  "num-bigint-dig",
