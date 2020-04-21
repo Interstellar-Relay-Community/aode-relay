@@ -171,7 +171,13 @@ impl State {
             }
         };
 
-        let (blocks, whitelists, listeners, private_key) = try_join!(f1, f2, f3, f4)?;
+        let (blocks, whitelists, listeners, mut private_key) = try_join!(f1, f2, f3, f4)?;
+
+        let private_key: RSAPrivateKey = web::block(move || {
+            private_key.precompute();
+            Ok(private_key) as Result<_, std::convert::Infallible>
+        })
+        .await?;
 
         let public_key = private_key.to_public_key();
         let listeners = Arc::new(RwLock::new(listeners));
