@@ -23,7 +23,7 @@ impl ActixJob for Listeners {
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
 
-    const NAME: &'static str = "ProcessListenersProcessor";
+    const NAME: &'static str = "relay::jobs::Listeners";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))

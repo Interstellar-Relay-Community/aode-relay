@@ -39,7 +39,7 @@ impl ActixJob for DeliverMany {
     type State = JobState;
     type Future = Ready<Result<(), Error>>;
 
-    const NAME: &'static str = "DeliverManyProcessor";
+    const NAME: &'static str = "relay::jobs::DeliverMany";
 
     fn run(self, state: Self::State) -> Self::Future {
         ready(self.perform(state))

@@ -60,7 +60,7 @@ impl ActixJob for Announce {
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
-    const NAME: &'static str = "AnnounceProcessor";
+    const NAME: &'static str = "relay::jobs::apub::Announce";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))

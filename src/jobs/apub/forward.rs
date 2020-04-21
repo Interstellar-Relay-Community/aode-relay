@@ -34,7 +34,7 @@ impl ActixJob for Forward {
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
-    const NAME: &'static str = "ForwardProcessor";
+    const NAME: &'static str = "relay::jobs::apub::Forward";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))

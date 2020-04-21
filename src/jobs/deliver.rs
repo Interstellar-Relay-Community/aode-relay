@@ -26,7 +26,7 @@ impl ActixJob for Deliver {
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
 
-    const NAME: &'static str = "DeliverProcessor";
+    const NAME: &'static str = "relay::jobs::Deliver";
     const BACKOFF: Backoff = Backoff::Exponential(8);
 
     fn run(self, state: Self::State) -> Self::Future {

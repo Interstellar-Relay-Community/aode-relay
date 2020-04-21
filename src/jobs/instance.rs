@@ -85,7 +85,7 @@ impl ActixJob for QueryInstance {
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
 
-    const NAME: &'static str = "InstanceProcessor";
+    const NAME: &'static str = "relay::jobs::QueryInstance";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))

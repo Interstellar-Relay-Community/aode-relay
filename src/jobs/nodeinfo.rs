@@ -56,7 +56,7 @@ impl ActixJob for QueryNodeinfo {
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
 
-    const NAME: &'static str = "NodeinfoProcessor";
+    const NAME: &'static str = "relay::jobs::QueryNodeinfo";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))
