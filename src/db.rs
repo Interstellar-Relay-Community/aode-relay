@@ -152,7 +152,11 @@ impl Db {
 
         if let Some(row) = rows.into_iter().next() {
             let key_str: String = row.get(0);
-            return Ok(Some(KeyExt::from_pem_pkcs8(&key_str)?));
+            // precomputation happens when constructing a private key, so it should be on the
+            // threadpool
+            let key = actix_web::web::block(move || KeyExt::from_pem_pkcs8(&key_str)).await?;
+
+            return Ok(Some(key));
         }
 
         Ok(None)
