@@ -50,7 +50,7 @@ pub fn create_workers(
         )
     })
     .register::<Deliver>()
-    .register::<Deliver>()
+    .register::<DeliverMany>()
     .register::<QueryNodeinfo>()
     .register::<QueryInstance>()
     .register::<Listeners>()
