@@ -140,7 +140,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(web::resource("/nodeinfo/2.0.json").route(web::get().to(nodeinfo)))
             .service(
                 web::scope("/.well-known")
-                    .service(actix_webfinger::scoped::<_, RelayResolver>())
+                    .service(actix_webfinger::scoped::<RelayResolver>())
                     .service(web::resource("/nodeinfo").route(web::get().to(nodeinfo_meta))),
             )
             .service(web::resource("/static/{filename}").route(web::get().to(statics)))

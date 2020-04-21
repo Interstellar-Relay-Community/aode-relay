@@ -319,9 +319,9 @@ dependencies = [
 
 [[package]]
 name = "actix-webfinger"
-version = "0.3.0-alpha.3"
+version = "0.3.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "120ce509b4ad2a0dedfbaebc1c1fb2b5e7bb34430a851c3eb264a704135e30a7"
+checksum = "818ce271e9226dc9b8885c4f397fb0e6d9e8888c95cc8bf98fa20941b8b26d89"
 dependencies = [
  "actix-http",
  "actix-web",
