@@ -86,11 +86,11 @@ pub enum MyError {
     #[error("Object has already been relayed")]
     Duplicate,
 
-    #[error("Couldn't send request")]
-    SendRequest,
+    #[error("Couldn't send request to {0}, {1}")]
+    SendRequest(String, String),
 
-    #[error("Couldn't receive request response")]
-    ReceiveResponse,
+    #[error("Couldn't receive request response from {0}, {1}")]
+    ReceiveResponse(String, String),
 
     #[error("Response has invalid status code, {0}")]
     Status(StatusCode),

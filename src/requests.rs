@@ -3,7 +3,7 @@ use activitystreams::primitives::XsdAnyUri;
 use actix_web::client::Client;
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
-use log::{error, info};
+use log::{debug, info};
 use rsa::{hash::Hashes, padding::PaddingScheme, RSAPrivateKey};
 use sha2::{Digest, Sha256};
 
@@ -43,16 +43,13 @@ impl Requests {
             .await?
             .send()
             .await
-            .map_err(|e| {
-                error!("Couldn't send request to {}, {}", url, e);
-                MyError::SendRequest
-            })?;
+            .map_err(|e| MyError::SendRequest(url.to_string(), e.to_string()))?;
 
         if !res.status().is_success() {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        error!("Response from {}, {}", url, s);
+                        debug!("Response from {}, {}", url, s);
                     }
                 }
             }
@@ -60,10 +57,9 @@ impl Requests {
             return Err(MyError::Status(res.status()));
         }
 
-        res.json().await.map_err(|e| {
-            error!("Coudn't fetch json from {}, {}", url, e);
-            MyError::ReceiveResponse
-        })
+        res.json()
+            .await
+            .map_err(|e| MyError::ReceiveResponse(url.to_string(), e.to_string()))
     }
 
     pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
@@ -82,10 +78,7 @@ impl Requests {
             .await?
             .send()
             .await
-            .map_err(|e| {
-                error!("Couldn't send request to {}, {}", url, e);
-                MyError::SendRequest
-            })?;
+            .map_err(|e| MyError::SendRequest(url.to_string(), e.to_string()))?;
 
         let content_type = if let Some(content_type) = res.headers().get("content-type") {
             if let Ok(s) = content_type.to_str() {
@@ -101,7 +94,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        error!("Response from {}, {}", url, s);
+                        debug!("Response from {}, {}", url, s);
                     }
                 }
             }
@@ -111,8 +104,7 @@ impl Requests {
 
         let bytes = match res.body().limit(1024 * 1024 * 4).await {
             Err(e) => {
-                error!("Coudn't fetch json from {}, {}", url, e);
-                return Err(MyError::ReceiveResponse);
+                return Err(MyError::ReceiveResponse(url.to_string(), e.to_string()));
             }
             Ok(bytes) => bytes,
         };
@@ -142,16 +134,13 @@ impl Requests {
             .await?
             .send()
             .await
-            .map_err(|e| {
-                error!("Couldn't send deliver request to {}, {}", inbox, e);
-                MyError::SendRequest
-            })?;
+            .map_err(|e| MyError::SendRequest(inbox.to_string(), e.to_string()))?;
 
         if !res.status().is_success() {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        error!("Response from {}, {}", inbox.as_str(), s);
+                        debug!("Response from {}, {}", inbox.as_str(), s);
                     }
                 }
             }
