@@ -1193,7 +1193,8 @@ dependencies = [
 [[package]]
 name = "http-signature-normalization"
 version = "0.4.1"
-source = "git+https://git.asonix.dog/Aardwolf/http-signature-normalization#40a3c283d75aa486f0cdd907532025dcc8e96b2a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "257835255b5d40c6de712d90e56dc874ca5da2816121e7b9f3cfc7b3a55a5714"
 dependencies = [
  "chrono",
  "thiserror",
@@ -1201,12 +1202,13 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.3.0-alpha.8"
-source = "git+https://git.asonix.dog/Aardwolf/http-signature-normalization#40a3c283d75aa486f0cdd907532025dcc8e96b2a"
+version = "0.3.0-alpha.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "195de65fba66cf11426765b07fde96553f02c9a982f760d9e736330cc2e7f07f"
 dependencies = [
  "actix-http",
  "actix-web",
- "base64 0.11.0",
+ "base64 0.12.0",
  "bytes",
  "chrono",
  "futures",
