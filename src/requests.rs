@@ -13,17 +13,15 @@ pub struct Requests {
     key_id: String,
     private_key: RSAPrivateKey,
     config: Config,
-    user_agent: String,
 }
 
 impl Requests {
     pub fn new(key_id: String, private_key: RSAPrivateKey, user_agent: String) -> Self {
         Requests {
-            client: Client::default(),
+            client: Client::build().header("User-Agent", user_agent).finish(),
             key_id,
             private_key,
             config: Config::default().dont_use_created_field(),
-            user_agent,
         }
     }
 
@@ -37,7 +35,6 @@ impl Requests {
             .client
             .get(url)
             .header("Accept", "application/activity+json")
-            .header("User-Agent", self.user_agent.as_str())
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -76,8 +73,7 @@ impl Requests {
         let mut res = self
             .client
             .get(url)
-            .header("Accept", "application/activity+json")
-            .header("User-Agent", self.user_agent.as_str())
+            .header("Accept", "*/*")
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -136,7 +132,6 @@ impl Requests {
             .post(inbox.as_str())
             .header("Accept", "application/activity+json")
             .header("Content-Type", "application/activity+json")
-            .header("User-Agent", self.user_agent.as_str())
             .signature_with_digest(
                 self.config.clone(),
                 self.key_id.clone(),
