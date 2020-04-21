@@ -4,6 +4,7 @@ use actix_web::{
     http::StatusCode,
     HttpResponse,
 };
+use deadpool::managed::{PoolError, TimeoutType};
 use log::error;
 use rsa_pem::KeyError;
 use std::{convert::Infallible, fmt::Debug, io::Error};
@@ -17,7 +18,7 @@ pub enum MyError {
     Config(#[from] config::ConfigError),
 
     #[error("Error in db, {0}")]
-    DbError(#[from] bb8_postgres::tokio_postgres::error::Error),
+    DbError(#[from] tokio_postgres::error::Error),
 
     #[error("Couldn't parse key, {0}")]
     Key(#[from] KeyError),
@@ -76,8 +77,8 @@ pub enum MyError {
     #[error("Couldn't flush buffer")]
     FlushBuffer,
 
-    #[error("Timed out while waiting on db pool")]
-    DbTimeout,
+    #[error("Timed out while waiting on db pool, {0:?}")]
+    DbTimeout(TimeoutType),
 
     #[error("Invalid algorithm provided to verifier")]
     Algorithm,
@@ -136,14 +137,14 @@ where
     }
 }
 
-impl<T> From<bb8_postgres::bb8::RunError<T>> for MyError
+impl<T> From<PoolError<T>> for MyError
 where
     T: Into<MyError>,
 {
-    fn from(e: bb8_postgres::bb8::RunError<T>) -> Self {
+    fn from(e: PoolError<T>) -> Self {
         match e {
-            bb8_postgres::bb8::RunError::User(e) => e.into(),
-            bb8_postgres::bb8::RunError::TimedOut => MyError::DbTimeout,
+            PoolError::Backend(e) => e.into(),
+            PoolError::Timeout(t) => MyError::DbTimeout(t),
         }
     }
 }

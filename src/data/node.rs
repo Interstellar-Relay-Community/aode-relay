@@ -1,6 +1,5 @@
 use crate::{db::Db, error::MyError};
 use activitystreams::primitives::XsdAnyUri;
-use bb8_postgres::tokio_postgres::types::Json;
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},
@@ -8,6 +7,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 use tokio::sync::RwLock;
+use tokio_postgres::types::Json;
 use uuid::Uuid;
 
 pub type ListenersCache = Arc<RwLock<HashSet<XsdAnyUri>>>;

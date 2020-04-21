@@ -470,8 +470,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs"
-version = "0.8.0-alpha.1"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#f8fa1bb5ef71724053c8fe68b75d900a51cb4f45"
+version = "0.8.0-alpha.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb38c4a5de33324650e9023829b0f4129eb5418b29f5dfe69a52100ff5bc50d7"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -479,8 +480,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.8.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#f8fa1bb5ef71724053c8fe68b75d900a51cb4f45"
+version = "0.8.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bb7f892dcd3ee34aab169d60587232d47aa054e4401c3067a64a6871eda806a"
 dependencies = [
  "actix",
  "actix-rt",
@@ -501,7 +503,8 @@ dependencies = [
 [[package]]
 name = "background-jobs-core"
 version = "0.8.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#f8fa1bb5ef71724053c8fe68b75d900a51cb4f45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c3447d183c7f1c6e2f9c564860712fb5b11ffa9be12caa28791674b865c85fb"
 dependencies = [
  "actix",
  "anyhow",
@@ -555,30 +558,6 @@ name = "base64"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d5ca2cd0adc3f48f9e9ea5a6bbdf9ccc0bfade884847e484d452414c7ccffb3"
-
-[[package]]
-name = "bb8"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7744a35a99f0ae3a6f5681f5af800e9074c658b1d0d314e9f0c3166455a1c3f6"
-dependencies = [
- "async-trait",
- "futures",
- "tokio",
-]
-
-[[package]]
-name = "bb8-postgres"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39a233af6ea3952e20d01863c87b4f6689b2f806249688b0908b5f02d4fa41ac"
-dependencies = [
- "async-trait",
- "bb8",
- "futures",
- "tokio",
- "tokio-postgres",
-]
 
 [[package]]
 name = "bit-vec"
@@ -782,6 +761,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam-queue"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c695eeca1e7173472a32221542ae469b3e9aac3a4fc81f7696bcad82029493db"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-utils"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -800,6 +789,36 @@ checksum = "4434400df11d95d556bac068ddfedd482915eb18fe8bea89bc80b6e4b1c179e5"
 dependencies = [
  "generic-array",
  "subtle 1.0.0",
+]
+
+[[package]]
+name = "deadpool"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38ce52b0b1ad88ed0b2be2bc3c65ad39dd1a5d9633b1a8a314fc017fbe0027d2"
+dependencies = [
+ "async-trait",
+ "config",
+ "crossbeam-queue",
+ "num_cpus",
+ "serde 1.0.106",
+ "tokio",
+]
+
+[[package]]
+name = "deadpool-postgres"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45575d9acf1535dddcfc5841fd8f1776287bdc328f8d9e76531f4dfd2eb9788f"
+dependencies = [
+ "async-trait",
+ "config",
+ "deadpool",
+ "futures",
+ "log",
+ "serde 1.0.106",
+ "tokio",
+ "tokio-postgres",
 ]
 
 [[package]]
@@ -1953,11 +1972,11 @@ dependencies = [
  "anyhow",
  "async-trait",
  "background-jobs",
- "background-jobs-core",
  "base64 0.12.0",
- "bb8-postgres",
  "bytes",
  "config",
+ "deadpool",
+ "deadpool-postgres",
  "dotenv",
  "env_logger",
  "futures",
@@ -1978,6 +1997,7 @@ dependencies = [
  "structopt",
  "thiserror",
  "tokio",
+ "tokio-postgres",
  "ttl_cache",
  "uuid",
 ]

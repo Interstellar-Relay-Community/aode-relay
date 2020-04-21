@@ -1,7 +1,7 @@
 use crate::{db::Db, error::MyError};
-use background_jobs_core::{JobInfo, Stats};
-use bb8_postgres::tokio_postgres::types::Json;
+use background_jobs::{dev::JobInfo, Stats};
 use log::debug;
+use tokio_postgres::types::Json;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -16,7 +16,7 @@ impl Storage {
 }
 
 #[async_trait::async_trait]
-impl background_jobs_core::Storage for Storage {
+impl background_jobs::dev::Storage for Storage {
     type Error = MyError;
 
     async fn generate_id(&self) -> Result<Uuid, MyError> {

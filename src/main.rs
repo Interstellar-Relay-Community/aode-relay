@@ -47,7 +47,7 @@ async fn main() -> Result<(), anyhow::Error> {
         env_logger::init();
     }
 
-    let db = Db::build(&config).await?;
+    let db = Db::build(&config)?;
 
     let args = Args::new();
 

@@ -5,10 +5,10 @@ use crate::{
 };
 use activitystreams::primitives::XsdAnyUri;
 use actix::clock::{delay_for, Duration};
-use bb8_postgres::tokio_postgres::{tls::NoTls, AsyncMessage, Config};
 use futures::stream::{poll_fn, StreamExt};
 use log::{debug, error, warn};
 use std::{collections::HashMap, sync::Arc};
+use tokio_postgres::{tls::NoTls, AsyncMessage, Config};
 use uuid::Uuid;
 
 pub trait Listener {
