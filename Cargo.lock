@@ -397,9 +397,9 @@ checksum = "d9a60d744a80c30fcb657dfe2c1b22bcb3e814c1a1e3674f32bf5820b570fbff"
 
 [[package]]
 name = "arc-swap"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d663a8e9a99154b5fb793032533f6328da35e23aac63d5c152279aa8ba356825"
+checksum = "b585a98a234c46fc563103e9278c9391fde1f4e6850334da895d27edb9580f62"
 
 [[package]]
 name = "arrayvec"
@@ -502,9 +502,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-core"
-version = "0.8.0-alpha.0"
+version = "0.8.0-alpha.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c3447d183c7f1c6e2f9c564860712fb5b11ffa9be12caa28791674b865c85fb"
+checksum = "fa1b993ad1d58fd073cf19fac0d7bcc9772881e0568c59f011cd2aa513f587ab"
 dependencies = [
  "actix",
  "anyhow",
@@ -2091,9 +2091,9 @@ dependencies = [
 
 [[package]]
 name = "ructe"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "212bf0697dc28a92adb00997970133e4210f992d477486aea295b491321fda48"
+checksum = "90bfdbe059afc8a41171d0c9f362c2bd67e03131f2d71939feef0a26b0a765b0"
 dependencies = [
  "base64 0.12.0",
  "bytecount",
