@@ -5,7 +5,7 @@ use crate::{
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
 use activitystreams::primitives::XsdAnyUri;
-use background_jobs::{ActixJob, Processor};
+use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -13,9 +13,6 @@ pub struct Undo {
     input: AcceptedObjects,
     actor: Actor,
 }
-
-#[derive(Clone, Debug)]
-pub struct UndoProcessor;
 
 impl Undo {
     pub fn new(input: AcceptedObjects, actor: Actor) -> Self {
@@ -42,18 +39,12 @@ impl Undo {
 }
 
 impl ActixJob for Undo {
-    type Processor = UndoProcessor;
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+
+    const NAME: &'static str = "UndoProcessor";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))
     }
-}
-
-impl Processor for UndoProcessor {
-    type Job = Undo;
-
-    const NAME: &'static str = "UndoProcessor";
-    const QUEUE: &'static str = "default";
 }

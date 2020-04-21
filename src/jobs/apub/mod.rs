@@ -14,13 +14,7 @@ mod forward;
 mod reject;
 mod undo;
 
-pub use self::{
-    announce::{Announce, AnnounceProcessor},
-    follow::{Follow, FollowProcessor},
-    forward::{Forward, ForwardProcessor},
-    reject::{Reject, RejectProcessor},
-    undo::{Undo, UndoProcessor},
-};
+pub use self::{announce::Announce, follow::Follow, forward::Forward, reject::Reject, undo::Undo};
 
 async fn get_inboxes(
     state: &State,

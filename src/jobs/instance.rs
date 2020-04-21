@@ -1,7 +1,7 @@
 use crate::{config::UrlKind, jobs::JobState};
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
-use background_jobs::{ActixJob, Processor};
+use background_jobs::ActixJob;
 use futures::join;
 use std::{future::Future, pin::Pin};
 
@@ -81,24 +81,15 @@ impl QueryInstance {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct InstanceProcessor;
-
 impl ActixJob for QueryInstance {
     type State = JobState;
-    type Processor = InstanceProcessor;
     type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
+
+    const NAME: &'static str = "InstanceProcessor";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))
     }
-}
-
-impl Processor for InstanceProcessor {
-    type Job = QueryInstance;
-
-    const NAME: &'static str = "InstanceProcessor";
-    const QUEUE: &'static str = "default";
 }
 
 #[derive(serde::Deserialize)]

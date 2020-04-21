@@ -1,7 +1,7 @@
 use crate::{error::MyError, jobs::JobState};
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
-use background_jobs::{ActixJob, Backoff, Processor};
+use background_jobs::{ActixJob, Backoff};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -22,13 +22,12 @@ impl Deliver {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct DeliverProcessor;
-
 impl ActixJob for Deliver {
     type State = JobState;
-    type Processor = DeliverProcessor;
     type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
+
+    const NAME: &'static str = "DeliverProcessor";
+    const BACKOFF: Backoff = Backoff::Exponential(8);
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move {
@@ -37,12 +36,4 @@ impl ActixJob for Deliver {
             Ok(())
         })
     }
-}
-
-impl Processor for DeliverProcessor {
-    type Job = Deliver;
-
-    const NAME: &'static str = "DeliverProcessor";
-    const QUEUE: &'static str = "default";
-    const BACKOFF_STRATEGY: Backoff = Backoff::Exponential(8);
 }

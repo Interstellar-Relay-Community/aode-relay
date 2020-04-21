@@ -3,7 +3,7 @@ use crate::{
     data::Actor,
     jobs::{apub::get_inboxes, DeliverMany, JobState},
 };
-use background_jobs::{ActixJob, Processor};
+use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -11,9 +11,6 @@ pub struct Forward {
     input: AcceptedObjects,
     actor: Actor,
 }
-
-#[derive(Clone, Debug)]
-pub struct ForwardProcessor;
 
 impl Forward {
     pub fn new(input: AcceptedObjects, actor: Actor) -> Self {
@@ -34,18 +31,12 @@ impl Forward {
 }
 
 impl ActixJob for Forward {
-    type Processor = ForwardProcessor;
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+
+    const NAME: &'static str = "ForwardProcessor";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))
     }
-}
-
-impl Processor for ForwardProcessor {
-    type Job = Forward;
-
-    const NAME: &'static str = "ForwardProcessor";
-    const QUEUE: &'static str = "default";
 }

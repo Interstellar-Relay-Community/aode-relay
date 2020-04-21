@@ -470,8 +470,8 @@ dependencies = [
 
 [[package]]
 name = "background-jobs"
-version = "0.8.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#ca1c07366692c44fce6ae351a4a6762089660a20"
+version = "0.8.0-alpha.1"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#f8fa1bb5ef71724053c8fe68b75d900a51cb4f45"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -479,8 +479,8 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.7.0-alpha.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#ca1c07366692c44fce6ae351a4a6762089660a20"
+version = "0.8.0-alpha.0"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#f8fa1bb5ef71724053c8fe68b75d900a51cb4f45"
 dependencies = [
  "actix",
  "actix-rt",
@@ -500,8 +500,8 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-core"
-version = "0.7.0"
-source = "git+https://git.asonix.dog/Aardwolf/background-jobs#ca1c07366692c44fce6ae351a4a6762089660a20"
+version = "0.8.0-alpha.0"
+source = "git+https://git.asonix.dog/Aardwolf/background-jobs#f8fa1bb5ef71724053c8fe68b75d900a51cb4f45"
 dependencies = [
  "actix",
  "anyhow",
@@ -2312,9 +2312,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "standback"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d747fd6d33f130039c9518cffa45a83d53986642ca4f872497df668e3f2b6b4d"
+checksum = "6389164ce46e8a68e1b373787efcca3b6b6620bb50b12d4e8d14380838db316f"
 
 [[package]]
 name = "static_assertions"

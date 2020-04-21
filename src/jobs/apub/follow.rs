@@ -6,7 +6,7 @@ use crate::{
     jobs::{apub::prepare_activity, Deliver, JobState},
 };
 use activitystreams::primitives::XsdAnyUri;
-use background_jobs::{ActixJob, Processor};
+use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -15,9 +15,6 @@ pub struct Follow {
     input: AcceptedObjects,
     actor: Actor,
 }
-
-#[derive(Clone, Debug)]
-pub struct FollowProcessor;
 
 impl Follow {
     pub fn new(is_listener: bool, input: AcceptedObjects, actor: Actor) -> Self {
@@ -105,18 +102,12 @@ fn generate_accept_follow(
 }
 
 impl ActixJob for Follow {
-    type Processor = FollowProcessor;
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+
+    const NAME: &'static str = "FollowProcessor";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))
     }
-}
-
-impl Processor for FollowProcessor {
-    type Job = Follow;
-
-    const NAME: &'static str = "FollowProcessor";
-    const QUEUE: &'static str = "default";
 }

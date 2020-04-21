@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use activitystreams::primitives::XsdAnyUri;
-use background_jobs::{ActixJob, Processor};
+use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -16,9 +16,6 @@ pub struct Announce {
     object_id: XsdAnyUri,
     actor: Actor,
 }
-
-#[derive(Clone, Debug)]
-pub struct AnnounceProcessor;
 
 impl Announce {
     pub fn new(object_id: XsdAnyUri, actor: Actor) -> Self {
@@ -60,18 +57,12 @@ fn generate_announce(
 }
 
 impl ActixJob for Announce {
-    type Processor = AnnounceProcessor;
     type State = JobState;
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+
+    const NAME: &'static str = "AnnounceProcessor";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(self.perform(state))
     }
-}
-
-impl Processor for AnnounceProcessor {
-    type Job = Announce;
-
-    const NAME: &'static str = "AnnounceProcessor";
-    const QUEUE: &'static str = "default";
 }

@@ -4,7 +4,7 @@ use crate::{
 };
 use activitystreams::primitives::XsdAnyUri;
 use anyhow::Error;
-use background_jobs::{ActixJob, Processor};
+use background_jobs::ActixJob;
 use futures::future::{ready, Ready};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -35,22 +35,13 @@ impl DeliverMany {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct DeliverManyProcessor;
-
 impl ActixJob for DeliverMany {
     type State = JobState;
-    type Processor = DeliverManyProcessor;
     type Future = Ready<Result<(), Error>>;
+
+    const NAME: &'static str = "DeliverManyProcessor";
 
     fn run(self, state: Self::State) -> Self::Future {
         ready(self.perform(state))
     }
-}
-
-impl Processor for DeliverManyProcessor {
-    type Job = DeliverMany;
-
-    const NAME: &'static str = "DeliverManyProcessor";
-    const QUEUE: &'static str = "default";
 }

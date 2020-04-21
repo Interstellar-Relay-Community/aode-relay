@@ -15,14 +15,7 @@ use crate::{
     data::{ActorCache, Media, NodeCache, State},
     db::Db,
     error::MyError,
-    jobs::{
-        deliver::DeliverProcessor,
-        deliver_many::DeliverManyProcessor,
-        instance::InstanceProcessor,
-        nodeinfo::NodeinfoProcessor,
-        process_listeners::{Listeners, ListenersProcessor},
-        storage::Storage,
-    },
+    jobs::{process_listeners::Listeners, storage::Storage},
     requests::Requests,
 };
 use background_jobs::{Job, QueueHandle, WorkerConfig};
@@ -56,17 +49,17 @@ pub fn create_workers(
             config.clone(),
         )
     })
-    .register(DeliverProcessor)
-    .register(DeliverManyProcessor)
-    .register(NodeinfoProcessor)
-    .register(InstanceProcessor)
-    .register(ListenersProcessor)
-    .register(apub::AnnounceProcessor)
-    .register(apub::FollowProcessor)
-    .register(apub::ForwardProcessor)
-    .register(apub::RejectProcessor)
-    .register(apub::UndoProcessor)
-    .set_processor_count("default", 4)
+    .register::<Deliver>()
+    .register::<Deliver>()
+    .register::<QueryNodeinfo>()
+    .register::<QueryInstance>()
+    .register::<Listeners>()
+    .register::<apub::Announce>()
+    .register::<apub::Follow>()
+    .register::<apub::Forward>()
+    .register::<apub::Reject>()
+    .register::<apub::Undo>()
+    .set_worker_count("default", 4)
     .start(remote_handle);
 }
 
