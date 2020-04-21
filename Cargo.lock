@@ -1670,9 +1670,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e136c1904604defe99ce5fd71a28d473fa60a12255d511aa78a9ddf11237aeb"
+checksum = "d58c7c768d4ba344e3e8d72518ac13e259d7c7ade24167003b8488e10b6740a3"
 dependencies = [
  "cfg-if",
  "cloudabi",
@@ -2049,9 +2049,9 @@ dependencies = [
 
 [[package]]
 name = "rsa-magic-public-key"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfe89053790d2de7953814284a0d4b64edab2c9619103c6df7d133135fcfdafe"
+checksum = "11bc74e37efd50ace66f9f250bb917d1370bee373b9d974f3873cda073d8e5ac"
 dependencies = [
  "base64 0.11.0",
  "num-bigint-dig",
@@ -2062,7 +2062,8 @@ dependencies = [
 [[package]]
 name = "rsa-pem"
 version = "0.1.0"
-source = "git+https://git.asonix.dog/Aardwolf/rsa-pem#8dc04bd060d7993058c120f5cbfa654890113614"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f5c8511d542ea4c96e1f7c4e8fb8010adceb741d3ff5d92673db44954b4abae"
 dependencies = [
  "bit-vec",
  "log",
@@ -2335,9 +2336,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "standback"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6389164ce46e8a68e1b373787efcca3b6b6620bb50b12d4e8d14380838db316f"
+checksum = "898341a519ec30272f8665dd05fb00156254310e99df3dc1e0cb096883d8656c"
 
 [[package]]
 name = "static_assertions"

@@ -165,8 +165,25 @@ impl Db {
     pub async fn update_private_key(&self, private_key: &RSAPrivateKey) -> Result<(), MyError> {
         let pem_pkcs8 = private_key.to_pem_pkcs8()?;
 
-        info!("INSERT INTO settings (key, value, created_at) VALUES ('private_key', $1::TEXT, 'now');");
-        self.pool.get().await?.execute("INSERT INTO settings (key, value, created_at) VALUES ('private_key', $1::TEXT, 'now');", &[&pem_pkcs8]).await?;
+        info!(
+            "INSERT INTO settings (key, value, created_at)
+             VALUES ('private_key', $1::TEXT, 'now')
+             ON CONFLICT (key)
+             DO UPDATE
+             SET value = $1::TEXT;"
+        );
+        self.pool
+            .get()
+            .await?
+            .execute(
+                "INSERT INTO settings (key, value, created_at)
+                 VALUES ('private_key', $1::TEXT, 'now')
+                 ON CONFLICT (key)
+                 DO UPDATE
+                 SET value = $1::TEXT;",
+                &[&pem_pkcs8],
+            )
+            .await?;
         Ok(())
     }
 }

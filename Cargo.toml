@@ -38,8 +38,8 @@ num_cpus = "1.12"
 pretty_env_logger = "0.4.0"
 rand = "0.7"
 rsa = "0.2"
-rsa-magic-public-key = "0.1.0"
-rsa-pem = { version = "0.1.0", git = "https://git.asonix.dog/Aardwolf/rsa-pem" }
+rsa-magic-public-key = "0.1.1"
+rsa-pem = "0.1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.8"

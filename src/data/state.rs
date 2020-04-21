@@ -155,7 +155,7 @@ impl State {
         let f3 = db.hydrate_listeners();
 
         let f4 = async move {
-            if let Some(key) = db.hydrate_private_key().await? {
+            if let Ok(Some(key)) = db.hydrate_private_key().await {
                 Ok(key)
             } else {
                 info!("Generating new keys");
