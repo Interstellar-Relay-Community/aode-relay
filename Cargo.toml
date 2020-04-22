@@ -17,7 +17,7 @@ anyhow = "1.0"
 actix = "0.10.0-alpha.2"
 actix-rt = "1.0.0"
 actix-web = { version = "3.0.0-alpha.1", features = ["rustls"] }
-actix-webfinger = "0.3.0-alpha.5"
+actix-webfinger = "0.3.0-alpha.6"
 activitystreams = "0.5.0"
 ammonia = "3.1.0"
 async-trait = "0.1.24"
