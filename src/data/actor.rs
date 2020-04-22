@@ -8,6 +8,27 @@ use uuid::Uuid;
 
 const REFETCH_DURATION: Duration = Duration::from_secs(60 * 30);
 
+#[derive(Debug)]
+pub enum MaybeCached<T> {
+    Cached(T),
+    Fetched(T),
+}
+
+impl<T> MaybeCached<T> {
+    pub fn is_cached(&self) -> bool {
+        match self {
+            MaybeCached::Cached(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn into_inner(self) -> T {
+        match self {
+            MaybeCached::Cached(t) | MaybeCached::Fetched(t) => t,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ActorCache {
     db: Db,
@@ -32,19 +53,11 @@ impl ActorCache {
         self.following.read().await.contains(id)
     }
 
-    pub async fn get(&self, id: &XsdAnyUri, requests: &Requests) -> Result<Actor, MyError> {
-        if let Some(actor) = self.cache.read().await.get(id) {
-            return Ok(actor.clone());
-        }
-
-        if let Some(actor) = self.lookup(id).await? {
-            self.cache
-                .write()
-                .await
-                .insert(id.clone(), actor.clone(), REFETCH_DURATION);
-            return Ok(actor);
-        }
-
+    pub async fn get_no_cache(
+        &self,
+        id: &XsdAnyUri,
+        requests: &Requests,
+    ) -> Result<Actor, MyError> {
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
         let input_host = id.as_url().host();
@@ -83,6 +96,28 @@ impl ActorCache {
             .await?;
 
         Ok(actor)
+    }
+
+    pub async fn get(
+        &self,
+        id: &XsdAnyUri,
+        requests: &Requests,
+    ) -> Result<MaybeCached<Actor>, MyError> {
+        if let Some(actor) = self.cache.read().await.get(id) {
+            return Ok(MaybeCached::Cached(actor.clone()));
+        }
+
+        if let Some(actor) = self.lookup(id).await? {
+            self.cache
+                .write()
+                .await
+                .insert(id.clone(), actor.clone(), REFETCH_DURATION);
+            return Ok(MaybeCached::Cached(actor));
+        }
+
+        self.get_no_cache(id, requests)
+            .await
+            .map(MaybeCached::Fetched)
     }
 
     pub async fn follower(&self, actor: &Actor) -> Result<(), MyError> {

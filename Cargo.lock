@@ -653,9 +653,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.50"
+version = "1.0.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95e28fa049fda1c330bcf9d723be7663a899c4679724b34c81e9f5a326aab8cd"
+checksum = "c3d87b23d6a92cd03af510a5ade527033f6aa6fa92161e2d5863a907d4c5e31d"
 
 [[package]]
 name = "cfg-if"
@@ -1192,9 +1192,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "257835255b5d40c6de712d90e56dc874ca5da2816121e7b9f3cfc7b3a55a5714"
+checksum = "fde6b0321d465ea2cdc18b5d5ec73eee2ff20177ecee126cd8dd997f6c49e088"
 dependencies = [
  "chrono",
  "thiserror",
@@ -1202,9 +1202,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.3.0-alpha.9"
+version = "0.3.0-alpha.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "195de65fba66cf11426765b07fde96553f02c9a982f760d9e736330cc2e7f07f"
+checksum = "31cbaa36c8b370b423bc69bdbe146bfc52d32ad3e38a91281f1a4ac0b1762274"
 dependencies = [
  "actix-http",
  "actix-web",
@@ -1765,9 +1765,9 @@ checksum = "237844750cfbb86f67afe27eee600dfbbcb6188d734139b534cbfbf4f96792ae"
 
 [[package]]
 name = "pin-utils"
-version = "0.1.0-alpha.4"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5894c618ce612a3fa23881b152b608bafb8c56cfc22f434a3ba3120b40f7b587"
+checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "postgres-protocol"
@@ -2092,9 +2092,9 @@ dependencies = [
 
 [[package]]
 name = "ructe"
-version = "0.11.0"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bfdbe059afc8a41171d0c9f362c2bd67e03131f2d71939feef0a26b0a765b0"
+checksum = "15be061bce86758995098b361a5d3ed2b4203f658dffd522a1ee680b457418b2"
 dependencies = [
  "base64 0.12.0",
  "bytecount",
@@ -2438,9 +2438,9 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "structopt"
-version = "0.3.13"
+version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff6da2e8d107dfd7b74df5ef4d205c6aebee0706c647f6bc6a2d5789905c00fb"
+checksum = "863246aaf5ddd0d6928dfeb1a9ca65f505599e4e1b399935ef7e75107516b4ef"
 dependencies = [
  "clap",
  "lazy_static",
@@ -2449,9 +2449,9 @@ dependencies = [
 
 [[package]]
 name = "structopt-derive"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a489c87c08fbaf12e386665109dd13470dcc9c4583ea3e10dd2b4523e5ebd9ac"
+checksum = "d239ca4b13aee7a2142e6795cbd69e457665ff8037aed33b3effdc430d2f927a"
 dependencies = [
  "heck",
  "proc-macro-error",

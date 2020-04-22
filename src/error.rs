@@ -80,8 +80,8 @@ pub enum MyError {
     #[error("Timed out while waiting on db pool, {0:?}")]
     DbTimeout(TimeoutType),
 
-    #[error("Invalid algorithm provided to verifier")]
-    Algorithm,
+    #[error("Invalid algorithm provided to verifier, {0}")]
+    Algorithm(String),
 
     #[error("Object has already been relayed")]
     Duplicate,

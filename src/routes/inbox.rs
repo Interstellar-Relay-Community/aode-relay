@@ -26,7 +26,7 @@ pub async fn route(
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
-    let actor = actors.get(&input.actor, &client).await?;
+    let actor = actors.get(&input.actor, &client).await?.into_inner();
 
     let (is_blocked, is_whitelisted, is_listener) = join!(
         state.is_blocked(&actor.id),
