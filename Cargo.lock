@@ -27,31 +27,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix"
-version = "0.10.0-alpha.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54fb3bae2fcef0d8edbbf223ea187da5b6313e1bc6eb9494720b81bff9137d26"
-dependencies = [
- "actix-rt",
- "actix_derive",
- "bitflags",
- "bytes",
- "crossbeam-channel",
- "derive_more",
- "futures-channel",
- "futures-util",
- "lazy_static",
- "log",
- "parking_lot",
- "pin-project",
- "smallvec",
- "tokio",
- "tokio-util 0.2.0",
- "trust-dns-proto",
- "trust-dns-resolver",
-]
-
-[[package]]
 name = "actix-codec"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -331,17 +306,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix_derive"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b95aceadaf327f18f0df5962fedc1bde2f870566a0b9f65c89508a3b1f79334c"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "adler32"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -480,11 +444,10 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.8.0-alpha.1"
+version = "0.8.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bb7f892dcd3ee34aab169d60587232d47aa054e4401c3067a64a6871eda806a"
+checksum = "d012b9293806c777f806b537e04b5eec34ecd6eaf876c52792017695ce53262f"
 dependencies = [
- "actix",
  "actix-rt",
  "anyhow",
  "async-trait",
@@ -502,11 +465,11 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-core"
-version = "0.8.0-alpha.1"
+version = "0.8.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa1b993ad1d58fd073cf19fac0d7bcc9772881e0568c59f011cd2aa513f587ab"
+checksum = "bd5efe91c019d7780d5a2fc2f92a15e1f95b84a761428e1d1972b7428634ebc7"
 dependencies = [
- "actix",
+ "actix-rt",
  "anyhow",
  "async-trait",
  "chrono",
@@ -748,16 +711,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "crossbeam-channel"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cced8691919c02aac3cb0a1bc2e9b73d89e832bf9a06fc579d4e71b68a2da061"
-dependencies = [
- "crossbeam-utils",
- "maybe-uninit",
 ]
 
 [[package]]
@@ -1454,12 +1407,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
 
 [[package]]
-name = "maybe-uninit"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
-
-[[package]]
 name = "md5"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1966,7 +1913,6 @@ name = "relay"
 version = "0.1.0"
 dependencies = [
  "activitystreams",
- "actix",
  "actix-rt",
  "actix-web",
  "actix-webfinger",

@@ -1,4 +1,4 @@
-use actix::Arbiter;
+use actix_rt::Arbiter;
 use actix_web::{
     middleware::{Compress, Logger},
     web, App, HttpServer,

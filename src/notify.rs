@@ -4,10 +4,10 @@ use crate::{
     jobs::{JobServer, QueryInstance, QueryNodeinfo},
 };
 use activitystreams::primitives::XsdAnyUri;
-use actix::clock::{delay_for, Duration};
+use actix_rt::{spawn, time::delay_for};
 use futures::stream::{poll_fn, StreamExt};
 use log::{debug, error, warn};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio_postgres::{tls::NoTls, AsyncMessage, Config};
 use uuid::Uuid;
 
@@ -43,7 +43,7 @@ impl Notifier {
     }
 
     pub fn start(self) {
-        actix::spawn(async move {
+        spawn(async move {
             let Notifier { config, listeners } = self;
 
             loop {
@@ -59,7 +59,7 @@ impl Notifier {
                 let client = Arc::new(new_client);
                 let new_client = client.clone();
 
-                actix::spawn(async move {
+                spawn(async move {
                     if let Err(e) = listen(&new_client).await {
                         error!("Error listening for updates, {}", e);
                     }
@@ -121,7 +121,7 @@ impl Listener for NewBlocks {
         debug!("Caching block of {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
-        actix::spawn(async move { state.cache_block(payload).await });
+        spawn(async move { state.cache_block(payload).await });
     }
 }
 
@@ -134,7 +134,7 @@ impl Listener for NewWhitelists {
         debug!("Caching whitelist of {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
-        actix::spawn(async move { state.cache_whitelist(payload.to_owned()).await });
+        spawn(async move { state.cache_whitelist(payload.to_owned()).await });
     }
 }
 
@@ -149,7 +149,7 @@ impl Listener for NewListeners {
             let state = self.0.clone();
             let _ = self.1.queue(QueryInstance::new(uri.clone()));
             let _ = self.1.queue(QueryNodeinfo::new(uri.clone()));
-            actix::spawn(async move { state.cache_listener(uri).await });
+            spawn(async move { state.cache_listener(uri).await });
         } else {
             warn!("Not caching listener {}, parse error", payload);
         }
@@ -165,7 +165,7 @@ impl Listener for NewActors {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
             debug!("Caching actor {}", uri);
             let actors = self.0.clone();
-            actix::spawn(async move { actors.cache_follower(uri).await });
+            spawn(async move { actors.cache_follower(uri).await });
         } else {
             warn!("Not caching actor {}, parse error", payload);
         }
@@ -181,7 +181,7 @@ impl Listener for NewNodes {
         if let Ok(uuid) = payload.parse::<Uuid>() {
             debug!("Caching node {}", uuid);
             let nodes = self.0.clone();
-            actix::spawn(async move { nodes.cache_by_id(uuid).await });
+            spawn(async move { nodes.cache_by_id(uuid).await });
         } else {
             warn!("Not caching node {}, parse error", payload);
         }
@@ -197,7 +197,7 @@ impl Listener for RmBlocks {
         debug!("Busting block cache for {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
-        actix::spawn(async move { state.bust_block(&payload).await });
+        spawn(async move { state.bust_block(&payload).await });
     }
 }
 
@@ -210,7 +210,7 @@ impl Listener for RmWhitelists {
         debug!("Busting whitelist cache for {}", payload);
         let state = self.0.clone();
         let payload = payload.to_owned();
-        actix::spawn(async move { state.bust_whitelist(&payload).await });
+        spawn(async move { state.bust_whitelist(&payload).await });
     }
 }
 
@@ -223,7 +223,7 @@ impl Listener for RmListeners {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
             debug!("Busting listener cache for {}", uri);
             let state = self.0.clone();
-            actix::spawn(async move { state.bust_listener(&uri).await });
+            spawn(async move { state.bust_listener(&uri).await });
         } else {
             warn!("Not busting listener cache for {}", payload);
         }
@@ -239,7 +239,7 @@ impl Listener for RmActors {
         if let Ok(uri) = payload.parse::<XsdAnyUri>() {
             debug!("Busting actor cache for {}", uri);
             let actors = self.0.clone();
-            actix::spawn(async move { actors.bust_follower(&uri).await });
+            spawn(async move { actors.bust_follower(&uri).await });
         } else {
             warn!("Not busting actor cache for {}", payload);
         }
@@ -255,7 +255,7 @@ impl Listener for RmNodes {
         if let Ok(uuid) = payload.parse::<Uuid>() {
             debug!("Caching node {}", uuid);
             let nodes = self.0.clone();
-            actix::spawn(async move { nodes.bust_by_id(uuid).await });
+            spawn(async move { nodes.bust_by_id(uuid).await });
         } else {
             warn!("Not caching node {}, parse error", payload);
         }

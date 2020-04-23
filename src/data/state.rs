@@ -6,14 +6,17 @@ use crate::{
     requests::Requests,
 };
 use activitystreams::primitives::XsdAnyUri;
-use actix::clock::{interval_at, Duration, Instant};
+use actix_rt::{
+    spawn,
+    time::{interval_at, Instant},
+};
 use actix_web::web;
 use futures::{join, try_join};
 use log::{error, info};
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RSAPrivateKey, RSAPublicKey};
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
@@ -194,7 +197,7 @@ impl State {
 
     fn spawn_rehydrate(&self, db: Db) {
         let state = self.clone();
-        actix::spawn(async move {
+        spawn(async move {
             let start = Instant::now();
             let duration = Duration::from_secs(60 * 10);
 

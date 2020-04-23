@@ -283,10 +283,10 @@ impl ActorCache {
     }
 
     fn spawn_rehydrate(&self) {
-        use actix::clock::{interval_at, Instant};
+        use actix_rt::time::{interval_at, Instant};
 
         let this = self.clone();
-        actix::spawn(async move {
+        actix_rt::spawn(async move {
             let mut interval = interval_at(Instant::now(), Duration::from_secs(60 * 10));
 
             loop {
