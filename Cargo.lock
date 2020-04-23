@@ -1192,9 +1192,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization"
-version = "0.4.2"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fde6b0321d465ea2cdc18b5d5ec73eee2ff20177ecee126cd8dd997f6c49e088"
+checksum = "67a9c60926ceacbad9840d7a773bf2552b4535b0a993c529d876b85dc3c9ed02"
 dependencies = [
  "chrono",
  "thiserror",
@@ -1202,9 +1202,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.3.0-alpha.10"
+version = "0.3.0-alpha.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31cbaa36c8b370b423bc69bdbe146bfc52d32ad3e38a91281f1a4ac0b1762274"
+checksum = "9994f5cd15a70a4ae0e1a6e40e42912e897f5a77f43e0e81fe8efdd7ad3c53ae"
 dependencies = [
  "actix-http",
  "actix-web",
@@ -2152,9 +2152,9 @@ dependencies = [
 
 [[package]]
 name = "ryu"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "535622e6be132bccd223f4bb2b8ac8d53cda3c7a6394944d3b2b33fb974f9d76"
+checksum = "ed3d612bc64430efeb3f7ee6ef26d590dce0c43249217bddc62112540c7941e1"
 
 [[package]]
 name = "scopeguard"
@@ -2312,9 +2312,9 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "smallvec"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05720e22615919e4734f6a99ceae50d00226c3c5aca406e102ebc33298214e0a"
+checksum = "c7cb5678e1615754284ec264d9bb5b4c27d2018577fd90ac0ceb578591ed5ee4"
 
 [[package]]
 name = "socket2"

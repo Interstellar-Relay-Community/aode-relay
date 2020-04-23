@@ -5,6 +5,7 @@ use actix_web::{
     HttpResponse,
 };
 use deadpool::managed::{PoolError, TimeoutType};
+use http_signature_normalization_actix::PrepareSignError;
 use log::error;
 use rsa_pem::KeyError;
 use std::{convert::Infallible, fmt::Debug, io::Error};
@@ -35,8 +36,8 @@ pub enum MyError {
     #[error("Couldn't do the json thing")]
     Json(#[from] serde_json::Error),
 
-    #[error("Couldn't serialzize the signature header")]
-    HeaderSerialize(#[from] actix_web::http::header::ToStrError),
+    #[error("Couldn't build signing string, {0}")]
+    PrepareSign(#[from] PrepareSignError),
 
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
