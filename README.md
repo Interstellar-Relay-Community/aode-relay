@@ -60,16 +60,20 @@ ecample, if the server is `https://relay.my.tld`, the correct URL would be
 `https://relay.my.tld/actor`.
 
 ### Supported Activities
-- Accept Follow {self}, this is a no-op
-- Reject Follow {self}, an Undo Follow is sent back
+- Accept Follow {remote-actor}, this is a no-op
+- Reject Follow {remote-actor}, an Undo Follow is sent to {remote-actor}
 - Announce {anything}, {anything} is Announced to listening servers
 - Create {anything}, {anything} is Announced to listening servers
-- Follow {self}, become a listener of the relay, a Follow will be sent back
+- Follow {self-actor}, become a listener of the relay, a Follow will be sent back
 - Follow Public, become a listener of the relay
-- Undo Follow {self}, stop listening on the relay, an Undo Follow will be sent back
+- Undo Follow {self-actor}, stop listening on the relay, an Undo Follow will be sent back
 - Undo Follow Public, stop listening on the relay
 - Delete {anything}, the Delete {anything} is relayed verbatim to listening servers
+    Note that this activity will likely be rejected by the listening servers unless it has been
+    signed with a JSON-LD signature
 - Update {anything}, the Update {anything} is relayed verbatim to listening servers
+    Note that this activity will likely be rejected by the listening servers unless it has been
+    signed with a JSON-LD signature
 
 ### Supported Discovery Protocols
 - Webfinger
