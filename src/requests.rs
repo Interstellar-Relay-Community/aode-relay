@@ -1,11 +1,12 @@
 use crate::error::MyError;
 use activitystreams::primitives::XsdAnyUri;
-use actix_web::client::Client;
+use actix_web::{client::Client, http::header::Date};
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
 use log::{debug, info};
 use rsa::{hash::Hashes, padding::PaddingScheme, RSAPrivateKey};
 use sha2::{Digest, Sha256};
+use std::time::SystemTime;
 
 #[derive(Clone)]
 pub struct Requests {
@@ -35,6 +36,7 @@ impl Requests {
             .client
             .get(url)
             .header("Accept", "application/activity+json")
+            .set(Date(SystemTime::now().into()))
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -70,6 +72,7 @@ impl Requests {
             .client
             .get(url)
             .header("Accept", "*/*")
+            .set(Date(SystemTime::now().into()))
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -124,6 +127,7 @@ impl Requests {
             .post(inbox.as_str())
             .header("Accept", "application/activity+json")
             .header("Content-Type", "application/activity+json")
+            .set(Date(SystemTime::now().into()))
             .signature_with_digest(
                 self.config.clone(),
                 self.key_id.clone(),
