@@ -1145,9 +1145,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67a9c60926ceacbad9840d7a773bf2552b4535b0a993c529d876b85dc3c9ed02"
+checksum = "648233553603e7bb55bc1ea08a514661e212c09c10f6434507894273d8b5e773"
 dependencies = [
  "chrono",
  "thiserror",
@@ -2420,9 +2420,9 @@ checksum = "7c65d530b10ccaeac294f349038a597e435b18fb456aadd0840a623f83b9e941"
 
 [[package]]
 name = "syn"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0df0eb663f387145cab623dea85b09c2c5b4b0aef44e945d928e682fce71bb03"
+checksum = "410a7488c0a728c7ceb4ad59b9567eb4053d02e8cc7f5c0e0eeeb39518369213"
 dependencies = [
  "proc-macro2",
  "quote",
