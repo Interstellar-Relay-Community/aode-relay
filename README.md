@@ -56,7 +56,7 @@ For example, if the server is `https://relay.my.tld`, the correct URL would be
 `https://relay.my.tld/inbox`.
 
 Pleroma admins can subscribe to this relay by adding the `/actor` route to their relay settings. For
-ecample, if the server is `https://relay.my.tld`, the correct URL would be
+example, if the server is `https://relay.my.tld`, the correct URL would be
 `https://relay.my.tld/actor`.
 
 ### Supported Activities
