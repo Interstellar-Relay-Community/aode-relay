@@ -65,15 +65,15 @@ impl ActorCache {
         let inbox_host = accepted_actor.inbox().as_url().host();
 
         if input_host != actor_host {
-            let input_host = input_host.map(|h| h.to_string()).unwrap_or(String::new());
-            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or(String::new());
+            let input_host = input_host.map(|h| h.to_string()).unwrap_or_default();
+            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or_default();
 
             return Err(MyError::HostMismatch(input_host, actor_host));
         }
 
         if actor_host != inbox_host {
-            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or(String::new());
-            let inbox_host = inbox_host.map(|h| h.to_string()).unwrap_or(String::new());
+            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or_default();
+            let inbox_host = inbox_host.map(|h| h.to_string()).unwrap_or_default();
 
             return Err(MyError::HostMismatch(actor_host, inbox_host));
         }

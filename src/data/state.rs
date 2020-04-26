@@ -206,9 +206,8 @@ impl State {
             loop {
                 interval.tick().await;
 
-                match state.rehydrate(&db).await {
-                    Err(e) => error!("Error rehydrating, {}", e),
-                    _ => (),
+                if let Err(e) = state.rehydrate(&db).await {
+                    error!("Error rehydrating, {}", e);
                 }
             }
         });

@@ -44,5 +44,5 @@ pub async fn route(
         public_key_pem: state.public_key.to_pem_pkcs8()?,
     };
 
-    Ok(ok(application.extend(public_key.to_ext())))
+    Ok(ok(application.extend(public_key.into_ext())))
 }

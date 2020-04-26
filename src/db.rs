@@ -68,7 +68,7 @@ impl Db {
         for domain in domains {
             match add_block(&conn, domain.as_str()).await {
                 Err(e) if e.code() != Some(&SqlState::UNIQUE_VIOLATION) => {
-                    Err(e)?;
+                    return Err(e.into());
                 }
                 _ => (),
             };
@@ -89,7 +89,7 @@ impl Db {
         for domain in domains {
             match add_whitelist(&conn, domain.as_str()).await {
                 Err(e) if e.code() != Some(&SqlState::UNIQUE_VIOLATION) => {
-                    Err(e)?;
+                    return Err(e.into());
                 }
                 _ => (),
             };

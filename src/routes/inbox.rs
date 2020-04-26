@@ -21,8 +21,7 @@ pub async fn route(
     client: web::Data<Requests>,
     jobs: web::Data<JobServer>,
     input: web::Json<AcceptedObjects>,
-    verified: Option<SignatureVerified>,
-    digest_verified: Option<DigestVerified>,
+    verified: Option<(SignatureVerified, DigestVerified)>,
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
@@ -46,10 +45,10 @@ pub async fn route(
         return Err(MyError::NotSubscribed(actor.inbox.to_string()));
     }
 
-    if config.validate_signatures() && (digest_verified.is_none() || verified.is_none()) {
+    if config.validate_signatures() && verified.is_none() {
         return Err(MyError::NoSignature(actor.public_key_id.to_string()));
     } else if config.validate_signatures() {
-        if let Some(verified) = verified {
+        if let Some((verified, _)) = verified {
             if actor.public_key_id.as_str() != verified.key_id() {
                 error!("Bad actor, more info: {:?}", input);
                 return Err(MyError::BadActor(

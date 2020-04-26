@@ -179,7 +179,7 @@ impl NodeCache {
             let mut write_guard = self.nodes.write().await;
             let node = write_guard
                 .entry(listener.clone())
-                .or_insert(Node::new(listener));
+                .or_insert_with(|| Node::new(listener));
 
             if let Some(info) = info {
                 node.info = Some(info.0);
@@ -212,7 +212,7 @@ impl NodeCache {
             let mut write_guard = self.nodes.write().await;
             let node = write_guard
                 .entry(listener.clone())
-                .or_insert(Node::new(listener.clone()));
+                .or_insert_with(|| Node::new(listener.clone()));
             node.set_info(software, version, reg);
             node.clone()
         };
@@ -239,7 +239,7 @@ impl NodeCache {
             let mut write_guard = self.nodes.write().await;
             let node = write_guard
                 .entry(listener.clone())
-                .or_insert(Node::new(listener.clone()));
+                .or_insert_with(|| Node::new(listener.clone()));
             node.set_instance(title, description, version, reg, requires_approval);
             node.clone()
         };
@@ -265,7 +265,7 @@ impl NodeCache {
             let mut write_guard = self.nodes.write().await;
             let node = write_guard
                 .entry(listener.clone())
-                .or_insert(Node::new(listener.clone()));
+                .or_insert_with(|| Node::new(listener.clone()));
             node.set_contact(username, display_name, url, avatar);
             node.clone()
         };

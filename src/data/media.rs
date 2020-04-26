@@ -90,9 +90,8 @@ impl Media {
     }
 
     pub async fn get_url(&self, uuid: Uuid) -> Result<Option<XsdAnyUri>, MyError> {
-        match self.url_cache.lock().await.get(&uuid).cloned() {
-            Some(url) => return Ok(Some(url)),
-            _ => (),
+        if let Some(url) = self.url_cache.lock().await.get(&uuid).cloned() {
+            return Ok(Some(url));
         }
 
         let row_opt = self

@@ -22,7 +22,7 @@ impl Undo {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
         let was_following = state.actors.is_following(&self.actor.id).await;
 
-        if let Some(_) = state.actors.unfollower(&self.actor).await? {
+        if state.actors.unfollower(&self.actor).await?.is_some() {
             state.db.remove_listener(self.actor.inbox.clone()).await?;
         }
 

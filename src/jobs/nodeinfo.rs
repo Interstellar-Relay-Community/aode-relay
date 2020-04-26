@@ -110,8 +110,8 @@ impl<T> MaybeSupported<T> {
 struct SupportedVersion(String);
 struct SupportedNodeinfo(String);
 
-static SUPPORTED_VERSIONS: &'static str = "2.";
-static SUPPORTED_NODEINFO: &'static str = "http://nodeinfo.diaspora.software/ns/schema/2.";
+static SUPPORTED_VERSIONS: &str = "2.";
+static SUPPORTED_NODEINFO: &str = "http://nodeinfo.diaspora.software/ns/schema/2.";
 
 struct SupportedVersionVisitor;
 struct SupportedNodeinfoVisitor;

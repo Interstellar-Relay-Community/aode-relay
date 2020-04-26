@@ -93,7 +93,7 @@ pub struct Endpoints {
 }
 
 impl PublicKey {
-    pub fn to_ext(self) -> PublicKeyExtension {
+    pub fn into_ext(self) -> PublicKeyExtension {
         self.into()
     }
 }

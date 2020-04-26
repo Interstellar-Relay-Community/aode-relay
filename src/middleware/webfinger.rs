@@ -13,6 +13,8 @@ pub struct RelayResolver;
 #[error("Error resolving webfinger data")]
 pub struct RelayError;
 
+type FutResult<T, E> = dyn Future<Output = Result<T, E>>;
+
 impl Resolver for RelayResolver {
     type State = (Data<State>, Data<Config>);
     type Error = RelayError;
@@ -21,7 +23,7 @@ impl Resolver for RelayResolver {
         account: &str,
         domain: &str,
         (state, config): Self::State,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Webfinger>, Self::Error>>>> {
+    ) -> Pin<Box<FutResult<Option<Webfinger>, Self::Error>>> {
         let domain = domain.to_owned();
         let account = account.to_owned();
 

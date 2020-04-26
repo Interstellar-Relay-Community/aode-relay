@@ -12,7 +12,7 @@ pub struct Reject(pub Actor);
 
 impl Reject {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
-        if let Some(_) = state.actors.unfollower(&self.0).await? {
+        if state.actors.unfollower(&self.0).await?.is_some() {
             state.db.remove_listener(self.0.inbox.clone()).await?;
         }
 

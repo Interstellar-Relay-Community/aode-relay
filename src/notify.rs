@@ -37,7 +37,7 @@ impl Notifier {
         let v = self
             .listeners
             .entry(l.key().to_owned())
-            .or_insert(Vec::new());
+            .or_insert_with(Vec::new);
         v.push(Box::new(l));
         self
     }
