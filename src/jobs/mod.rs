@@ -1,4 +1,5 @@
 pub mod apub;
+mod cache_media;
 mod deliver;
 mod deliver_many;
 mod instance;
@@ -7,7 +8,8 @@ mod process_listeners;
 mod storage;
 
 pub use self::{
-    deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance, nodeinfo::QueryNodeinfo,
+    cache_media::CacheMedia, deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance,
+    nodeinfo::QueryNodeinfo,
 };
 
 use crate::{
@@ -54,6 +56,7 @@ pub fn create_workers(
     .register::<QueryNodeinfo>()
     .register::<QueryInstance>()
     .register::<Listeners>()
+    .register::<CacheMedia>()
     .register::<apub::Announce>()
     .register::<apub::Follow>()
     .register::<apub::Forward>()

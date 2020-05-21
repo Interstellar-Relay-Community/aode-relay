@@ -1,4 +1,7 @@
-use crate::{config::UrlKind, jobs::JobState};
+use crate::{
+    config::UrlKind,
+    jobs::{cache_media::CacheMedia, JobState},
+};
 use activitystreams_new::primitives::XsdAnyUri;
 use anyhow::Error;
 use background_jobs::ActixJob;
@@ -44,12 +47,16 @@ impl QueryInstance {
         };
 
         if let Some(mut contact) = instance.contact {
-            if let Some(uuid) = state.media.get_uuid(&contact.avatar).await? {
+            let uuid = if let Some(uuid) = state.media.get_uuid(&contact.avatar).await? {
                 contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).parse()?;
+                uuid
             } else {
                 let uuid = state.media.store_url(&contact.avatar).await?;
                 contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).parse()?;
-            }
+                uuid
+            };
+
+            state.job_server.queue(CacheMedia::new(uuid))?;
 
             state
                 .node_cache
