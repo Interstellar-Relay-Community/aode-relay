@@ -3,7 +3,7 @@ use crate::{
     db::listen,
     jobs::{JobServer, QueryInstance, QueryNodeinfo},
 };
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use actix_rt::{spawn, time::delay_for};
 use futures::stream::{poll_fn, StreamExt};
 use log::{debug, error, warn};

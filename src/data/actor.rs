@@ -1,5 +1,5 @@
 use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::{prelude::*, primitives::XsdAnyUri};
 use log::error;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
@@ -61,7 +61,8 @@ impl ActorCache {
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
         let input_host = id.as_url().host();
-        let actor_host = accepted_actor.id.as_url().host();
+        let accepted_actor_id = accepted_actor.id().ok_or(MyError::MissingId)?;
+        let actor_host = accepted_actor_id.as_url().host();
         let inbox_host = accepted_actor.inbox().as_url().host();
 
         if input_host != actor_host {
@@ -81,9 +82,9 @@ impl ActorCache {
         let inbox = accepted_actor.inbox().clone();
 
         let actor = Actor {
-            id: accepted_actor.id,
-            public_key: accepted_actor.public_key.public_key_pem,
-            public_key_id: accepted_actor.public_key.id,
+            id: accepted_actor_id.clone(),
+            public_key: accepted_actor.ext_one.public_key.public_key_pem,
+            public_key_id: accepted_actor.ext_one.public_key.id,
             inbox,
         };
 

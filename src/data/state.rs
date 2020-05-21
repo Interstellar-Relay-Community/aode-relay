@@ -5,7 +5,7 @@ use crate::{
     error::MyError,
     requests::Requests,
 };
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use actix_rt::{
     spawn,
     time::{interval_at, Instant},

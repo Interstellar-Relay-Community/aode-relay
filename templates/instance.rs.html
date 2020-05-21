@@ -1,5 +1,5 @@
 @use crate::{data::{Contact, Instance}, templates::admin};
-@use activitystreams::primitives::XsdAnyUri;
+@use activitystreams_new::primitives::XsdAnyUri;
 
 @(instance: &Instance, software: Option<&str>, contact: Option<&Contact>, base: &XsdAnyUri)
 

@@ -1,4 +1,4 @@
-use activitystreams::primitives::XsdAnyUriError;
+use activitystreams_new::primitives::XsdAnyUriError;
 use actix_web::{
     error::{BlockingError, ResponseError},
     http::StatusCode,
@@ -96,6 +96,18 @@ pub enum MyError {
     #[error("Response has invalid status code, {0}")]
     Status(StatusCode),
 
+    #[error("Expected an Object, found something else")]
+    ObjectFormat,
+
+    #[error("Expected a single object, found array")]
+    ObjectCount,
+
+    #[error("Input is missing a 'type' field")]
+    MissingKind,
+
+    #[error("Input is missing a 'id' field")]
+    MissingId,
+
     #[error("URI is missing domain field")]
     Domain,
 
@@ -112,7 +124,9 @@ impl ResponseError for MyError {
             | MyError::BadActor(_, _) => StatusCode::FORBIDDEN,
             MyError::NotSubscribed(_) => StatusCode::UNAUTHORIZED,
             MyError::Duplicate => StatusCode::ACCEPTED,
-            MyError::Kind(_) => StatusCode::BAD_REQUEST,
+            MyError::Kind(_) | MyError::MissingKind | MyError::MissingId | MyError::ObjectCount => {
+                StatusCode::BAD_REQUEST
+            }
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},

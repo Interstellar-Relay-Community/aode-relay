@@ -1,13 +1,17 @@
 use crate::{
-    apub::PublicKey,
+    apub::{PublicKey, PublicKeyInner},
     config::{Config, UrlKind},
     data::State,
     error::MyError,
     routes::ok,
 };
-use activitystreams::{
-    actor::Application, context, endpoint::EndpointProperties, ext::Extensible,
-    object::properties::ObjectProperties, security,
+use activitystreams_ext::Ext1;
+use activitystreams_new::{
+    actor::{ApActor, Application, Endpoints},
+    context,
+    prelude::*,
+    primitives::{XsdAnyUri, XsdString},
+    security,
 };
 use actix_web::{web, Responder};
 use rsa_pem::KeyExt;
@@ -16,33 +20,42 @@ pub async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<impl Responder, MyError> {
-    let mut application = Application::full();
-    let mut endpoint = EndpointProperties::default();
-
-    endpoint.set_shared_inbox(config.generate_url(UrlKind::Inbox))?;
-
-    let props: &mut ObjectProperties = application.as_mut();
-    props
-        .set_id(config.generate_url(UrlKind::Actor))?
-        .set_summary_xsd_string("AodeRelay bot")?
-        .set_name_xsd_string("AodeRelay")?
-        .set_url_xsd_any_uri(config.generate_url(UrlKind::Actor))?
-        .set_many_context_xsd_any_uris(vec![context(), security()])?;
+    let mut application = Ext1::new(
+        ApActor::new(
+            config.generate_url(UrlKind::Inbox).parse()?,
+            config.generate_url(UrlKind::Outbox).parse()?,
+            Application::new(),
+        ),
+        PublicKey {
+            public_key: PublicKeyInner {
+                id: config.generate_url(UrlKind::MainKey).parse()?,
+                owner: config.generate_url(UrlKind::Actor).parse()?,
+                public_key_pem: state.public_key.to_pem_pkcs8()?,
+            },
+        },
+    );
 
     application
-        .extension
-        .set_preferred_username("relay")?
-        .set_followers(config.generate_url(UrlKind::Followers))?
-        .set_following(config.generate_url(UrlKind::Following))?
-        .set_inbox(config.generate_url(UrlKind::Inbox))?
-        .set_outbox(config.generate_url(UrlKind::Outbox))?
-        .set_endpoints(endpoint)?;
+        .set_id(config.generate_url(UrlKind::Actor).parse()?)
+        .set_summary(XsdString::from("AodeRelay bot"))
+        .set_name(XsdString::from("AodeRelay"))
+        .set_url(config.generate_url(UrlKind::Actor).parse::<XsdAnyUri>()?)
+        .set_many_contexts(vec![context(), security()])
+        .set_preferred_username("relay".into())
+        .set_followers(
+            config
+                .generate_url(UrlKind::Followers)
+                .parse::<XsdAnyUri>()?,
+        )
+        .set_following(
+            config
+                .generate_url(UrlKind::Following)
+                .parse::<XsdAnyUri>()?,
+        )
+        .set_endpoints(Endpoints {
+            shared_inbox: Some(config.generate_url(UrlKind::Inbox).parse::<XsdAnyUri>()?),
+            ..Default::default()
+        });
 
-    let public_key = PublicKey {
-        id: config.generate_url(UrlKind::MainKey).parse()?,
-        owner: config.generate_url(UrlKind::Actor).parse()?,
-        public_key_pem: state.public_key.to_pem_pkcs8()?,
-    };
-
-    Ok(ok(application.extend(public_key.into_ext())))
+    Ok(ok(application))
 }

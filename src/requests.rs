@@ -1,5 +1,5 @@
 use crate::error::MyError;
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use actix_web::{client::Client, http::header::Date};
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;

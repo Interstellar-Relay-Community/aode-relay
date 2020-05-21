@@ -14,10 +14,11 @@ build = "src/build.rs"
 
 [dependencies]
 anyhow = "1.0"
-actix-rt = "1.0.0"
-actix-web = { version = "3.0.0-alpha.1", features = ["rustls"] }
+actix-rt = "1.1.1"
+actix-web = { version = "3.0.0-alpha.2", features = ["rustls"] }
 actix-webfinger = "0.3.0-alpha.6"
-activitystreams = "0.5.0"
+activitystreams-new = { git = "https://git.asonix.dog/asonix/activitystreams-sketch" }
+activitystreams-ext = { git = "https://git.asonix.dog/asonix/activitystreams-ext" }
 ammonia = "3.1.0"
 async-trait = "0.1.24"
 background-jobs = "0.8.0-alpha.2"

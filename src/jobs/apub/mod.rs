@@ -3,8 +3,12 @@ use crate::{
     data::{Actor, State},
     error::MyError,
 };
-use activitystreams::{
-    context, object::properties::ObjectProperties, primitives::XsdAnyUri, security,
+use activitystreams_new::{
+    activity::{Follow as AsFollow, Undo as AsUndo},
+    context,
+    prelude::*,
+    primitives::XsdAnyUri,
+    security,
 };
 use std::convert::TryInto;
 
@@ -30,19 +34,18 @@ async fn get_inboxes(
     Ok(state.listeners_without(&actor.inbox, &domain).await)
 }
 
-fn prepare_activity<T, U, V>(
+fn prepare_activity<T, U, V, Kind>(
     mut t: T,
     id: impl TryInto<XsdAnyUri, Error = U>,
     to: impl TryInto<XsdAnyUri, Error = V>,
 ) -> Result<T, MyError>
 where
-    T: AsMut<ObjectProperties>,
+    T: ObjectExt<Kind> + BaseExt<Kind>,
     MyError: From<U> + From<V>,
 {
-    t.as_mut()
-        .set_id(id.try_into()?)?
-        .set_many_to_xsd_any_uris(vec![to.try_into()?])?
-        .set_many_context_xsd_any_uris(vec![context(), security()])?;
+    t.set_id(id.try_into()?)
+        .set_many_tos(vec![to.try_into()?])
+        .set_many_contexts(vec![context(), security()]);
     Ok(t)
 }
 
@@ -51,24 +54,12 @@ fn generate_undo_follow(
     config: &Config,
     actor_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
-) -> Result<activitystreams::activity::Undo, MyError> {
-    let mut undo = activitystreams::activity::Undo::default();
+) -> Result<AsUndo, MyError> {
+    let mut follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
-    undo.undo_props
-        .set_actor_xsd_any_uri(my_id.clone())?
-        .set_object_base_box({
-            let mut follow = activitystreams::activity::Follow::default();
+    follow.set_id(config.generate_url(UrlKind::Activity).parse()?);
 
-            follow
-                .object_props
-                .set_id(config.generate_url(UrlKind::Activity))?;
-            follow
-                .follow_props
-                .set_actor_xsd_any_uri(actor_id.clone())?
-                .set_object_xsd_any_uri(actor_id.clone())?;
-
-            follow
-        })?;
+    let undo = AsUndo::new(my_id.clone(), follow.into_any_base()?);
 
     prepare_activity(undo, config.generate_url(UrlKind::Actor), actor_id.clone())
 }

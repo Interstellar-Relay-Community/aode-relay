@@ -1,23 +1,27 @@
 use crate::{
-    apub::AcceptedObjects,
+    apub::AcceptedActivities,
     config::{Config, UrlKind},
     data::Actor,
     error::MyError,
     jobs::{apub::prepare_activity, Deliver, JobState},
 };
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::{
+    activity::{Accept as AsAccept, Follow as AsFollow},
+    prelude::*,
+    primitives::XsdAnyUri,
+};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Follow {
     is_listener: bool,
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
 }
 
 impl Follow {
-    pub fn new(is_listener: bool, input: AcceptedObjects, actor: Actor) -> Self {
+    pub fn new(is_listener: bool, input: AcceptedActivities, actor: Actor) -> Self {
         Follow {
             is_listener,
             input,
@@ -32,7 +36,7 @@ impl Follow {
         let my_id: XsdAnyUri = state.config.generate_url(UrlKind::Actor).parse()?;
 
         // if following relay directly, not just following 'public', followback
-        if self.input.object.is(&my_id) && !state.actors.is_following(&self.actor.id).await {
+        if self.input.object_is(&my_id) && !state.actors.is_following(&self.actor.id).await {
             let follow = generate_follow(&state.config, &self.actor.id, &my_id)?;
             state
                 .job_server
@@ -41,7 +45,12 @@ impl Follow {
 
         state.actors.follower(&self.actor).await?;
 
-        let accept = generate_accept_follow(&state.config, &self.actor.id, &self.input.id, &my_id)?;
+        let accept = generate_accept_follow(
+            &state.config,
+            &self.actor.id,
+            self.input.id().ok_or(MyError::MissingId)?,
+            &my_id,
+        )?;
 
         state
             .job_server
@@ -55,13 +64,8 @@ fn generate_follow(
     config: &Config,
     actor_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
-) -> Result<activitystreams::activity::Follow, MyError> {
-    let mut follow = activitystreams::activity::Follow::default();
-
-    follow
-        .follow_props
-        .set_object_xsd_any_uri(actor_id.clone())?
-        .set_actor_xsd_any_uri(my_id.clone())?;
+) -> Result<AsFollow, MyError> {
+    let follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     prepare_activity(
         follow,
@@ -76,23 +80,12 @@ fn generate_accept_follow(
     actor_id: &XsdAnyUri,
     input_id: &XsdAnyUri,
     my_id: &XsdAnyUri,
-) -> Result<activitystreams::activity::Accept, MyError> {
-    let mut accept = activitystreams::activity::Accept::default();
+) -> Result<AsAccept, MyError> {
+    let mut follow = AsFollow::new(actor_id.clone(), my_id.clone());
 
-    accept
-        .accept_props
-        .set_actor_xsd_any_uri(my_id.clone())?
-        .set_object_base_box({
-            let mut follow = activitystreams::activity::Follow::default();
+    follow.set_id(input_id.clone());
 
-            follow.object_props.set_id(input_id.clone())?;
-            follow
-                .follow_props
-                .set_object_xsd_any_uri(my_id.clone())?
-                .set_actor_xsd_any_uri(actor_id.clone())?;
-
-            follow
-        })?;
+    let accept = AsAccept::new(my_id.clone(), follow.into_any_base()?);
 
     prepare_activity(
         accept,

@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use bytes::Bytes;
 use futures::join;
 use lru::LruCache;

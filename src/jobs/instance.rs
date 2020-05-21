@@ -1,5 +1,5 @@
 use crate::{config::UrlKind, jobs::JobState};
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use anyhow::Error;
 use background_jobs::ActixJob;
 use futures::join;

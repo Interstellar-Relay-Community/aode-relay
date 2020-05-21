@@ -1,5 +1,5 @@
 use crate::error::MyError;
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use deadpool_postgres::{Manager, Pool};
 use log::{info, warn};
 use rsa::RSAPrivateKey;

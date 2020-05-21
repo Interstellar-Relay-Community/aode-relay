@@ -1,5 +1,5 @@
 use crate::{
-    apub::{AcceptedObjects, ValidTypes},
+    apub::{AcceptedActivities, AcceptedUndoObjects, UndoTypes, ValidTypes},
     config::{Config, UrlKind},
     data::{Actor, ActorCache, State},
     error::MyError,
@@ -8,7 +8,13 @@ use crate::{
     requests::Requests,
     routes::accepted,
 };
-use activitystreams::{primitives::XsdAnyUri, public};
+use activitystreams_new::{
+    activity,
+    base::AnyBase,
+    prelude::*,
+    primitives::{OneOrMany, XsdAnyUri},
+    public,
+};
 use actix_web::{web, HttpResponse};
 use futures::join;
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
@@ -20,12 +26,18 @@ pub async fn route(
     config: web::Data<Config>,
     client: web::Data<Requests>,
     jobs: web::Data<JobServer>,
-    input: web::Json<AcceptedObjects>,
+    input: web::Json<AcceptedActivities>,
     verified: Option<(SignatureVerified, DigestVerified)>,
 ) -> Result<HttpResponse, MyError> {
     let input = input.into_inner();
 
-    let actor = actors.get(&input.actor, &client).await?.into_inner();
+    let actor = actors
+        .get(
+            input.actor().as_single_id().ok_or(MyError::MissingId)?,
+            &client,
+        )
+        .await?
+        .into_inner();
 
     let (is_blocked, is_whitelisted, is_listener) = join!(
         state.is_blocked(&actor.id),
@@ -41,7 +53,7 @@ pub async fn route(
         return Err(MyError::Whitelist(actor.id.to_string()));
     }
 
-    if !is_listener && !valid_without_listener(&input) {
+    if !is_listener && !valid_without_listener(&input)? {
         return Err(MyError::NotSubscribed(actor.inbox.to_string()));
     }
 
@@ -59,7 +71,7 @@ pub async fn route(
         }
     }
 
-    match input.kind {
+    match input.kind().ok_or(MyError::MissingKind)? {
         ValidTypes::Accept => handle_accept(&config, input).await?,
         ValidTypes::Reject => handle_reject(&config, &jobs, input, actor).await?,
         ValidTypes::Announce | ValidTypes::Create => {
@@ -73,26 +85,39 @@ pub async fn route(
     Ok(accepted(serde_json::json!({})))
 }
 
-fn valid_without_listener(input: &AcceptedObjects) -> bool {
-    match input.kind {
-        ValidTypes::Follow => true,
-        ValidTypes::Undo if input.object.is_kind("Follow") => true,
-        _ => false,
+fn valid_without_listener(input: &AcceptedActivities) -> Result<bool, MyError> {
+    match input.kind() {
+        Some(ValidTypes::Follow) => Ok(true),
+        Some(ValidTypes::Undo) => Ok(single_object(input.object())?.is_kind("Follow")),
+        _ => Ok(false),
     }
 }
 
-async fn handle_accept(config: &Config, input: AcceptedObjects) -> Result<(), MyError> {
-    if !input.object.is_kind("Follow") {
-        return Err(MyError::Kind(
-            input.object.kind().unwrap_or("unknown").to_owned(),
-        ));
-    }
+fn kind_str(base: &AnyBase) -> Result<&str, MyError> {
+    base.kind_str().ok_or(MyError::MissingKind)
+}
 
-    if !input
-        .object
-        .child_actor_is(&config.generate_url(UrlKind::Actor).parse()?)
+fn id_string(id: Option<&XsdAnyUri>) -> Result<String, MyError> {
+    id.map(|s| s.to_string()).ok_or(MyError::MissingId)
+}
+
+fn single_object(o: &OneOrMany<AnyBase>) -> Result<&AnyBase, MyError> {
+    o.as_one().ok_or(MyError::ObjectCount)
+}
+
+async fn handle_accept(config: &Config, input: AcceptedActivities) -> Result<(), MyError> {
+    let follow = if let Ok(Some(follow)) =
+        activity::Follow::from_any_base(single_object(input.object())?.clone())
     {
-        return Err(MyError::WrongActor(input.object.id().to_string()));
+        follow
+    } else {
+        return Err(MyError::Kind(
+            kind_str(single_object(input.object())?)?.to_owned(),
+        ));
+    };
+
+    if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
+        return Err(MyError::WrongActor(id_string(follow.id())?));
     }
 
     Ok(())
@@ -101,20 +126,23 @@ async fn handle_accept(config: &Config, input: AcceptedObjects) -> Result<(), My
 async fn handle_reject(
     config: &Config,
     jobs: &JobServer,
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), MyError> {
-    if !input.object.is_kind("Follow") {
-        return Err(MyError::Kind(
-            input.object.kind().unwrap_or("unknown").to_owned(),
-        ));
-    }
-
-    if !input
-        .object
-        .child_actor_is(&config.generate_url(UrlKind::Actor).parse()?)
+    let follow = if let Ok(Some(follow)) =
+        activity::Follow::from_any_base(single_object(input.object())?.clone())
     {
-        return Err(MyError::WrongActor(input.object.id().to_string()));
+        follow
+    } else {
+        return Err(MyError::Kind(
+            kind_str(single_object(input.object())?)?.to_owned(),
+        ));
+    };
+
+    if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
+        return Err(MyError::WrongActor(
+            follow.id().map(|s| s.to_string()).unwrap_or(String::new()),
+        ));
     }
 
     jobs.queue(Reject(actor))?;
@@ -125,34 +153,27 @@ async fn handle_reject(
 async fn handle_undo(
     config: &Config,
     jobs: &JobServer,
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
     is_listener: bool,
 ) -> Result<(), MyError> {
-    match input.object.kind() {
-        Some("Follow") | Some("Announce") | Some("Create") => (),
-        _ => {
-            return Err(MyError::Kind(
-                input.object.kind().unwrap_or("unknown").to_owned(),
-            ));
-        }
-    }
+    let any_base = single_object(input.object())?.clone();
+    let undone_object =
+        AcceptedUndoObjects::from_any_base(any_base)?.ok_or(MyError::ObjectFormat)?;
 
-    if !input.object.is_kind("Follow") {
+    if !undone_object.is_kind(&UndoTypes::Follow) {
         if is_listener {
             jobs.queue(Forward::new(input, actor))?;
             return Ok(());
         } else {
-            return Err(MyError::Kind(
-                input.object.kind().unwrap_or("unknown").to_owned(),
-            ));
+            return Err(MyError::NotSubscribed(id_string(input.id())?));
         }
     }
 
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
-    if !input.object.child_object_is(&my_id) && !input.object.child_object_is(&public()) {
-        return Err(MyError::WrongActor(input.object.id().to_string()));
+    if !undone_object.object_is(&my_id) && !undone_object.object_is(&public()) {
+        return Err(MyError::WrongActor(id_string(undone_object.id())?));
     }
 
     if !is_listener {
@@ -165,7 +186,7 @@ async fn handle_undo(
 
 async fn handle_forward(
     jobs: &JobServer,
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), MyError> {
     jobs.queue(Forward::new(input, actor))?;
@@ -176,10 +197,10 @@ async fn handle_forward(
 async fn handle_announce(
     state: &State,
     jobs: &JobServer,
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), MyError> {
-    let object_id = input.object.id();
+    let object_id = input.object().as_single_id().ok_or(MyError::MissingId)?;
 
     if state.is_cached(object_id).await {
         return Err(MyError::Duplicate);
@@ -193,14 +214,16 @@ async fn handle_announce(
 async fn handle_follow(
     config: &Config,
     jobs: &JobServer,
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
     is_listener: bool,
 ) -> Result<(), MyError> {
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
-    if !input.object.is(&my_id) && !input.object.is(&public()) {
-        return Err(MyError::WrongActor(input.object.id().to_string()));
+    if !input.object_is(&my_id) && !input.object_is(&public()) {
+        return Err(MyError::WrongActor(id_string(
+            input.object().as_single_id(),
+        )?));
     }
 
     jobs.queue(Follow::new(is_listener, input, actor))?;

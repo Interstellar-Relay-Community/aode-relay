@@ -7,7 +7,7 @@ use crate::{
         DeliverMany, JobState,
     },
 };
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::{activity::Announce as AsAnnounce, primitives::XsdAnyUri};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
@@ -41,13 +41,11 @@ fn generate_announce(
     config: &Config,
     activity_id: &XsdAnyUri,
     object_id: &XsdAnyUri,
-) -> Result<activitystreams::activity::Announce, MyError> {
-    let mut announce = activitystreams::activity::Announce::default();
-
-    announce
-        .announce_props
-        .set_object_xsd_any_uri(object_id.clone())?
-        .set_actor_xsd_any_uri(config.generate_url(UrlKind::Actor))?;
+) -> Result<AsAnnounce, MyError> {
+    let announce = AsAnnounce::new(
+        config.generate_url(UrlKind::Actor).parse::<XsdAnyUri>()?,
+        object_id.clone(),
+    );
 
     prepare_activity(
         announce,

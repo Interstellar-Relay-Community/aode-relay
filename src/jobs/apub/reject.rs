@@ -3,7 +3,7 @@ use crate::{
     data::Actor,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 

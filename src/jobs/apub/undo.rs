@@ -1,21 +1,21 @@
 use crate::{
-    apub::AcceptedObjects,
+    apub::AcceptedActivities,
     config::UrlKind,
     data::Actor,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
-use activitystreams::primitives::XsdAnyUri;
+use activitystreams_new::primitives::XsdAnyUri;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Undo {
-    input: AcceptedObjects,
+    input: AcceptedActivities,
     actor: Actor,
 }
 
 impl Undo {
-    pub fn new(input: AcceptedObjects, actor: Actor) -> Self {
+    pub fn new(input: AcceptedActivities, actor: Actor) -> Self {
         Undo { input, actor }
     }
 
