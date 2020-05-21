@@ -166,7 +166,7 @@ async fn handle_undo(
             jobs.queue(Forward::new(input, actor))?;
             return Ok(());
         } else {
-            return Err(MyError::NotSubscribed(id_string(input.id())?));
+            return Err(MyError::NotSubscribed(actor.inbox.to_string()));
         }
     }
 

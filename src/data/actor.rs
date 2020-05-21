@@ -63,7 +63,7 @@ impl ActorCache {
         let input_host = id.as_url().host();
         let accepted_actor_id = accepted_actor.id().ok_or(MyError::MissingId)?;
         let actor_host = accepted_actor_id.as_url().host();
-        let inbox_host = accepted_actor.inbox().as_url().host();
+        let inbox_host = get_inbox(&accepted_actor).as_url().host();
 
         if input_host != actor_host {
             let input_host = input_host.map(|h| h.to_string()).unwrap_or_default();
@@ -79,7 +79,7 @@ impl ActorCache {
             return Err(MyError::HostMismatch(actor_host, inbox_host));
         }
 
-        let inbox = accepted_actor.inbox().clone();
+        let inbox = get_inbox(&accepted_actor).clone();
 
         let actor = Actor {
             id: accepted_actor_id.clone(),
@@ -333,6 +333,13 @@ impl ActorCache {
         *write_guard = actor_ids;
         Ok(())
     }
+}
+
+fn get_inbox(actor: &AcceptedActors) -> &XsdAnyUri {
+    actor
+        .endpoints()
+        .and_then(|e| e.shared_inbox.as_ref())
+        .unwrap_or(actor.inbox())
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
