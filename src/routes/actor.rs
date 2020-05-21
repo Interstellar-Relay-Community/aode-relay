@@ -23,7 +23,6 @@ pub async fn route(
     let mut application = Ext1::new(
         ApActor::new(
             config.generate_url(UrlKind::Inbox).parse()?,
-            config.generate_url(UrlKind::Outbox).parse()?,
             Application::new(),
         ),
         PublicKey {
@@ -42,6 +41,7 @@ pub async fn route(
         .set_url(config.generate_url(UrlKind::Actor).parse::<XsdAnyUri>()?)
         .set_many_contexts(vec![context(), security()])
         .set_preferred_username("relay".into())
+        .set_outbox(config.generate_url(UrlKind::Outbox).parse()?)
         .set_followers(
             config
                 .generate_url(UrlKind::Followers)
