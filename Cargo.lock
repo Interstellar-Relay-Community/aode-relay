@@ -408,6 +408,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-mutex"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2158da821e7ba10beee4c01ad1d8f7f49a30675f8761106dd7d569284024d40"
+dependencies = [
+ "event-listener",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -875,6 +884,12 @@ dependencies = [
  "regex",
  "termcolor",
 ]
+
+[[package]]
+name = "event-listener"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0173b36d730a966f1e1aa2a811cc41619aaf50df92df434fdbad0504d39a973d"
 
 [[package]]
 name = "failure"
@@ -1965,6 +1980,7 @@ dependencies = [
  "actix-webfinger",
  "ammonia",
  "anyhow",
+ "async-mutex",
  "async-trait",
  "background-jobs",
  "base64 0.12.1",

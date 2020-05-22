@@ -20,6 +20,7 @@ actix-webfinger = "0.3.0-alpha.6"
 activitystreams-new = { git = "https://git.asonix.dog/asonix/activitystreams-sketch" }
 activitystreams-ext = { git = "https://git.asonix.dog/asonix/activitystreams-ext" }
 ammonia = "3.1.0"
+async-mutex = "1.0.1"
 async-trait = "0.1.24"
 background-jobs = "0.8.0-alpha.2"
 bytes = "0.5.4"
