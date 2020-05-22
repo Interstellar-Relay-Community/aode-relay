@@ -106,9 +106,8 @@ fn single_object(o: &OneOrMany<AnyBase>) -> Result<&AnyBase, MyError> {
 }
 
 async fn handle_accept(config: &Config, input: AcceptedActivities) -> Result<(), MyError> {
-    let follow = if let Ok(Some(follow)) =
-        activity::Follow::from_any_base(single_object(input.object())?.clone())
-    {
+    let base = single_object(input.object())?.clone();
+    let follow = if let Some(follow) = activity::Follow::from_any_base(base)? {
         follow
     } else {
         return Err(MyError::Kind(
@@ -129,9 +128,8 @@ async fn handle_reject(
     input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), MyError> {
-    let follow = if let Ok(Some(follow)) =
-        activity::Follow::from_any_base(single_object(input.object())?.clone())
-    {
+    let base = single_object(input.object())?.clone();
+    let follow = if let Some(follow) = activity::Follow::from_any_base(base)? {
         follow
     } else {
         return Err(MyError::Kind(
@@ -140,9 +138,7 @@ async fn handle_reject(
     };
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
-        return Err(MyError::WrongActor(
-            follow.id().map(|s| s.to_string()).unwrap_or(String::new()),
-        ));
+        return Err(MyError::WrongActor(id_string(follow.id())?));
     }
 
     jobs.queue(Reject(actor))?;
