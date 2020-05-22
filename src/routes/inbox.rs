@@ -116,7 +116,9 @@ async fn handle_accept(config: &Config, input: AcceptedActivities) -> Result<(),
     };
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
-        return Err(MyError::WrongActor(id_string(follow.id())?));
+        return Err(MyError::WrongActor(id_string(
+            follow.actor().as_single_id(),
+        )?));
     }
 
     Ok(())
@@ -138,7 +140,9 @@ async fn handle_reject(
     };
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
-        return Err(MyError::WrongActor(id_string(follow.id())?));
+        return Err(MyError::WrongActor(id_string(
+            follow.actor().as_single_id(),
+        )?));
     }
 
     jobs.queue(Reject(actor))?;
@@ -169,7 +173,9 @@ async fn handle_undo(
     let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
 
     if !undone_object.object_is(&my_id) && !undone_object.object_is(&public()) {
-        return Err(MyError::WrongActor(id_string(undone_object.id())?));
+        return Err(MyError::WrongActor(id_string(
+            undone_object.object().as_single_id(),
+        )?));
     }
 
     if !is_listener {
