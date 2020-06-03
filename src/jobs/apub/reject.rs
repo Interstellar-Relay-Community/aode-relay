@@ -3,7 +3,6 @@ use crate::{
     data::Actor,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
-use activitystreams_new::primitives::XsdAnyUri;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
@@ -16,7 +15,7 @@ impl Reject {
             state.db.remove_listener(self.0.inbox.clone()).await?;
         }
 
-        let my_id: XsdAnyUri = state.config.generate_url(UrlKind::Actor).parse()?;
+        let my_id = state.config.generate_url(UrlKind::Actor);
         let undo = generate_undo_follow(&state.config, &self.0.id, &my_id)?;
 
         state.job_server.queue(Deliver::new(self.0.inbox, undo)?)?;

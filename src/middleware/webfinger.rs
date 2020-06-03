@@ -36,9 +36,9 @@ impl Resolver for RelayResolver {
                 return Ok(None);
             }
 
-            let mut wf = Webfinger::new(&config.generate_resource());
-            wf.add_alias(&config.generate_url(UrlKind::Actor))
-                .add_activitypub(&config.generate_url(UrlKind::Actor))
+            let mut wf = Webfinger::new(config.generate_resource().as_str());
+            wf.add_alias(config.generate_url(UrlKind::Actor).as_str())
+                .add_activitypub(config.generate_url(UrlKind::Actor).as_str())
                 .add_magic_public_key(&state.public_key.as_magic_public_key());
 
             Ok(Some(wf))

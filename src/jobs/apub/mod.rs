@@ -57,7 +57,7 @@ fn generate_undo_follow(
 ) -> Result<AsUndo, MyError> {
     let mut follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
-    follow.set_id(config.generate_url(UrlKind::Activity).parse()?);
+    follow.set_id(config.generate_url(UrlKind::Activity));
 
     let undo = AsUndo::new(my_id.clone(), follow.into_any_base()?);
 

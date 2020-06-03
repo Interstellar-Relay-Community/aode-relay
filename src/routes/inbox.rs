@@ -115,7 +115,7 @@ async fn handle_accept(config: &Config, input: AcceptedActivities) -> Result<(),
         ));
     };
 
-    if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
+    if !follow.actor_is(&config.generate_url(UrlKind::Actor)) {
         return Err(MyError::WrongActor(id_string(
             follow.actor().as_single_id(),
         )?));
@@ -139,7 +139,7 @@ async fn handle_reject(
         ));
     };
 
-    if !follow.actor_is(&config.generate_url(UrlKind::Actor).parse()?) {
+    if !follow.actor_is(&config.generate_url(UrlKind::Actor)) {
         return Err(MyError::WrongActor(id_string(
             follow.actor().as_single_id(),
         )?));
@@ -170,7 +170,7 @@ async fn handle_undo(
         }
     }
 
-    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
+    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor);
 
     if !undone_object.object_is(&my_id) && !undone_object.object_is(&public()) {
         return Err(MyError::WrongActor(id_string(
@@ -220,7 +220,7 @@ async fn handle_follow(
     actor: Actor,
     is_listener: bool,
 ) -> Result<(), MyError> {
-    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor).parse()?;
+    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor);
 
     if !input.object_is(&my_id) && !input.object_is(&public()) {
         return Err(MyError::WrongActor(id_string(

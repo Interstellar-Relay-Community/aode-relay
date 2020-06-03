@@ -9,7 +9,7 @@ pub async fn well_known(config: web::Data<Config>) -> impl Responder {
     web::Json(Links {
         links: vec![Link {
             rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
-            href: Some(config.generate_url(UrlKind::NodeInfo)),
+            href: Some(config.generate_url(UrlKind::NodeInfo).to_string()),
             template: None,
             kind: None,
         }],

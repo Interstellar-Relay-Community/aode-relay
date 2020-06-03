@@ -38,7 +38,7 @@ impl State {
 
     pub fn requests(&self) -> Requests {
         Requests::new(
-            self.config.generate_url(UrlKind::MainKey),
+            self.config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),
             format!(
                 "Actix Web 3.0.0-alpha.1 ({}/{}; +{})",

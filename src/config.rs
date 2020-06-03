@@ -1,4 +1,5 @@
 use crate::{data::ActorCache, error::MyError, middleware::MyVerify, requests::Requests};
+use activitystreams_new::primitives::XsdAnyUri;
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};
@@ -6,7 +7,7 @@ use std::net::IpAddr;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize)]
-pub struct Config {
+pub struct ParsedConfig {
     hostname: String,
     addr: IpAddr,
     port: u16,
@@ -18,6 +19,21 @@ pub struct Config {
     pretty_log: bool,
     publish_blocks: bool,
     max_connections: usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct Config {
+    hostname: String,
+    addr: IpAddr,
+    port: u16,
+    debug: bool,
+    whitelist_mode: bool,
+    validate_signatures: bool,
+    database_url: String,
+    pretty_log: bool,
+    publish_blocks: bool,
+    max_connections: usize,
+    base_uri: XsdAnyUri,
 }
 
 pub enum UrlKind {
@@ -49,7 +65,24 @@ impl Config {
             .set_default("max_connections", 2)?
             .merge(Environment::new())?;
 
-        Ok(config.try_into()?)
+        let config: ParsedConfig = config.try_into()?;
+
+        let scheme = if config.https { "https" } else { "http" };
+        let base_uri = format!("{}://{}", scheme, config.hostname).parse()?;
+
+        Ok(Config {
+            hostname: config.hostname,
+            addr: config.addr,
+            port: config.port,
+            debug: config.debug,
+            whitelist_mode: config.whitelist_mode,
+            validate_signatures: config.validate_signatures,
+            database_url: config.database_url,
+            pretty_log: config.pretty_log,
+            publish_blocks: config.publish_blocks,
+            max_connections: config.max_connections,
+            base_uri,
+        })
     }
 
     pub fn pretty_log(&self) -> bool {
@@ -124,22 +157,26 @@ impl Config {
         "https://git.asonix.dog/asonix/ap-relay".to_owned()
     }
 
-    pub fn generate_url(&self, kind: UrlKind) -> String {
-        let scheme = if self.https { "https" } else { "http" };
+    pub fn generate_url(&self, kind: UrlKind) -> XsdAnyUri {
+        let mut uri = self.base_uri.clone();
+        let url = uri.as_url_mut();
 
         match kind {
-            UrlKind::Activity => {
-                format!("{}://{}/activity/{}", scheme, self.hostname, Uuid::new_v4())
+            UrlKind::Activity => url.set_path(&format!("activity/{}", Uuid::new_v4())),
+            UrlKind::Actor => url.set_path("actor"),
+            UrlKind::Followers => url.set_path("followers"),
+            UrlKind::Following => url.set_path("following"),
+            UrlKind::Inbox => url.set_path("inbox"),
+            UrlKind::Index => (),
+            UrlKind::MainKey => {
+                url.set_path("actor");
+                url.set_fragment(Some("main-key"));
             }
-            UrlKind::Actor => format!("{}://{}/actor", scheme, self.hostname),
-            UrlKind::Followers => format!("{}://{}/followers", scheme, self.hostname),
-            UrlKind::Following => format!("{}://{}/following", scheme, self.hostname),
-            UrlKind::Inbox => format!("{}://{}/inbox", scheme, self.hostname),
-            UrlKind::Index => format!("{}://{}/", scheme, self.hostname),
-            UrlKind::MainKey => format!("{}://{}/actor#main-key", scheme, self.hostname),
-            UrlKind::Media(uuid) => format!("{}://{}/media/{}", scheme, self.hostname, uuid),
-            UrlKind::NodeInfo => format!("{}://{}/nodeinfo/2.0.json", scheme, self.hostname),
-            UrlKind::Outbox => format!("{}://{}/outbox", scheme, self.hostname),
-        }
+            UrlKind::Media(uuid) => url.set_path(&format!("media/{}", uuid)),
+            UrlKind::NodeInfo => url.set_path("nodeinfo/2.0.json"),
+            UrlKind::Outbox => url.set_path("outbox"),
+        };
+
+        uri
     }
 }

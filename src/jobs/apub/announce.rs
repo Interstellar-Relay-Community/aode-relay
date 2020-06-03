@@ -23,7 +23,7 @@ impl Announce {
     }
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
-        let activity_id: XsdAnyUri = state.config.generate_url(UrlKind::Activity).parse()?;
+        let activity_id = state.config.generate_url(UrlKind::Activity);
 
         let announce = generate_announce(&state.config, &activity_id, &self.object_id)?;
         let inboxes = get_inboxes(&state.state, &self.actor, &self.object_id).await?;
@@ -42,10 +42,7 @@ fn generate_announce(
     activity_id: &XsdAnyUri,
     object_id: &XsdAnyUri,
 ) -> Result<AsAnnounce, MyError> {
-    let announce = AsAnnounce::new(
-        config.generate_url(UrlKind::Actor).parse::<XsdAnyUri>()?,
-        object_id.clone(),
-    );
+    let announce = AsAnnounce::new(config.generate_url(UrlKind::Actor), object_id.clone());
 
     prepare_activity(
         announce,

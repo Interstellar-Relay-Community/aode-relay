@@ -33,7 +33,7 @@ impl Follow {
         if !self.is_listener {
             state.db.add_listener(self.actor.inbox.clone()).await?;
         }
-        let my_id: XsdAnyUri = state.config.generate_url(UrlKind::Actor).parse()?;
+        let my_id = state.config.generate_url(UrlKind::Actor);
 
         // if following relay directly, not just following 'public', followback
         if self.input.object_is(&my_id) && !state.actors.is_following(&self.actor.id).await {

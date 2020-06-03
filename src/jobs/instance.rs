@@ -48,11 +48,11 @@ impl QueryInstance {
 
         if let Some(mut contact) = instance.contact {
             let uuid = if let Some(uuid) = state.media.get_uuid(&contact.avatar).await? {
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).parse()?;
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
                 uuid
             } else {
                 let uuid = state.media.store_url(&contact.avatar).await?;
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).parse()?;
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
                 uuid
             };
 
