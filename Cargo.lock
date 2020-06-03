@@ -39,7 +39,7 @@ dependencies = [
 [[package]]
 name = "activitystreams-new"
 version = "0.1.0"
-source = "git+https://git.asonix.dog/asonix/activitystreams-sketch#d37714ff57820fb80b2c0799153a1a8d56699ecb"
+source = "git+https://git.asonix.dog/asonix/activitystreams-sketch#05a2bdc98d5595b0a74fd79b7e1b19f382ad3139"
 dependencies = [
  "activitystreams",
  "serde 1.0.111",

@@ -32,11 +32,11 @@ pub async fn route(
 
     application
         .set_id(config.generate_url(UrlKind::Actor))
-        .set_summary("AodeRelay bot".to_owned())
-        .set_name("AodeRelay".to_owned())
+        .set_summary("AodeRelay bot")
+        .set_name("AodeRelay")
         .set_url(config.generate_url(UrlKind::Actor))
         .set_many_contexts(vec![context(), security()])
-        .set_preferred_username("relay".into())
+        .set_preferred_username("relay")
         .set_outbox(config.generate_url(UrlKind::Outbox))
         .set_followers(config.generate_url(UrlKind::Followers))
         .set_following(config.generate_url(UrlKind::Following))
