@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::{primitives::XsdAnyUri, uri};
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},
@@ -140,9 +140,8 @@ impl NodeCache {
         };
 
         let listener: String = row.try_get(0)?;
-        let listener: XsdAnyUri = listener.parse()?;
 
-        self.nodes.write().await.remove(&listener);
+        self.nodes.write().await.remove(&uri!(listener));
 
         Ok(())
     }
@@ -170,7 +169,7 @@ impl NodeCache {
         };
 
         let listener: String = row.try_get(0)?;
-        let listener: XsdAnyUri = listener.parse()?;
+        let listener = uri!(listener);
         let info: Option<Json<Info>> = row.try_get(1)?;
         let instance: Option<Json<Instance>> = row.try_get(2)?;
         let contact: Option<Json<Contact>> = row.try_get(3)?;

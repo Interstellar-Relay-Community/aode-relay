@@ -1,5 +1,5 @@
 use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
-use activitystreams_new::{prelude::*, primitives::XsdAnyUri};
+use activitystreams_new::{prelude::*, primitives::XsdAnyUri, uri};
 use log::error;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
@@ -204,9 +204,9 @@ impl ActorCache {
 
         Ok(Some(Actor {
             id: id.clone(),
-            inbox: inbox.parse()?,
+            inbox: uri!(inbox),
             public_key: row.try_get(1)?,
-            public_key_id: public_key_id.parse()?,
+            public_key_id: uri!(public_key_id),
         }))
     }
 

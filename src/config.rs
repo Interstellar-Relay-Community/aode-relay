@@ -1,5 +1,5 @@
 use crate::{data::ActorCache, error::MyError, middleware::MyVerify, requests::Requests};
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::{primitives::XsdAnyUri, uri};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};
@@ -68,7 +68,7 @@ impl Config {
         let config: ParsedConfig = config.try_into()?;
 
         let scheme = if config.https { "https" } else { "http" };
-        let base_uri = format!("{}://{}", scheme, config.hostname).parse()?;
+        let base_uri = uri!(format!("{}://{}", scheme, config.hostname));
 
         Ok(Config {
             hostname: config.hostname,
