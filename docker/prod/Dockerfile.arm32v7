@@ -56,6 +56,7 @@ FROM arm32v7/alpine:3.12
 ARG UID=991
 ARG GID=991
 ARG BINARY=relay
+ARG TARGET=arm-unknown-linux-musleabihf
 
 RUN \
  apk add tini && \
@@ -63,7 +64,7 @@ RUN \
  adduser -D -G relay -u $UID -g "" -h /opt/relay relay && \
  chown -R relay:relay /opt/relay
 
-COPY --from=arm32v7-builder /opt/build/repo/target/$TARGET/release/$BINARY /usr/bin/$BINARY
+COPY --from=builder /opt/build/repo/target/$TARGET/release/$BINARY /usr/bin/$BINARY
 
 EXPOSE 8080
 WORKDIR /opt/relay
