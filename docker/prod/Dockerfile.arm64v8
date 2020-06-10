@@ -63,7 +63,7 @@ RUN \
  adduser -D -G relay -u $UID -g "" -h /opt/relay relay && \
  chown -R relay:relay /opt/relay
 
-COPY --from=build /relay /usr/bin/relay
+COPY --from=aarch64-builder /opt/build/repo/target/$TARGET/release/$BINARY /usr/bin/$BINARY
 
 EXPOSE 8080
 WORKDIR /opt/relay
