@@ -43,7 +43,7 @@ rsa-magic-public-key = "0.1.1"
 rsa-pem = "0.1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.8"
+sha2 = "0.9"
 structopt = "0.3.12"
 thiserror = "1.0"
 tokio = { version = "0.2.13", features = ["sync"] }
