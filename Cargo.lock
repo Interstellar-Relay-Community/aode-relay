@@ -1416,9 +1416,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.4.3"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0609345ddee5badacf857d4f547e0e5a2e987db77085c24cd887f73573a04237"
+checksum = "28e0c685219cd60e49a2796bba7e4fe6523e10daca4fd721e84e7f905093d60c"
 dependencies = [
  "hashbrown",
 ]
