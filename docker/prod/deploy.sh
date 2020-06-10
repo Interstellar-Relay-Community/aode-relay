@@ -33,7 +33,7 @@ function build_image() {
         -f "Dockerfile.${arch}" \
         -t "${repo}:${tag}-${arch}" \
         -t "${repo}:latest-${arch}" \
-        ./artifacts
+        .
 
     docker push "${repo}:${tag}-arm64v8"
     docker push "${repo}:latest-arm64v8"
