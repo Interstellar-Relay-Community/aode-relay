@@ -29,7 +29,7 @@ RUN \
 USER build
 WORKDIR /opt/build
 
-ENV PATH="PATH:/opt/build/.cargo/bin"
+ENV PATH="$PATH:/opt/build/.cargo/bin"
 
 RUN \
  chmod +x rustup.sh && \
