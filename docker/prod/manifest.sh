@@ -18,7 +18,7 @@ function print_help() {
     echo "	tag: The git tag to be applied to the image manifest"
 }
 
-repo=$2
+repo=$1
 tag=$2
 
 require "$repo" "repo"
