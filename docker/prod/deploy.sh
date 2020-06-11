@@ -35,8 +35,8 @@ function build_image() {
         -t "${repo}:latest-${arch}" \
         .
 
-    docker push "${repo}:${tag}-arm64v8"
-    docker push "${repo}:latest-arm64v8"
+    docker push "${repo}:${tag}-${arch}"
+    docker push "${repo}:latest-${arch}"
 }
 
 require "$TAG" "tag"
