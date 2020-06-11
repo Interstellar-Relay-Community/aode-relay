@@ -27,17 +27,17 @@ require "$tag" "tag"
 set -xe
 
 docker manifest create $repo:$tag \
-    -a $repo:arm64v8-$tag \
-    -a $repo:arm32v7-$tag \
-    -a $repo:amd64-$tag
+    -a $repo:$tag-arm64v8 \
+    -a $repo:$tag-arm32v7 \
+    -a $repo:$tag-amd64
 
 docker manifest annotate $repo:$tag \
-    $repo:arm64v8-$tag --os linux --arch arm64 --variant v8
+    $repo:$tag-arm64v8 --os linux --arch arm64 --variant v8
 
 docker manifest annotate $repo:$tag \
-    $repo:arm32v7-$tag --os linux --arch arm --variant v7
+    $repo:$tag-arm32v7 --os linux --arch arm --variant v7
 
 docker manifest annotate $repo:$tag \
-    $repo:amd64-$tag --os linux --arch amd64
+    $repo:$tag-amd64 --os linux --arch amd64
 
 docker manifest push $repo:$tag --purge
