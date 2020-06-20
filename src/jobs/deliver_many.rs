@@ -2,7 +2,7 @@ use crate::{
     error::MyError,
     jobs::{Deliver, JobState},
 };
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::{primitives::XsdAnyUri, url::Url};
 use anyhow::Error;
 use background_jobs::ActixJob;
 use futures::future::{ready, Ready};
@@ -14,12 +14,12 @@ pub struct DeliverMany {
 }
 
 impl DeliverMany {
-    pub fn new<T>(to: Vec<XsdAnyUri>, data: T) -> Result<Self, MyError>
+    pub fn new<T>(to: Vec<Url>, data: T) -> Result<Self, MyError>
     where
         T: serde::ser::Serialize,
     {
         Ok(DeliverMany {
-            to,
+            to: to.into_iter().map(XsdAnyUri::from).collect(),
             data: serde_json::to_value(data)?,
         })
     }

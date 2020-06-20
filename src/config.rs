@@ -1,5 +1,5 @@
 use crate::{data::ActorCache, error::MyError, middleware::MyVerify, requests::Requests};
-use activitystreams_new::{primitives::XsdAnyUri, uri};
+use activitystreams_new::{uri, url::Url};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};
@@ -33,7 +33,7 @@ pub struct Config {
     pretty_log: bool,
     publish_blocks: bool,
     max_connections: usize,
-    base_uri: XsdAnyUri,
+    base_uri: Url,
 }
 
 pub enum UrlKind {
@@ -157,9 +157,8 @@ impl Config {
         "https://git.asonix.dog/asonix/ap-relay".to_owned()
     }
 
-    pub fn generate_url(&self, kind: UrlKind) -> XsdAnyUri {
-        let mut uri = self.base_uri.clone();
-        let url = uri.as_url_mut();
+    pub fn generate_url(&self, kind: UrlKind) -> Url {
+        let mut url = self.base_uri.clone();
 
         match kind {
             UrlKind::Activity => url.set_path(&format!("activity/{}", Uuid::new_v4())),
@@ -177,6 +176,6 @@ impl Config {
             UrlKind::Outbox => url.set_path("outbox"),
         };
 
-        uri
+        url
     }
 }

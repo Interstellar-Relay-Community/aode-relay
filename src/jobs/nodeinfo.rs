@@ -1,5 +1,5 @@
 use crate::jobs::JobState;
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::{primitives::XsdAnyUri, url::Url};
 use anyhow::Error;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
@@ -10,21 +10,20 @@ pub struct QueryNodeinfo {
 }
 
 impl QueryNodeinfo {
-    pub fn new(listener: XsdAnyUri) -> Self {
-        QueryNodeinfo { listener }
+    pub fn new(listener: Url) -> Self {
+        QueryNodeinfo {
+            listener: listener.into(),
+        }
     }
 
     async fn perform(mut self, state: JobState) -> Result<(), Error> {
-        let listener = self.listener.clone();
-
-        if !state.node_cache.is_nodeinfo_outdated(&listener).await {
+        if !state.node_cache.is_nodeinfo_outdated(&self.listener).await {
             return Ok(());
         }
 
-        let url = self.listener.as_url_mut();
-        url.set_fragment(None);
-        url.set_query(None);
-        url.set_path(".well-known/nodeinfo");
+        self.listener.set_fragment(None);
+        self.listener.set_query(None);
+        self.listener.set_path(".well-known/nodeinfo");
 
         let well_known = state
             .requests
@@ -42,7 +41,7 @@ impl QueryNodeinfo {
         state
             .node_cache
             .set_info(
-                &listener,
+                &self.listener,
                 nodeinfo.software.name,
                 nodeinfo.software.version,
                 nodeinfo.open_registrations,

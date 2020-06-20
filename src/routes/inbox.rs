@@ -9,11 +9,7 @@ use crate::{
     routes::accepted,
 };
 use activitystreams_new::{
-    activity,
-    base::AnyBase,
-    prelude::*,
-    primitives::{OneOrMany, XsdAnyUri},
-    public,
+    activity, base::AnyBase, prelude::*, primitives::OneOrMany, public, url::Url,
 };
 use actix_web::{web, HttpResponse};
 use futures::join;
@@ -33,7 +29,7 @@ pub async fn route(
 
     let actor = actors
         .get(
-            input.actor().as_single_id().ok_or(MyError::MissingId)?,
+            input.actor()?.as_single_id().ok_or(MyError::MissingId)?,
             &client,
         )
         .await?
@@ -97,7 +93,7 @@ fn kind_str(base: &AnyBase) -> Result<&str, MyError> {
     base.kind_str().ok_or(MyError::MissingKind)
 }
 
-fn id_string(id: Option<&XsdAnyUri>) -> Result<String, MyError> {
+fn id_string(id: Option<&Url>) -> Result<String, MyError> {
     id.map(|s| s.to_string()).ok_or(MyError::MissingId)
 }
 
@@ -117,7 +113,7 @@ async fn handle_accept(config: &Config, input: AcceptedActivities) -> Result<(),
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor)) {
         return Err(MyError::WrongActor(id_string(
-            follow.actor().as_single_id(),
+            follow.actor()?.as_single_id(),
         )?));
     }
 
@@ -141,7 +137,7 @@ async fn handle_reject(
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor)) {
         return Err(MyError::WrongActor(id_string(
-            follow.actor().as_single_id(),
+            follow.actor()?.as_single_id(),
         )?));
     }
 
@@ -170,7 +166,7 @@ async fn handle_undo(
         }
     }
 
-    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor);
+    let my_id: Url = config.generate_url(UrlKind::Actor);
 
     if !undone_object.object_is(&my_id) && !undone_object.object_is(&public()) {
         return Err(MyError::WrongActor(id_string(
@@ -220,7 +216,7 @@ async fn handle_follow(
     actor: Actor,
     is_listener: bool,
 ) -> Result<(), MyError> {
-    let my_id: XsdAnyUri = config.generate_url(UrlKind::Actor);
+    let my_id: Url = config.generate_url(UrlKind::Actor);
 
     if !input.object_is(&my_id) && !input.object_is(&public()) {
         return Err(MyError::WrongActor(id_string(

@@ -5,7 +5,7 @@ use crate::{
     error::MyError,
     requests::Requests,
 };
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::url::Url;
 use actix_rt::{
     spawn,
     time::{interval_at, Instant},
@@ -24,10 +24,10 @@ pub struct State {
     pub public_key: RSAPublicKey,
     private_key: RSAPrivateKey,
     config: Config,
-    actor_id_cache: Arc<RwLock<LruCache<XsdAnyUri, XsdAnyUri>>>,
+    actor_id_cache: Arc<RwLock<LruCache<Url, Url>>>,
     blocks: Arc<RwLock<HashSet<String>>>,
     whitelists: Arc<RwLock<HashSet<String>>>,
-    listeners: Arc<RwLock<HashSet<XsdAnyUri>>>,
+    listeners: Arc<RwLock<HashSet<Url>>>,
     node_cache: NodeCache,
 }
 
@@ -57,11 +57,11 @@ impl State {
         self.blocks.write().await.remove(block);
     }
 
-    pub async fn bust_listener(&self, inbox: &XsdAnyUri) {
+    pub async fn bust_listener(&self, inbox: &Url) {
         self.listeners.write().await.remove(inbox);
     }
 
-    pub async fn listeners(&self) -> Vec<XsdAnyUri> {
+    pub async fn listeners(&self) -> Vec<Url> {
         self.listeners.read().await.iter().cloned().collect()
     }
 
@@ -69,13 +69,13 @@ impl State {
         self.blocks.read().await.iter().cloned().collect()
     }
 
-    pub async fn listeners_without(&self, inbox: &XsdAnyUri, domain: &str) -> Vec<XsdAnyUri> {
+    pub async fn listeners_without(&self, inbox: &Url, domain: &str) -> Vec<Url> {
         self.listeners
             .read()
             .await
             .iter()
             .filter_map(|listener| {
-                if let Some(dom) = listener.as_url().domain() {
+                if let Some(dom) = listener.domain() {
                     if listener != inbox && dom != domain {
                         return Some(listener.clone());
                     }
@@ -86,35 +86,35 @@ impl State {
             .collect()
     }
 
-    pub async fn is_whitelisted(&self, actor_id: &XsdAnyUri) -> bool {
+    pub async fn is_whitelisted(&self, actor_id: &Url) -> bool {
         if !self.config.whitelist_mode() {
             return true;
         }
 
-        if let Some(domain) = actor_id.as_url().domain() {
+        if let Some(domain) = actor_id.domain() {
             return self.whitelists.read().await.contains(domain);
         }
 
         false
     }
 
-    pub async fn is_blocked(&self, actor_id: &XsdAnyUri) -> bool {
-        if let Some(domain) = actor_id.as_url().domain() {
+    pub async fn is_blocked(&self, actor_id: &Url) -> bool {
+        if let Some(domain) = actor_id.domain() {
             return self.blocks.read().await.contains(domain);
         }
 
         true
     }
 
-    pub async fn is_listener(&self, actor_id: &XsdAnyUri) -> bool {
+    pub async fn is_listener(&self, actor_id: &Url) -> bool {
         self.listeners.read().await.contains(actor_id)
     }
 
-    pub async fn is_cached(&self, object_id: &XsdAnyUri) -> bool {
+    pub async fn is_cached(&self, object_id: &Url) -> bool {
         self.actor_id_cache.read().await.contains(object_id)
     }
 
-    pub async fn cache(&self, object_id: XsdAnyUri, actor_id: XsdAnyUri) {
+    pub async fn cache(&self, object_id: Url, actor_id: Url) {
         self.actor_id_cache.write().await.put(object_id, actor_id);
     }
 
@@ -126,7 +126,7 @@ impl State {
         self.whitelists.write().await.insert(host);
     }
 
-    pub async fn cache_listener(&self, listener: XsdAnyUri) {
+    pub async fn cache_listener(&self, listener: Url) {
         self.listeners.write().await.insert(listener);
     }
 

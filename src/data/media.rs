@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::url::Url;
 use async_mutex::Mutex;
 use bytes::Bytes;
 use futures::join;
@@ -14,8 +14,8 @@ static MEDIA_DURATION: Duration = Duration::from_secs(60 * 60 * 24 * 2);
 #[derive(Clone)]
 pub struct Media {
     db: Db,
-    inverse: Arc<Mutex<HashMap<XsdAnyUri, Uuid>>>,
-    url_cache: Arc<Mutex<LruCache<Uuid, XsdAnyUri>>>,
+    inverse: Arc<Mutex<HashMap<Url, Uuid>>>,
+    url_cache: Arc<Mutex<LruCache<Uuid, Url>>>,
     byte_cache: Arc<RwLock<TtlCache<Uuid, (String, Bytes)>>>,
 }
 
@@ -29,7 +29,7 @@ impl Media {
         }
     }
 
-    pub async fn get_uuid(&self, url: &XsdAnyUri) -> Result<Option<Uuid>, MyError> {
+    pub async fn get_uuid(&self, url: &Url) -> Result<Option<Uuid>, MyError> {
         let res = self.inverse.lock().await.get(url).cloned();
         let uuid = match res {
             Some(uuid) => uuid,
@@ -90,7 +90,7 @@ impl Media {
         Ok(None)
     }
 
-    pub async fn get_url(&self, uuid: Uuid) -> Result<Option<XsdAnyUri>, MyError> {
+    pub async fn get_url(&self, uuid: Uuid) -> Result<Option<Url>, MyError> {
         if let Some(url) = self.url_cache.lock().await.get(&uuid).cloned() {
             return Ok(Some(url));
         }
@@ -111,7 +111,7 @@ impl Media {
 
         if let Some(row) = row_opt {
             let url: String = row.try_get(0)?;
-            let url: XsdAnyUri = url.parse()?;
+            let url: Url = url.parse()?;
             return Ok(Some(url));
         }
 
@@ -122,7 +122,7 @@ impl Media {
         self.byte_cache.read().await.get(&uuid).cloned()
     }
 
-    pub async fn store_url(&self, url: &XsdAnyUri) -> Result<Uuid, MyError> {
+    pub async fn store_url(&self, url: &Url) -> Result<Uuid, MyError> {
         let uuid = Uuid::new_v4();
 
         let (_, _, res) = join!(

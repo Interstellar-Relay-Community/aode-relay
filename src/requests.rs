@@ -1,5 +1,5 @@
 use crate::error::MyError;
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::url::Url;
 use actix_web::{client::Client, http::header::Date};
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
@@ -159,7 +159,7 @@ impl Requests {
         Ok((content_type, bytes))
     }
 
-    pub async fn deliver<T>(&self, inbox: XsdAnyUri, item: &T) -> Result<(), MyError>
+    pub async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), MyError>
     where
         T: serde::ser::Serialize,
     {

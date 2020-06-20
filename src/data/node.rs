@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams_new::{primitives::XsdAnyUri, uri};
+use activitystreams_new::{primitives::XsdAnyUri, uri, url::Url};
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},
@@ -10,13 +10,13 @@ use tokio::sync::RwLock;
 use tokio_postgres::types::Json;
 use uuid::Uuid;
 
-pub type ListenersCache = Arc<RwLock<HashSet<XsdAnyUri>>>;
+pub type ListenersCache = Arc<RwLock<HashSet<Url>>>;
 
 #[derive(Clone)]
 pub struct NodeCache {
     db: Db,
     listeners: ListenersCache,
-    nodes: Arc<RwLock<HashMap<XsdAnyUri, Node>>>,
+    nodes: Arc<RwLock<HashMap<Url, Node>>>,
 }
 
 impl NodeCache {
@@ -45,7 +45,7 @@ impl NodeCache {
             .collect()
     }
 
-    pub async fn is_nodeinfo_outdated(&self, listener: &XsdAnyUri) -> bool {
+    pub async fn is_nodeinfo_outdated(&self, listener: &Url) -> bool {
         let read_guard = self.nodes.read().await;
 
         let node = match read_guard.get(listener) {
@@ -65,7 +65,7 @@ impl NodeCache {
         }
     }
 
-    pub async fn is_contact_outdated(&self, listener: &XsdAnyUri) -> bool {
+    pub async fn is_contact_outdated(&self, listener: &Url) -> bool {
         let read_guard = self.nodes.read().await;
 
         let node = match read_guard.get(listener) {
@@ -85,7 +85,7 @@ impl NodeCache {
         }
     }
 
-    pub async fn is_instance_outdated(&self, listener: &XsdAnyUri) -> bool {
+    pub async fn is_instance_outdated(&self, listener: &Url) -> bool {
         let read_guard = self.nodes.read().await;
 
         let node = match read_guard.get(listener) {
@@ -196,7 +196,7 @@ impl NodeCache {
 
     pub async fn set_info(
         &self,
-        listener: &XsdAnyUri,
+        listener: &Url,
         software: String,
         version: String,
         reg: bool,
@@ -221,7 +221,7 @@ impl NodeCache {
 
     pub async fn set_instance(
         &self,
-        listener: &XsdAnyUri,
+        listener: &Url,
         title: String,
         description: String,
         version: String,
@@ -248,11 +248,11 @@ impl NodeCache {
 
     pub async fn set_contact(
         &self,
-        listener: &XsdAnyUri,
+        listener: &Url,
         username: String,
         display_name: String,
-        url: XsdAnyUri,
-        avatar: XsdAnyUri,
+        url: Url,
+        avatar: Url,
     ) -> Result<(), MyError> {
         if !self.listeners.read().await.contains(listener) {
             let mut nodes = self.nodes.write().await;
@@ -272,7 +272,7 @@ impl NodeCache {
         Ok(())
     }
 
-    pub async fn save(&self, listener: &XsdAnyUri, node: &Node) -> Result<(), MyError> {
+    pub async fn save(&self, listener: &Url, node: &Node) -> Result<(), MyError> {
         let row_opt = self
             .db
             .pool()
@@ -328,21 +328,20 @@ impl NodeCache {
 
 #[derive(Clone, Debug)]
 pub struct Node {
-    pub base: XsdAnyUri,
+    pub base: Url,
     pub info: Option<Info>,
     pub instance: Option<Instance>,
     pub contact: Option<Contact>,
 }
 
 impl Node {
-    pub fn new(mut uri: XsdAnyUri) -> Self {
-        let url = uri.as_mut();
+    pub fn new(mut url: Url) -> Self {
         url.set_fragment(None);
         url.set_query(None);
         url.set_path("");
 
         Node {
-            base: uri,
+            base: url,
             info: None,
             instance: None,
             contact: None,
@@ -382,14 +381,14 @@ impl Node {
         &mut self,
         username: String,
         display_name: String,
-        url: XsdAnyUri,
-        avatar: XsdAnyUri,
+        url: Url,
+        avatar: Url,
     ) -> &mut Self {
         self.contact = Some(Contact {
             username,
             display_name,
-            url,
-            avatar,
+            url: url.into(),
+            avatar: avatar.into(),
             updated: SystemTime::now(),
         });
         self

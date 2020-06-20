@@ -3,7 +3,7 @@ use crate::{
     db::listen,
     jobs::{JobServer, QueryInstance, QueryNodeinfo},
 };
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::url::Url;
 use actix_rt::{spawn, time::delay_for};
 use futures::stream::{poll_fn, StreamExt};
 use log::{debug, error, warn};
@@ -144,7 +144,7 @@ impl Listener for NewListeners {
     }
 
     fn execute(&self, payload: &str) {
-        if let Ok(uri) = payload.parse::<XsdAnyUri>() {
+        if let Ok(uri) = payload.parse::<Url>() {
             debug!("Caching listener {}", uri);
             let state = self.0.clone();
             let _ = self.1.queue(QueryInstance::new(uri.clone()));
@@ -162,7 +162,7 @@ impl Listener for NewActors {
     }
 
     fn execute(&self, payload: &str) {
-        if let Ok(uri) = payload.parse::<XsdAnyUri>() {
+        if let Ok(uri) = payload.parse::<Url>() {
             debug!("Caching actor {}", uri);
             let actors = self.0.clone();
             spawn(async move { actors.cache_follower(uri).await });
@@ -220,7 +220,7 @@ impl Listener for RmListeners {
     }
 
     fn execute(&self, payload: &str) {
-        if let Ok(uri) = payload.parse::<XsdAnyUri>() {
+        if let Ok(uri) = payload.parse::<Url>() {
             debug!("Busting listener cache for {}", uri);
             let state = self.0.clone();
             spawn(async move { state.bust_listener(&uri).await });
@@ -236,7 +236,7 @@ impl Listener for RmActors {
     }
 
     fn execute(&self, payload: &str) {
-        if let Ok(uri) = payload.parse::<XsdAnyUri>() {
+        if let Ok(uri) = payload.parse::<Url>() {
             debug!("Busting actor cache for {}", uri);
             let actors = self.0.clone();
             spawn(async move { actors.bust_follower(&uri).await });

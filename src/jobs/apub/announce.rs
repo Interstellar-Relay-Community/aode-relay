@@ -7,7 +7,7 @@ use crate::{
         DeliverMany, JobState,
     },
 };
-use activitystreams_new::{activity::Announce as AsAnnounce, primitives::XsdAnyUri};
+use activitystreams_new::{activity::Announce as AsAnnounce, primitives::XsdAnyUri, url::Url};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
@@ -18,8 +18,11 @@ pub struct Announce {
 }
 
 impl Announce {
-    pub fn new(object_id: XsdAnyUri, actor: Actor) -> Self {
-        Announce { object_id, actor }
+    pub fn new(object_id: Url, actor: Actor) -> Self {
+        Announce {
+            object_id: object_id.into(),
+            actor,
+        }
     }
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
@@ -31,7 +34,10 @@ impl Announce {
             .job_server
             .queue(DeliverMany::new(inboxes, announce)?)?;
 
-        state.state.cache(self.object_id, activity_id).await;
+        state
+            .state
+            .cache(self.object_id.into_inner(), activity_id)
+            .await;
         Ok(())
     }
 }
@@ -39,8 +45,8 @@ impl Announce {
 // Generate a type that says "Look at this object"
 fn generate_announce(
     config: &Config,
-    activity_id: &XsdAnyUri,
-    object_id: &XsdAnyUri,
+    activity_id: &Url,
+    object_id: &Url,
 ) -> Result<AsAnnounce, MyError> {
     let announce = AsAnnounce::new(config.generate_url(UrlKind::Actor), object_id.clone());
 

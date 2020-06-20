@@ -2,7 +2,7 @@ use crate::{
     config::UrlKind,
     jobs::{cache_media::CacheMedia, JobState},
 };
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::{primitives::XsdAnyUri, url::Url};
 use anyhow::Error;
 use background_jobs::ActixJob;
 use futures::join;
@@ -14,26 +14,25 @@ pub struct QueryInstance {
 }
 
 impl QueryInstance {
-    pub fn new(listener: XsdAnyUri) -> Self {
-        QueryInstance { listener }
+    pub fn new(listener: Url) -> Self {
+        QueryInstance {
+            listener: listener.into(),
+        }
     }
 
     async fn perform(mut self, state: JobState) -> Result<(), Error> {
-        let listener = self.listener.clone();
-
         let (o1, o2) = join!(
-            state.node_cache.is_contact_outdated(&listener),
-            state.node_cache.is_instance_outdated(&listener),
+            state.node_cache.is_contact_outdated(&self.listener),
+            state.node_cache.is_instance_outdated(&self.listener),
         );
 
         if !(o1 || o2) {
             return Ok(());
         }
 
-        let url = self.listener.as_url_mut();
-        url.set_fragment(None);
-        url.set_query(None);
-        url.set_path("api/v1/instance");
+        self.listener.set_fragment(None);
+        self.listener.set_query(None);
+        self.listener.set_path("api/v1/instance");
 
         let instance = state
             .requests
@@ -48,11 +47,11 @@ impl QueryInstance {
 
         if let Some(mut contact) = instance.contact {
             let uuid = if let Some(uuid) = state.media.get_uuid(&contact.avatar).await? {
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).into();
                 uuid
             } else {
                 let uuid = state.media.store_url(&contact.avatar).await?;
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).into();
                 uuid
             };
 
@@ -61,11 +60,11 @@ impl QueryInstance {
             state
                 .node_cache
                 .set_contact(
-                    &listener,
+                    &self.listener,
                     contact.username,
                     contact.display_name,
-                    contact.url,
-                    contact.avatar,
+                    contact.url.into_inner(),
+                    contact.avatar.into_inner(),
                 )
                 .await?;
         }
@@ -75,7 +74,7 @@ impl QueryInstance {
         state
             .node_cache
             .set_instance(
-                &listener,
+                &self.listener,
                 instance.title,
                 description,
                 instance.version,

@@ -1,4 +1,4 @@
-use activitystreams_new::primitives::XsdAnyUriError;
+use activitystreams_new::{error::DomainError, url::ParseError};
 use actix_web::{
     error::{BlockingError, ResponseError},
     http::StatusCode,
@@ -25,7 +25,7 @@ pub enum MyError {
     Key(#[from] KeyError),
 
     #[error("Couldn't parse URI, {0}")]
-    Uri(#[from] XsdAnyUriError),
+    Uri(#[from] ParseError),
 
     #[error("Couldn't perform IO, {0}")]
     Io(#[from] Error),
@@ -69,8 +69,8 @@ pub enum MyError {
     #[error("Too many CPUs, {0}")]
     CpuCount(#[from] std::num::TryFromIntError),
 
-    #[error("Hosts don't match, {0}, {1}")]
-    HostMismatch(String, String),
+    #[error("{0}")]
+    HostMismatch(#[from] DomainError),
 
     #[error("Invalid or missing content type")]
     ContentType,
@@ -107,6 +107,9 @@ pub enum MyError {
 
     #[error("Input is missing a 'id' field")]
     MissingId,
+
+    #[error("Url is missing a domain")]
+    MissingDomain,
 
     #[error("URI is missing domain field")]
     Domain,

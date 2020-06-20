@@ -1,5 +1,5 @@
 use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
-use activitystreams_new::{prelude::*, primitives::XsdAnyUri, uri};
+use activitystreams_new::{prelude::*, primitives::XsdAnyUri, uri, url::Url};
 use log::error;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
@@ -32,8 +32,8 @@ impl<T> MaybeCached<T> {
 #[derive(Clone)]
 pub struct ActorCache {
     db: Db,
-    cache: Arc<RwLock<TtlCache<XsdAnyUri, Actor>>>,
-    following: Arc<RwLock<HashSet<XsdAnyUri>>>,
+    cache: Arc<RwLock<TtlCache<Url, Actor>>>,
+    following: Arc<RwLock<HashSet<Url>>>,
 }
 
 impl ActorCache {
@@ -49,43 +49,25 @@ impl ActorCache {
         cache
     }
 
-    pub async fn is_following(&self, id: &XsdAnyUri) -> bool {
+    pub async fn is_following(&self, id: &Url) -> bool {
         self.following.read().await.contains(id)
     }
 
-    pub async fn get_no_cache(
-        &self,
-        id: &XsdAnyUri,
-        requests: &Requests,
-    ) -> Result<Actor, MyError> {
+    pub async fn get_no_cache(&self, id: &Url, requests: &Requests) -> Result<Actor, MyError> {
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
-        let input_host = id.as_url().host();
-        let accepted_actor_id = accepted_actor.id().ok_or(MyError::MissingId)?;
-        let actor_host = accepted_actor_id.as_url().host();
-        let inbox_host = get_inbox(&accepted_actor).as_url().host();
+        let input_domain = id.domain().ok_or(MyError::MissingDomain)?;
+        let accepted_actor_id = accepted_actor
+            .id(&input_domain)?
+            .ok_or(MyError::MissingId)?;
 
-        if input_host != actor_host {
-            let input_host = input_host.map(|h| h.to_string()).unwrap_or_default();
-            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or_default();
-
-            return Err(MyError::HostMismatch(input_host, actor_host));
-        }
-
-        if actor_host != inbox_host {
-            let actor_host = actor_host.map(|h| h.to_string()).unwrap_or_default();
-            let inbox_host = inbox_host.map(|h| h.to_string()).unwrap_or_default();
-
-            return Err(MyError::HostMismatch(actor_host, inbox_host));
-        }
-
-        let inbox = get_inbox(&accepted_actor).clone();
+        let inbox = get_inbox(&accepted_actor)?.clone();
 
         let actor = Actor {
-            id: accepted_actor_id.clone(),
+            id: accepted_actor_id.clone().into(),
             public_key: accepted_actor.ext_one.public_key.public_key_pem,
             public_key_id: accepted_actor.ext_one.public_key.id,
-            inbox,
+            inbox: inbox.into(),
         };
 
         self.cache
@@ -99,11 +81,7 @@ impl ActorCache {
         Ok(actor)
     }
 
-    pub async fn get(
-        &self,
-        id: &XsdAnyUri,
-        requests: &Requests,
-    ) -> Result<MaybeCached<Actor>, MyError> {
+    pub async fn get(&self, id: &Url, requests: &Requests) -> Result<MaybeCached<Actor>, MyError> {
         if let Some(actor) = self.cache.read().await.get(id) {
             return Ok(MaybeCached::Cached(actor.clone()));
         }
@@ -125,11 +103,11 @@ impl ActorCache {
         self.save(actor.clone()).await
     }
 
-    pub async fn cache_follower(&self, id: XsdAnyUri) {
+    pub async fn cache_follower(&self, id: Url) {
         self.following.write().await.insert(id);
     }
 
-    pub async fn bust_follower(&self, id: &XsdAnyUri) {
+    pub async fn bust_follower(&self, id: &Url) {
         self.following.write().await.remove(id);
     }
 
@@ -174,7 +152,7 @@ impl ActorCache {
         Ok(None)
     }
 
-    async fn lookup(&self, id: &XsdAnyUri) -> Result<Option<Actor>, MyError> {
+    async fn lookup(&self, id: &Url) -> Result<Option<Actor>, MyError> {
         let row_opt = self
             .db
             .pool()
@@ -203,10 +181,10 @@ impl ActorCache {
         let public_key_id: String = row.try_get(2)?;
 
         Ok(Some(Actor {
-            id: id.clone(),
-            inbox: uri!(inbox),
+            id: id.clone().into(),
+            inbox: uri!(inbox).into(),
             public_key: row.try_get(1)?,
-            public_key_id: uri!(public_key_id),
+            public_key_id: uri!(public_key_id).into(),
         }))
     }
 
@@ -262,12 +240,7 @@ impl ActorCache {
         Ok(())
     }
 
-    async fn update(
-        &self,
-        id: &XsdAnyUri,
-        public_key: &str,
-        public_key_id: &XsdAnyUri,
-    ) -> Result<(), MyError> {
+    async fn update(&self, id: &Url, public_key: &str, public_key_id: &Url) -> Result<(), MyError> {
         self.db
             .pool()
             .get()
@@ -335,11 +308,11 @@ impl ActorCache {
     }
 }
 
-fn get_inbox(actor: &AcceptedActors) -> &XsdAnyUri {
-    actor
-        .endpoints()
-        .and_then(|e| e.shared_inbox.as_ref())
-        .unwrap_or(actor.inbox())
+fn get_inbox(actor: &AcceptedActors) -> Result<&Url, MyError> {
+    Ok(actor
+        .endpoints()?
+        .and_then(|e| e.shared_inbox)
+        .unwrap_or(actor.inbox()?))
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]

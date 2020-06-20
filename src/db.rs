@@ -1,5 +1,5 @@
 use crate::error::MyError;
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::url::Url;
 use deadpool_postgres::{Manager, Pool};
 use log::{info, warn};
 use rsa::RSAPrivateKey;
@@ -32,7 +32,7 @@ impl Db {
         &self.pool
     }
 
-    pub async fn remove_listener(&self, inbox: XsdAnyUri) -> Result<(), MyError> {
+    pub async fn remove_listener(&self, inbox: Url) -> Result<(), MyError> {
         info!("DELETE FROM listeners WHERE actor_id = {};", inbox.as_str());
         self.pool
             .get()
@@ -46,7 +46,7 @@ impl Db {
         Ok(())
     }
 
-    pub async fn add_listener(&self, inbox: XsdAnyUri) -> Result<(), MyError> {
+    pub async fn add_listener(&self, inbox: Url) -> Result<(), MyError> {
         info!(
             "INSERT INTO listeners (actor_id, created_at) VALUES ($1::TEXT, 'now'); [{}]",
             inbox.as_str(),
@@ -129,7 +129,7 @@ impl Db {
         parse_rows(rows)
     }
 
-    pub async fn hydrate_listeners(&self) -> Result<HashSet<XsdAnyUri>, MyError> {
+    pub async fn hydrate_listeners(&self) -> Result<HashSet<Url>, MyError> {
         info!("SELECT actor_id FROM listeners");
         let rows = self
             .pool

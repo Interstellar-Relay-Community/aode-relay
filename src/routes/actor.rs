@@ -23,8 +23,8 @@ pub async fn route(
         ApActor::new(config.generate_url(UrlKind::Inbox), Application::new()),
         PublicKey {
             public_key: PublicKeyInner {
-                id: config.generate_url(UrlKind::MainKey),
-                owner: config.generate_url(UrlKind::Actor),
+                id: config.generate_url(UrlKind::MainKey).into(),
+                owner: config.generate_url(UrlKind::Actor).into(),
                 public_key_pem: state.public_key.to_pem_pkcs8()?,
             },
         },

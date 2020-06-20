@@ -7,8 +7,8 @@ use activitystreams_new::{
     activity::{Follow as AsFollow, Undo as AsUndo},
     context,
     prelude::*,
-    primitives::XsdAnyUri,
     security,
+    url::Url,
 };
 use std::convert::TryInto;
 
@@ -20,24 +20,16 @@ mod undo;
 
 pub use self::{announce::Announce, follow::Follow, forward::Forward, reject::Reject, undo::Undo};
 
-async fn get_inboxes(
-    state: &State,
-    actor: &Actor,
-    object_id: &XsdAnyUri,
-) -> Result<Vec<XsdAnyUri>, MyError> {
-    let domain = object_id
-        .as_url()
-        .host()
-        .ok_or(MyError::Domain)?
-        .to_string();
+async fn get_inboxes(state: &State, actor: &Actor, object_id: &Url) -> Result<Vec<Url>, MyError> {
+    let domain = object_id.host().ok_or(MyError::Domain)?.to_string();
 
     Ok(state.listeners_without(&actor.inbox, &domain).await)
 }
 
 fn prepare_activity<T, U, V, Kind>(
     mut t: T,
-    id: impl TryInto<XsdAnyUri, Error = U>,
-    to: impl TryInto<XsdAnyUri, Error = V>,
+    id: impl TryInto<Url, Error = U>,
+    to: impl TryInto<Url, Error = V>,
 ) -> Result<T, MyError>
 where
     T: ObjectExt<Kind> + BaseExt<Kind>,
@@ -50,11 +42,7 @@ where
 }
 
 // Generate a type that says "I want to stop following you"
-fn generate_undo_follow(
-    config: &Config,
-    actor_id: &XsdAnyUri,
-    my_id: &XsdAnyUri,
-) -> Result<AsUndo, MyError> {
+fn generate_undo_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsUndo, MyError> {
     let mut follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     follow.set_id(config.generate_url(UrlKind::Activity));

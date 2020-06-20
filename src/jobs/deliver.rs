@@ -31,7 +31,10 @@ impl ActixJob for Deliver {
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move {
-            state.requests.deliver(self.to, &self.data).await?;
+            state
+                .requests
+                .deliver(self.to.into_inner(), &self.data)
+                .await?;
 
             Ok(())
         })

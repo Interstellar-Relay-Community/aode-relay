@@ -8,7 +8,7 @@ use crate::{
 use activitystreams_new::{
     activity::{Accept as AsAccept, Follow as AsFollow},
     prelude::*,
-    primitives::XsdAnyUri,
+    url::Url,
 };
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
@@ -31,7 +31,10 @@ impl Follow {
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
         if !self.is_listener {
-            state.db.add_listener(self.actor.inbox.clone()).await?;
+            state
+                .db
+                .add_listener(self.actor.inbox.clone().into_inner())
+                .await?;
         }
         let my_id = state.config.generate_url(UrlKind::Actor);
 
@@ -48,7 +51,7 @@ impl Follow {
         let accept = generate_accept_follow(
             &state.config,
             &self.actor.id,
-            self.input.id().ok_or(MyError::MissingId)?,
+            self.input.id_unchecked().ok_or(MyError::MissingId)?,
             &my_id,
         )?;
 
@@ -60,11 +63,7 @@ impl Follow {
 }
 
 // Generate a type that says "I want to follow you"
-fn generate_follow(
-    config: &Config,
-    actor_id: &XsdAnyUri,
-    my_id: &XsdAnyUri,
-) -> Result<AsFollow, MyError> {
+fn generate_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsFollow, MyError> {
     let follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     prepare_activity(
@@ -77,9 +76,9 @@ fn generate_follow(
 // Generate a type that says "I accept your follow request"
 fn generate_accept_follow(
     config: &Config,
-    actor_id: &XsdAnyUri,
-    input_id: &XsdAnyUri,
-    my_id: &XsdAnyUri,
+    actor_id: &Url,
+    input_id: &Url,
+    my_id: &Url,
 ) -> Result<AsAccept, MyError> {
     let mut follow = AsFollow::new(actor_id.clone(), my_id.clone());
 

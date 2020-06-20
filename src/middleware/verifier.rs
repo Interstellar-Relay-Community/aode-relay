@@ -20,7 +20,7 @@ impl MyVerify {
         signing_string: String,
     ) -> Result<bool, MyError> {
         let mut uri = uri!(key_id);
-        uri.as_url_mut().set_fragment(None);
+        uri.set_fragment(None);
         let actor = self.1.get(&uri, &self.0).await?;
         let was_cached = actor.is_cached();
         let actor = actor.into_inner();

@@ -49,7 +49,7 @@ pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::J
                 .listeners()
                 .await
                 .iter()
-                .filter_map(|listener| listener.as_url().domain())
+                .filter_map(|listener| listener.domain())
                 .map(|s| s.to_owned())
                 .collect(),
             blocks: if config.publish_blocks() {
