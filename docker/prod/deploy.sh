@@ -48,7 +48,7 @@ fi
 
 set -xe
 
-git checkout master
+git checkout main
 git commit -m "Version $TAG"
 git tag $TAG
 
