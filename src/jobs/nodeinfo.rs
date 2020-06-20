@@ -16,18 +16,19 @@ impl QueryNodeinfo {
         }
     }
 
-    async fn perform(mut self, state: JobState) -> Result<(), Error> {
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         if !state.node_cache.is_nodeinfo_outdated(&self.listener).await {
             return Ok(());
         }
 
-        self.listener.set_fragment(None);
-        self.listener.set_query(None);
-        self.listener.set_path(".well-known/nodeinfo");
+        let mut well_known_uri = self.listener.clone();
+        well_known_uri.set_fragment(None);
+        well_known_uri.set_query(None);
+        well_known_uri.set_path(".well-known/nodeinfo");
 
         let well_known = state
             .requests
-            .fetch::<WellKnown>(self.listener.as_str())
+            .fetch::<WellKnown>(well_known_uri.as_str())
             .await?;
 
         let href = if let Some(link) = well_known.links.into_iter().find(|l| l.rel.is_supported()) {

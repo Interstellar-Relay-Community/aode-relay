@@ -20,7 +20,7 @@ impl QueryInstance {
         }
     }
 
-    async fn perform(mut self, state: JobState) -> Result<(), Error> {
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         let (o1, o2) = join!(
             state.node_cache.is_contact_outdated(&self.listener),
             state.node_cache.is_instance_outdated(&self.listener),
@@ -30,13 +30,14 @@ impl QueryInstance {
             return Ok(());
         }
 
-        self.listener.set_fragment(None);
-        self.listener.set_query(None);
-        self.listener.set_path("api/v1/instance");
+        let mut instance_uri = self.listener.clone();
+        instance_uri.set_fragment(None);
+        instance_uri.set_query(None);
+        instance_uri.set_path("api/v1/instance");
 
         let instance = state
             .requests
-            .fetch::<Instance>(self.listener.as_str())
+            .fetch::<Instance>(instance_uri.as_str())
             .await?;
 
         let description = if instance.description.is_empty() {
