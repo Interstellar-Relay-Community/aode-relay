@@ -49,7 +49,7 @@ fi
 set -xe
 
 git checkout main
-git commit -m "Version $TAG"
+git commit -m "Version $TAG" || true
 git tag $TAG
 
 git push origin $TAG

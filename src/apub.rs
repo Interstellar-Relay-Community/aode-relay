@@ -2,15 +2,15 @@ use activitystreams_ext::{Ext1, UnparsedExtension};
 use activitystreams_new::{
     activity::ActorAndObject,
     actor::{Actor, ApActor},
-    primitives::XsdAnyUri,
     unparsed::UnparsedMutExt,
+    url::Url,
 };
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicKeyInner {
-    pub id: XsdAnyUri,
-    pub owner: XsdAnyUri,
+    pub id: Url,
+    pub owner: Url,
     pub public_key_pem: String,
 }
 

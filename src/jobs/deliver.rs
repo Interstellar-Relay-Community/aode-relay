@@ -1,17 +1,17 @@
 use crate::{error::MyError, jobs::JobState};
-use activitystreams_new::primitives::XsdAnyUri;
+use activitystreams_new::url::Url;
 use anyhow::Error;
 use background_jobs::{ActixJob, Backoff};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Deliver {
-    to: XsdAnyUri,
+    to: Url,
     data: serde_json::Value,
 }
 
 impl Deliver {
-    pub fn new<T>(to: XsdAnyUri, data: T) -> Result<Self, MyError>
+    pub fn new<T>(to: Url, data: T) -> Result<Self, MyError>
     where
         T: serde::ser::Serialize,
     {
@@ -31,10 +31,7 @@ impl ActixJob for Deliver {
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move {
-            state
-                .requests
-                .deliver(self.to.into_inner(), &self.data)
-                .await?;
+            state.requests.deliver(self.to, &self.data).await?;
 
             Ok(())
         })

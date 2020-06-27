@@ -12,10 +12,7 @@ pub struct Reject(pub Actor);
 impl Reject {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
         if state.actors.unfollower(&self.0).await?.is_some() {
-            state
-                .db
-                .remove_listener(self.0.inbox.clone().into_inner())
-                .await?;
+            state.db.remove_listener(self.0.inbox.clone()).await?;
         }
 
         let my_id = state.config.generate_url(UrlKind::Actor);

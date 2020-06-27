@@ -1,5 +1,5 @@
 use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
-use activitystreams_new::{prelude::*, primitives::XsdAnyUri, uri, url::Url};
+use activitystreams_new::{prelude::*, uri, url::Url};
 use log::error;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::RwLock;
@@ -317,8 +317,8 @@ fn get_inbox(actor: &AcceptedActors) -> Result<&Url, MyError> {
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Actor {
-    pub id: XsdAnyUri,
+    pub id: Url,
     pub public_key: String,
-    pub public_key_id: XsdAnyUri,
-    pub inbox: XsdAnyUri,
+    pub public_key_id: Url,
+    pub inbox: Url,
 }

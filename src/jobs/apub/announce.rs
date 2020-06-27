@@ -7,22 +7,19 @@ use crate::{
         DeliverMany, JobState,
     },
 };
-use activitystreams_new::{activity::Announce as AsAnnounce, primitives::XsdAnyUri, url::Url};
+use activitystreams_new::{activity::Announce as AsAnnounce, url::Url};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Announce {
-    object_id: XsdAnyUri,
+    object_id: Url,
     actor: Actor,
 }
 
 impl Announce {
     pub fn new(object_id: Url, actor: Actor) -> Self {
-        Announce {
-            object_id: object_id.into(),
-            actor,
-        }
+        Announce { object_id, actor }
     }
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
@@ -34,10 +31,7 @@ impl Announce {
             .job_server
             .queue(DeliverMany::new(inboxes, announce)?)?;
 
-        state
-            .state
-            .cache(self.object_id.into_inner(), activity_id)
-            .await;
+        state.state.cache(self.object_id, activity_id).await;
         Ok(())
     }
 }

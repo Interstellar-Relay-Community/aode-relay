@@ -31,10 +31,7 @@ impl Follow {
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
         if !self.is_listener {
-            state
-                .db
-                .add_listener(self.actor.inbox.clone().into_inner())
-                .await?;
+            state.db.add_listener(self.actor.inbox.clone()).await?;
         }
         let my_id = state.config.generate_url(UrlKind::Actor);
 

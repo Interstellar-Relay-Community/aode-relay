@@ -1,19 +1,17 @@
 use crate::jobs::JobState;
-use activitystreams_new::{primitives::XsdAnyUri, url::Url};
+use activitystreams_new::url::Url;
 use anyhow::Error;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryNodeinfo {
-    listener: XsdAnyUri,
+    listener: Url,
 }
 
 impl QueryNodeinfo {
     pub fn new(listener: Url) -> Self {
-        QueryNodeinfo {
-            listener: listener.into(),
-        }
+        QueryNodeinfo { listener }
     }
 
     async fn perform(self, state: JobState) -> Result<(), Error> {

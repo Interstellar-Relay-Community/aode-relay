@@ -22,10 +22,7 @@ impl Undo {
         let was_following = state.actors.is_following(&self.actor.id).await;
 
         if state.actors.unfollower(&self.actor).await?.is_some() {
-            state
-                .db
-                .remove_listener(self.actor.inbox.clone().into_inner())
-                .await?;
+            state.db.remove_listener(self.actor.inbox.clone()).await?;
         }
 
         if was_following {

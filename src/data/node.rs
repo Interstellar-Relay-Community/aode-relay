@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams_new::{primitives::XsdAnyUri, uri, url::Url};
+use activitystreams_new::{uri, url::Url};
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},
@@ -417,8 +417,8 @@ pub struct Instance {
 pub struct Contact {
     pub username: String,
     pub display_name: String,
-    pub url: XsdAnyUri,
-    pub avatar: XsdAnyUri,
+    pub url: Url,
+    pub avatar: Url,
     pub updated: SystemTime,
 }
 

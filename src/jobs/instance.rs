@@ -2,7 +2,7 @@ use crate::{
     config::UrlKind,
     jobs::{cache_media::CacheMedia, JobState},
 };
-use activitystreams_new::{primitives::XsdAnyUri, url::Url};
+use activitystreams_new::url::Url;
 use anyhow::Error;
 use background_jobs::ActixJob;
 use futures::join;
@@ -10,7 +10,7 @@ use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryInstance {
-    listener: XsdAnyUri,
+    listener: Url,
 }
 
 impl QueryInstance {
@@ -64,8 +64,8 @@ impl QueryInstance {
                     &self.listener,
                     contact.username,
                     contact.display_name,
-                    contact.url.into_inner(),
-                    contact.avatar.into_inner(),
+                    contact.url,
+                    contact.avatar,
                 )
                 .await?;
         }
@@ -116,6 +116,6 @@ struct Instance {
 struct Contact {
     username: String,
     display_name: String,
-    url: XsdAnyUri,
-    avatar: XsdAnyUri,
+    url: Url,
+    avatar: Url,
 }
