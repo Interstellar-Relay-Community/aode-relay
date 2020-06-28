@@ -80,6 +80,8 @@ section {
     }
 
     a {
+        transition: color .2s cubic-bezier(.3,0,.5,1);
+
         &,
         &:focus,
         &:active {
@@ -236,5 +238,16 @@ footer {
         img {
             border-radius: 25px;
         }
+    }
+}
+
+@media(max-width: 360px) {
+    .admin {
+        flex-direction: column;
+    }
+
+    .right {
+        margin: 16px;
+        margin-top: 0;
     }
 }
