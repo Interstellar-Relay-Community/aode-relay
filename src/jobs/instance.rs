@@ -80,7 +80,7 @@ impl QueryInstance {
                 description,
                 instance.version,
                 instance.registrations,
-                instance.approval_required || instance.registrations,
+                instance.approval_required,
             )
             .await?;
 
@@ -113,9 +113,6 @@ struct Instance {
 
     #[serde(default = "default_approval")]
     approval_required: bool,
-
-    #[serde(default = "default_approval")]
-    registrations: bool,
 
     #[serde(rename = "contact_account")]
     contact: Option<Contact>,
