@@ -22,7 +22,7 @@ use self::{
     data::{ActorCache, Media, State},
     db::Db,
     jobs::{create_server, create_workers},
-    middleware::RelayResolver,
+    middleware::{DebugPayload, RelayResolver},
     routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
 };
 
@@ -132,6 +132,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
                 web::resource("/inbox")
+                    .wrap(DebugPayload(config.debug()))
                     .wrap(config.digest_middleware())
                     .wrap(config.signature_middleware(state.requests(), actors.clone()))
                     .route(web::post().to(inbox)),
