@@ -26,7 +26,7 @@ impl QueryNodeinfo {
 
         let well_known = state
             .requests
-            .fetch::<WellKnown>(well_known_uri.as_str())
+            .fetch_json::<WellKnown>(well_known_uri.as_str())
             .await?;
 
         let href = if let Some(link) = well_known.links.into_iter().find(|l| l.rel.is_supported()) {
@@ -35,7 +35,7 @@ impl QueryNodeinfo {
             return Ok(());
         };
 
-        let nodeinfo = state.requests.fetch::<Nodeinfo>(&href).await?;
+        let nodeinfo = state.requests.fetch_json::<Nodeinfo>(&href).await?;
 
         state
             .node_cache

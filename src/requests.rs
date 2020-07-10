@@ -56,7 +56,21 @@ impl Requests {
         self.consecutive_errors.swap(0, Ordering::Relaxed);
     }
 
+    pub async fn fetch_json<T>(&self, url: &str) -> Result<T, MyError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.do_fetch(url, "application/json").await
+    }
+
     pub async fn fetch<T>(&self, url: &str) -> Result<T, MyError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.do_fetch(url, "application/activity+json").await
+    }
+
+    async fn do_fetch<T>(&self, url: &str, accept: &str) -> Result<T, MyError>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -65,7 +79,7 @@ impl Requests {
         let client: Client = self.client.borrow().clone();
         let res = client
             .get(url)
-            .header("Accept", "application/activity+json")
+            .header("Accept", accept)
             .set(Date(SystemTime::now().into()))
             .signature(
                 self.config.clone(),

@@ -37,7 +37,7 @@ impl QueryInstance {
 
         let instance = state
             .requests
-            .fetch::<Instance>(instance_uri.as_str())
+            .fetch_json::<Instance>(instance_uri.as_str())
             .await?;
 
         let description = if instance.description.is_empty() {
