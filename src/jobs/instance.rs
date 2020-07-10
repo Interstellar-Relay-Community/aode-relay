@@ -99,6 +99,10 @@ impl ActixJob for QueryInstance {
     }
 }
 
+fn default_approval() -> bool {
+    false
+}
+
 #[derive(serde::Deserialize)]
 struct Instance {
     title: String,
@@ -106,6 +110,8 @@ struct Instance {
     description: String,
     version: String,
     registrations: bool,
+
+    #[serde(default = "default_approval")]
     approval_required: bool,
 
     #[serde(rename = "contact_account")]
