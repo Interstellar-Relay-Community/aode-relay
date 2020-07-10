@@ -110,9 +110,12 @@ impl Requests {
             return Err(MyError::Status(res.status()));
         }
 
-        res.json()
+        let body = res
+            .body()
             .await
-            .map_err(|e| MyError::ReceiveResponse(url.to_string(), e.to_string()))
+            .map_err(|e| MyError::ReceiveResponse(url.to_string(), e.to_string()))?;
+
+        Ok(serde_json::from_slice(body.as_ref())?)
     }
 
     pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {

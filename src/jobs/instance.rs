@@ -41,7 +41,7 @@ impl QueryInstance {
             .await?;
 
         let description = if instance.description.is_empty() {
-            instance.short_description
+            instance.short_description.unwrap_or(String::new())
         } else {
             instance.description
         };
@@ -102,7 +102,7 @@ impl ActixJob for QueryInstance {
 #[derive(serde::Deserialize)]
 struct Instance {
     title: String,
-    short_description: String,
+    short_description: Option<String>,
     description: String,
     version: String,
     registrations: bool,
