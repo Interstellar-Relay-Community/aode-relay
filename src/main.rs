@@ -132,9 +132,9 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
                 web::resource("/inbox")
-                    .wrap(DebugPayload(config.debug()))
                     .wrap(config.digest_middleware())
                     .wrap(config.signature_middleware(state.requests(), actors.clone()))
+                    .wrap(DebugPayload(config.debug()))
                     .route(web::post().to(inbox)),
             )
             .service(web::resource("/actor").route(web::get().to(actor)))

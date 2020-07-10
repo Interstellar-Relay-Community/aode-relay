@@ -5,10 +5,10 @@ use actix_web::{
 };
 use bytes::BytesMut;
 use futures::{
-    future::{ok, LocalBoxFuture, Ready},
+    future::{ok, try_join, LocalBoxFuture, Ready},
     stream::StreamExt,
 };
-use log::info;
+use log::{error, info};
 use std::task::{Context, Poll};
 use tokio::sync::mpsc::channel;
 
@@ -75,24 +75,36 @@ where
 
             let fut = self.1.call(req);
 
-            return Box::pin(async move {
+            let payload_fut = async move {
                 let mut bytes = BytesMut::new();
 
                 while let Some(res) = pl.next().await {
-                    let b = res.map_err(|_| DebugError)?;
+                    let b = res.map_err(|e| {
+                        error!("Payload error, {}", e);
+                        DebugError
+                    })?;
                     bytes.extend(b);
                 }
 
                 info!("{}", String::from_utf8_lossy(bytes.as_ref()));
 
-                tx.send(Ok(bytes.freeze())).await.map_err(|_| DebugError)?;
+                tx.send(Ok(bytes.freeze())).await.map_err(|e| {
+                    error!("Error sending bytes, {}", e);
+                    DebugError
+                })?;
 
-                fut.await
-            });
+                Ok(()) as Result<(), actix_web::Error>
+            };
+
+            Box::pin(async move {
+                let (res, _) = try_join(fut, payload_fut).await?;
+
+                Ok(res)
+            })
+        } else {
+            let fut = self.1.call(req);
+
+            Box::pin(async move { fut.await })
         }
-
-        let fut = self.1.call(req);
-
-        Box::pin(async move { fut.await })
     }
 }
