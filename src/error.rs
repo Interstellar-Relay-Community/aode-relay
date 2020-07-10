@@ -33,7 +33,7 @@ pub enum MyError {
     #[error("Couldn't sign string, {0}")]
     Rsa(rsa::errors::Error),
 
-    #[error("Couldn't do the json thing")]
+    #[error("Couldn't do the json thing, {0}")]
     Json(#[from] serde_json::Error),
 
     #[error("Couldn't build signing string, {0}")]
