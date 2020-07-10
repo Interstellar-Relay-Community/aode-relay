@@ -13,7 +13,7 @@ dependencies = [
 [[package]]
 name = "activitystreams-new"
 version = "0.1.0"
-source = "git+https://git.asonix.dog/asonix/activitystreams-sketch?branch=main#60716a6d2ad18672e08be7564c5691b77536533c"
+source = "git+https://git.asonix.dog/asonix/activitystreams-sketch?branch=main#e9f3878bd2390ac0376aa89967872f3ab6229339"
 dependencies = [
  "chrono",
  "mime",
