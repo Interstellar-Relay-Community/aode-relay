@@ -5,7 +5,6 @@ mod deliver_many;
 mod instance;
 mod nodeinfo;
 mod process_listeners;
-mod storage;
 
 pub use self::{
     cache_media::CacheMedia, deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance,
@@ -17,14 +16,14 @@ use crate::{
     data::{ActorCache, Media, NodeCache, State},
     db::Db,
     error::MyError,
-    jobs::{process_listeners::Listeners, storage::Storage},
+    jobs::process_listeners::Listeners,
     requests::Requests,
 };
-use background_jobs::{Job, QueueHandle, WorkerConfig};
+use background_jobs::{memory_storage::Storage, Job, QueueHandle, WorkerConfig};
 use std::time::Duration;
 
-pub fn create_server(db: Db) -> JobServer {
-    let shared = background_jobs::create_server(Storage::new(db));
+pub fn create_server() -> JobServer {
+    let shared = background_jobs::create_server(Storage::new());
 
     shared.every(Duration::from_secs(60 * 5), Listeners);
 

@@ -71,7 +71,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let media = Media::new(db.clone());
     let state = State::hydrate(config.clone(), &db).await?;
     let actors = ActorCache::new(db.clone());
-    let job_server = create_server(db.clone());
+    let job_server = create_server();
 
     notify::Notifier::new(config.database_url().parse()?)
         .register(notify::NewBlocks(state.clone()))
