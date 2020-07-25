@@ -3,7 +3,7 @@ use activitystreams_new::uri;
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::error;
-use rsa::{hash::Hashes, padding::PaddingScheme, PublicKey, RSAPublicKey};
+use rsa::{hash::Hash, padding::PaddingScheme, PublicKey, RSAPublicKey};
 use rsa_pem::KeyExt;
 use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
@@ -67,8 +67,9 @@ async fn do_verify(
         let hashed = Sha256::digest(signing_string.as_bytes());
 
         public_key.verify(
-            PaddingScheme::PKCS1v15,
-            Some(&Hashes::SHA2_256),
+            PaddingScheme::PKCS1v15Sign {
+                hash: Some(Hash::SHA2_256),
+            },
             &hashed,
             &decoded,
         )?;

@@ -4,7 +4,7 @@ use actix_web::{client::Client, http::header::Date};
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
 use log::{debug, info, warn};
-use rsa::{hash::Hashes, padding::PaddingScheme, RSAPrivateKey};
+use rsa::{hash::Hash, padding::PaddingScheme, RSAPrivateKey};
 use sha2::{Digest, Sha256};
 use std::{
     cell::RefCell,
@@ -236,9 +236,12 @@ struct Signer {
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, MyError> {
         let hashed = Sha256::digest(signing_string.as_bytes());
-        let bytes =
-            self.private_key
-                .sign(PaddingScheme::PKCS1v15, Some(&Hashes::SHA2_256), &hashed)?;
+        let bytes = self.private_key.sign(
+            PaddingScheme::PKCS1v15Sign {
+                hash: Some(Hash::SHA2_256),
+            },
+            &hashed,
+        )?;
         Ok(base64::encode(bytes))
     }
 }

@@ -15,7 +15,7 @@ build = "src/build.rs"
 [dependencies]
 anyhow = "1.0"
 actix-rt = "1.1.1"
-actix-web = { version = "3.0.0-alpha.2", features = ["rustls"] }
+actix-web = { version = "3.0.0-beta.1", features = ["rustls"] }
 actix-webfinger = "0.3.0-alpha.6"
 activitystreams-new = { git = "https://git.asonix.dog/asonix/activitystreams-sketch", branch = "main" }
 activitystreams-ext = { git = "https://git.asonix.dog/asonix/activitystreams-ext", branch = "main" }
@@ -38,9 +38,9 @@ mime = "0.3.16"
 num_cpus = "1.12"
 pretty_env_logger = "0.4.0"
 rand = "0.7"
-rsa = "0.2"
-rsa-magic-public-key = "0.1.1"
-rsa-pem = "0.1.0"
+rsa = "0.3"
+rsa-magic-public-key = "0.2.0"
+rsa-pem = "0.2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.9"
