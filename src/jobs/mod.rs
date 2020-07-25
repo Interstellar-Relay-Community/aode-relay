@@ -61,7 +61,7 @@ pub fn create_workers(
     .register::<apub::Forward>()
     .register::<apub::Reject>()
     .register::<apub::Undo>()
-    .set_worker_count("default", 4)
+    .set_worker_count("default", 16)
     .start(remote_handle);
 }
 
