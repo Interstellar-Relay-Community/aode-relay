@@ -150,7 +150,7 @@ impl Config {
     }
 
     pub fn software_version(&self) -> String {
-        "v0.1.0-master".to_owned()
+        "v0.1.0-main".to_owned()
     }
 
     pub fn source_code(&self) -> String {
