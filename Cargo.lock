@@ -2029,9 +2029,9 @@ dependencies = [
 
 [[package]]
 name = "rsa-magic-public-key"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d58c7f4c779e983db7bb42b72d0f7d3d7114d428dd8bedadd4037a2a4dbb4c3"
+checksum = "0aa71a8877794a60c9c75c9cfa3989cf368ee28c199dbac367e6fa48ccdfd0c9"
 dependencies = [
  "base64 0.12.3",
  "num-bigint-dig",
