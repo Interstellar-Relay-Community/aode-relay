@@ -107,7 +107,7 @@ impl Requests {
                 }
             }
 
-            return Err(MyError::Status(res.status()));
+            return Err(MyError::Status(url.to_string(), res.status()));
         }
 
         let body = res
@@ -163,7 +163,7 @@ impl Requests {
                 }
             }
 
-            return Err(MyError::Status(res.status()));
+            return Err(MyError::Status(url.to_string(), res.status()));
         }
 
         let bytes = match res.body().limit(1024 * 1024 * 4).await {
@@ -216,7 +216,7 @@ impl Requests {
                     }
                 }
             }
-            return Err(MyError::Status(res.status()));
+            return Err(MyError::Status(inbox.to_string(), res.status()));
         }
 
         Ok(())

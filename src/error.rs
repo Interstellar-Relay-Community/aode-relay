@@ -93,8 +93,8 @@ pub enum MyError {
     #[error("Couldn't receive request response from {0}, {1}")]
     ReceiveResponse(String, String),
 
-    #[error("Response has invalid status code, {0}")]
-    Status(StatusCode),
+    #[error("Response from {0} has invalid status code, {1}")]
+    Status(String, StatusCode),
 
     #[error("Expected an Object, found something else")]
     ObjectFormat,
