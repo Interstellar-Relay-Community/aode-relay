@@ -83,6 +83,7 @@ impl Requests {
             .host()
             .ok_or(MyError::Host(url.to_string()))?
             .to_string();
+        debug!("Host: {}", host);
         let res = req
             .header("Host", host)
             .header("Accept", accept)
@@ -135,6 +136,7 @@ impl Requests {
             .host()
             .ok_or(MyError::Host(url.to_string()))?
             .to_string();
+        debug!("Host: {}", host);
         let res = req
             .header("Host", host)
             .header("Accept", "*/*")
@@ -202,6 +204,7 @@ impl Requests {
             .host()
             .ok_or(MyError::Host(inbox.to_string()))?
             .to_string();
+        debug!("Host: {}", host);
         let res = req
             .header("Host", host)
             .header("Accept", "application/activity+json")
