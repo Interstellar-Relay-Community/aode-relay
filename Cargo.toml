@@ -33,7 +33,7 @@ env_logger = "0.7.1"
 futures = "0.3.4"
 http-signature-normalization-actix = { version = "0.4.0-alpha.1", default-features = false, features = ["sha-2"] }
 log = "0.4"
-lru = "0.5.1"
+lru = "0.6.0"
 mime = "0.3.16"
 num_cpus = "1.12"
 pretty_env_logger = "0.4.0"
@@ -54,7 +54,7 @@ uuid = { version = "0.8", features = ["v4", "serde"] }
 [build-dependencies]
 anyhow = "1.0"
 dotenv = "0.15.0"
-ructe = { version = "0.11.0", features = ["sass", "mime03"] }
+ructe = { version = "0.12.0", features = ["sass", "mime03"] }
 
 [profile.dev.package.rsa]
 opt-level = 3

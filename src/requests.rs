@@ -77,8 +77,14 @@ impl Requests {
         let signer = self.signer();
 
         let client: Client = self.client.borrow().clone();
-        let res = client
-            .get(url)
+        let req = client.get(url);
+        let host = req
+            .get_uri()
+            .host()
+            .ok_or(MyError::Host(url.to_string()))?
+            .to_string();
+        let res = req
+            .header("Host", host)
             .header("Accept", accept)
             .set(Date(SystemTime::now().into()))
             .signature(
@@ -123,8 +129,14 @@ impl Requests {
         let signer = self.signer();
 
         let client: Client = self.client.borrow().clone();
-        let res = client
-            .get(url)
+        let req = client.get(url);
+        let host = req
+            .get_uri()
+            .host()
+            .ok_or(MyError::Host(url.to_string()))?
+            .to_string();
+        let res = req
+            .header("Host", host)
             .header("Accept", "*/*")
             .set(Date(SystemTime::now().into()))
             .signature(
@@ -184,8 +196,14 @@ impl Requests {
         let item_string = serde_json::to_string(item)?;
 
         let client: Client = self.client.borrow().clone();
-        let res = client
-            .post(inbox.as_str())
+        let req = client.post(inbox.as_str());
+        let host = req
+            .get_uri()
+            .host()
+            .ok_or(MyError::Host(inbox.to_string()))?
+            .to_string();
+        let res = req
+            .header("Host", host)
             .header("Accept", "application/activity+json")
             .header("Content-Type", "application/activity+json")
             .set(Date(SystemTime::now().into()))

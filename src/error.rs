@@ -96,6 +96,9 @@ pub enum MyError {
     #[error("Response from {0} has invalid status code, {1}")]
     Status(String, StatusCode),
 
+    #[error("Uri {0} is missing host")]
+    Host(String),
+
     #[error("Expected an Object, found something else")]
     ObjectFormat,
 
