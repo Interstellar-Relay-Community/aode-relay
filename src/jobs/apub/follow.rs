@@ -5,7 +5,7 @@ use crate::{
     error::MyError,
     jobs::{apub::prepare_activity, Deliver, JobState},
 };
-use activitystreams_new::{
+use activitystreams::{
     activity::{Accept as AsAccept, Follow as AsFollow},
     prelude::*,
     url::Url,

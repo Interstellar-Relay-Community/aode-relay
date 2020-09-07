@@ -1,5 +1,5 @@
 use crate::error::MyError;
-use activitystreams_new::url::Url;
+use activitystreams::url::Url;
 use actix_web::{client::Client, http::header::Date};
 use bytes::Bytes;
 use http_signature_normalization_actix::prelude::*;
@@ -37,7 +37,7 @@ impl Requests {
             key_id,
             user_agent,
             private_key,
-            config: Config::default().dont_use_created_field(),
+            config: Config::default().dont_use_created_field().set_host_header(),
         }
     }
 
@@ -77,15 +77,8 @@ impl Requests {
         let signer = self.signer();
 
         let client: Client = self.client.borrow().clone();
-        let req = client.get(url);
-        let host = req
-            .get_uri()
-            .host()
-            .ok_or(MyError::Host(url.to_string()))?
-            .to_string();
-        debug!("Host: {}", host);
-        let res = req
-            .header("Host", host)
+        let res = client
+            .get(url)
             .header("Accept", accept)
             .set(Date(SystemTime::now().into()))
             .signature(
@@ -130,15 +123,8 @@ impl Requests {
         let signer = self.signer();
 
         let client: Client = self.client.borrow().clone();
-        let req = client.get(url);
-        let host = req
-            .get_uri()
-            .host()
-            .ok_or(MyError::Host(url.to_string()))?
-            .to_string();
-        debug!("Host: {}", host);
-        let res = req
-            .header("Host", host)
+        let res = client
+            .get(url)
             .header("Accept", "*/*")
             .set(Date(SystemTime::now().into()))
             .signature(
@@ -198,15 +184,8 @@ impl Requests {
         let item_string = serde_json::to_string(item)?;
 
         let client: Client = self.client.borrow().clone();
-        let req = client.post(inbox.as_str());
-        let host = req
-            .get_uri()
-            .host()
-            .ok_or(MyError::Host(inbox.to_string()))?
-            .to_string();
-        debug!("Host: {}", host);
-        let res = req
-            .header("Host", host)
+        let res = client
+            .post(inbox.as_str())
             .header("Accept", "application/activity+json")
             .header("Content-Type", "application/activity+json")
             .set(Date(SystemTime::now().into()))

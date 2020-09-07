@@ -1,5 +1,5 @@
 use crate::{data::ActorCache, error::MyError, middleware::MyVerify, requests::Requests};
-use activitystreams_new::{uri, url::Url};
+use activitystreams::{uri, url::Url};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};

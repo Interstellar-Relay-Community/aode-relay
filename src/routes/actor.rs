@@ -6,7 +6,7 @@ use crate::{
     routes::ok,
 };
 use activitystreams_ext::Ext1;
-use activitystreams_new::{
+use activitystreams::{
     actor::{ApActor, Application, Endpoints},
     context,
     prelude::*,

@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams_new::url::Url;
+use activitystreams::url::Url;
 use async_mutex::Mutex;
 use bytes::Bytes;
 use futures::join;

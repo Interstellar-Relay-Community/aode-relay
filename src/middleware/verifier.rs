@@ -1,5 +1,5 @@
 use crate::{data::ActorCache, error::MyError, requests::Requests};
-use activitystreams_new::uri;
+use activitystreams::uri;
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::error;

@@ -4,7 +4,7 @@ use crate::{
     error::MyError,
     jobs::{apub::get_inboxes, DeliverMany, JobState},
 };
-use activitystreams_new::prelude::*;
+use activitystreams::prelude::*;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 

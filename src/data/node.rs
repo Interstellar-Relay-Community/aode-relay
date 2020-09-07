@@ -1,5 +1,5 @@
 use crate::{db::Db, error::MyError};
-use activitystreams_new::{uri, url::Url};
+use activitystreams::{uri, url::Url};
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},

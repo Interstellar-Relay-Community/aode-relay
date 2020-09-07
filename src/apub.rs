@@ -1,5 +1,5 @@
 use activitystreams_ext::{Ext1, UnparsedExtension};
-use activitystreams_new::{
+use activitystreams::{
     activity::ActorAndObject,
     actor::{Actor, ApActor},
     unparsed::UnparsedMutExt,

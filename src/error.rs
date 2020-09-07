@@ -1,4 +1,4 @@
-use activitystreams_new::{error::DomainError, url::ParseError};
+use activitystreams::{error::DomainError, url::ParseError};
 use actix_web::{
     error::{BlockingError, ResponseError},
     http::StatusCode,

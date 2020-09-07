@@ -7,7 +7,7 @@ use crate::{
         DeliverMany, JobState,
     },
 };
-use activitystreams_new::{activity::Announce as AsAnnounce, url::Url};
+use activitystreams::{activity::Announce as AsAnnounce, url::Url};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 

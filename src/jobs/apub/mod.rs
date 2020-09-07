@@ -3,7 +3,7 @@ use crate::{
     data::{Actor, State},
     error::MyError,
 };
-use activitystreams_new::{
+use activitystreams::{
     activity::{Follow as AsFollow, Undo as AsUndo},
     context,
     prelude::*,

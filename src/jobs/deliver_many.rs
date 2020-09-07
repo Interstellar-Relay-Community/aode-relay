@@ -2,7 +2,7 @@ use crate::{
     error::MyError,
     jobs::{Deliver, JobState},
 };
-use activitystreams_new::url::Url;
+use activitystreams::url::Url;
 use anyhow::Error;
 use background_jobs::ActixJob;
 use futures::future::{ready, Ready};

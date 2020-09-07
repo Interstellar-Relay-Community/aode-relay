@@ -8,7 +8,7 @@ use crate::{
     requests::Requests,
     routes::accepted,
 };
-use activitystreams_new::{
+use activitystreams::{
     activity, base::AnyBase, prelude::*, primitives::OneOrMany, public, url::Url,
 };
 use actix_web::{web, HttpResponse};

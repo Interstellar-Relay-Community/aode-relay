@@ -1,5 +1,5 @@
 use crate::jobs::JobState;
-use activitystreams_new::url::Url;
+use activitystreams::url::Url;
 use anyhow::Error;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};

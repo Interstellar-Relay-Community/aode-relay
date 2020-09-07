@@ -1,5 +1,5 @@
 use crate::error::MyError;
-use activitystreams_new::url::Url;
+use activitystreams::url::Url;
 use deadpool_postgres::{Manager, Pool};
 use log::{info, warn};
 use rsa::RSAPrivateKey;
