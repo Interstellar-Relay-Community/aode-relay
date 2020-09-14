@@ -28,7 +28,7 @@ impl Requests {
     pub fn new(key_id: String, private_key: RSAPrivateKey, user_agent: String) -> Self {
         Requests {
             client: Rc::new(RefCell::new(
-                Client::build()
+                Client::builder()
                     .header("User-Agent", user_agent.clone())
                     .finish(),
             )),
@@ -45,7 +45,7 @@ impl Requests {
         let count = self.consecutive_errors.fetch_add(1, Ordering::Relaxed);
         if count + 1 >= self.error_limit {
             warn!("{} consecutive errors, rebuilding http client", count);
-            *self.client.borrow_mut() = Client::build()
+            *self.client.borrow_mut() = Client::builder()
                 .header("User-Agent", self.user_agent.clone())
                 .finish();
             self.reset_err();
