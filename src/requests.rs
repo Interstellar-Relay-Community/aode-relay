@@ -37,7 +37,7 @@ impl Requests {
             key_id,
             user_agent,
             private_key,
-            config: Config::default().dont_use_created_field().set_host_header(),
+            config: Config::default().mastodon_compat(),
         }
     }
 
