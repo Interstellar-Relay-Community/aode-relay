@@ -1,4 +1,9 @@
-use crate::{data::ActorCache, error::MyError, middleware::MyVerify, requests::Requests};
+use crate::{
+    data::{ActorCache, State},
+    error::MyError,
+    middleware::MyVerify,
+    requests::Requests,
+};
 use activitystreams::{uri, url::Url};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
@@ -109,11 +114,12 @@ impl Config {
         &self,
         requests: Requests,
         actors: ActorCache,
+        state: State,
     ) -> VerifySignature<MyVerify> {
         if self.validate_signatures {
-            VerifySignature::new(MyVerify(requests, actors), Default::default())
+            VerifySignature::new(MyVerify(requests, actors, state), Default::default())
         } else {
-            VerifySignature::new(MyVerify(requests, actors), Default::default()).optional()
+            VerifySignature::new(MyVerify(requests, actors, state), Default::default()).optional()
         }
     }
 

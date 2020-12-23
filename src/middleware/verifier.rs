@@ -1,6 +1,11 @@
-use crate::{data::ActorCache, error::MyError, requests::Requests};
+use crate::{
+    data::{ActorCache, State},
+    error::MyError,
+    requests::Requests,
+};
 use activitystreams::uri;
 use actix_web::web;
+use futures::join;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::error;
 use rsa::{hash::Hash, padding::PaddingScheme, PublicKey, RSAPublicKey};
@@ -9,7 +14,7 @@ use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone)]
-pub struct MyVerify(pub Requests, pub ActorCache);
+pub struct MyVerify(pub Requests, pub ActorCache, pub State);
 
 impl MyVerify {
     async fn verify(
@@ -20,6 +25,18 @@ impl MyVerify {
         signing_string: String,
     ) -> Result<bool, MyError> {
         let mut uri = uri!(key_id);
+
+        let (is_blocked, is_whitelisted) =
+            join!(self.2.is_blocked(&uri), self.2.is_whitelisted(&uri));
+
+        if is_blocked {
+            return Err(MyError::Blocked(key_id));
+        }
+
+        if !is_whitelisted {
+            return Err(MyError::Whitelist(key_id));
+        }
+
         uri.set_fragment(None);
         let actor = self.1.get(&uri, &self.0).await?;
         let was_cached = actor.is_cached();

@@ -133,7 +133,11 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
-                    .wrap(config.signature_middleware(state.requests(), actors.clone()))
+                    .wrap(config.signature_middleware(
+                        state.requests(),
+                        actors.clone(),
+                        state.clone(),
+                    ))
                     .wrap(DebugPayload(config.debug()))
                     .route(web::post().to(inbox)),
             )
