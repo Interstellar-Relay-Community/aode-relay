@@ -3,7 +3,7 @@ use crate::{
     data::NodeCache,
     db::Db,
     error::MyError,
-    requests::Requests,
+    requests::{Breakers, Requests},
 };
 use activitystreams::url::Url;
 use actix_rt::{
@@ -29,6 +29,7 @@ pub struct State {
     whitelists: Arc<RwLock<HashSet<String>>>,
     listeners: Arc<RwLock<HashSet<Url>>>,
     node_cache: NodeCache,
+    breakers: Breakers,
 }
 
 impl State {
@@ -46,6 +47,7 @@ impl State {
                 self.config.software_version(),
                 self.config.generate_url(UrlKind::Index),
             ),
+            self.breakers.clone(),
         )
     }
 
@@ -188,6 +190,7 @@ impl State {
             whitelists: Arc::new(RwLock::new(whitelists)),
             listeners: listeners.clone(),
             node_cache: NodeCache::new(db.clone(), listeners),
+            breakers: Breakers::default(),
         };
 
         state.spawn_rehydrate(db.clone());

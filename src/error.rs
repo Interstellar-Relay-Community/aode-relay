@@ -119,6 +119,9 @@ pub enum MyError {
 
     #[error("Blocking operation was canceled")]
     Canceled,
+
+    #[error("Not trying request due to failed breaker")]
+    Breaker,
 }
 
 impl ResponseError for MyError {

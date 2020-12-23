@@ -2,16 +2,113 @@ use crate::error::MyError;
 use activitystreams::url::Url;
 use actix_web::{client::Client, http::header::Date};
 use bytes::Bytes;
+use chrono::{DateTime, Utc};
 use http_signature_normalization_actix::prelude::*;
 use log::{debug, info, warn};
 use rsa::{hash::Hash, padding::PaddingScheme, RSAPrivateKey};
 use sha2::{Digest, Sha256};
 use std::{
     cell::RefCell,
+    collections::HashMap,
     rc::Rc,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
     time::SystemTime,
 };
+
+#[derive(Clone)]
+pub struct Breakers {
+    inner: Arc<Mutex<HashMap<String, Breaker>>>,
+}
+
+impl Breakers {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn should_try(&self, url: &Url) -> bool {
+        if let Some(domain) = url.domain() {
+            self.inner
+                .lock()
+                .expect("Breakers poisoned")
+                .get(domain)
+                .map(|breaker| breaker.should_try())
+                .unwrap_or(true)
+        } else {
+            false
+        }
+    }
+
+    fn fail(&self, url: &Url) {
+        if let Some(domain) = url.domain() {
+            let mut hm = self.inner.lock().expect("Breakers poisoned");
+            let entry = hm.entry(domain.to_owned()).or_insert(Breaker::default());
+            entry.fail();
+        }
+    }
+
+    fn succeed(&self, url: &Url) {
+        if let Some(domain) = url.domain() {
+            let mut hm = self.inner.lock().expect("Breakers poisoned");
+            let entry = hm.entry(domain.to_owned()).or_insert(Breaker::default());
+            entry.succeed();
+        }
+    }
+}
+
+impl Default for Breakers {
+    fn default() -> Self {
+        Breakers {
+            inner: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+}
+
+struct Breaker {
+    failures: usize,
+    last_attempt: DateTime<Utc>,
+    last_success: DateTime<Utc>,
+}
+
+impl Breaker {
+    const fn failure_threshold() -> usize {
+        10
+    }
+
+    fn failure_wait() -> chrono::Duration {
+        chrono::Duration::days(1)
+    }
+
+    fn should_try(&self) -> bool {
+        self.failures < Self::failure_threshold()
+            || self.last_attempt + Self::failure_wait() < Utc::now()
+    }
+
+    fn fail(&mut self) {
+        self.failures += 1;
+        self.last_attempt = Utc::now();
+    }
+
+    fn succeed(&mut self) {
+        self.failures = 0;
+        self.last_attempt = Utc::now();
+        self.last_success = Utc::now();
+    }
+}
+
+impl Default for Breaker {
+    fn default() -> Self {
+        let now = Utc::now();
+
+        Breaker {
+            failures: 0,
+            last_attempt: now,
+            last_success: now,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct Requests {
@@ -22,10 +119,16 @@ pub struct Requests {
     user_agent: String,
     private_key: RSAPrivateKey,
     config: Config,
+    breakers: Breakers,
 }
 
 impl Requests {
-    pub fn new(key_id: String, private_key: RSAPrivateKey, user_agent: String) -> Self {
+    pub fn new(
+        key_id: String,
+        private_key: RSAPrivateKey,
+        user_agent: String,
+        breakers: Breakers,
+    ) -> Self {
         Requests {
             client: Rc::new(RefCell::new(
                 Client::builder()
@@ -38,6 +141,7 @@ impl Requests {
             user_agent,
             private_key,
             config: Config::default().mastodon_compat(),
+            breakers,
         }
     }
 
@@ -74,6 +178,12 @@ impl Requests {
     where
         T: serde::de::DeserializeOwned,
     {
+        let parsed_url = url.parse::<Url>()?;
+
+        if !self.breakers.should_try(&parsed_url) {
+            return Err(MyError::Breaker);
+        }
+
         let signer = self.signer();
 
         let client: Client = self.client.borrow().clone();
@@ -92,6 +202,7 @@ impl Requests {
 
         if res.is_err() {
             self.count_err();
+            self.breakers.fail(&parsed_url);
         }
 
         let mut res = res.map_err(|e| MyError::SendRequest(url.to_string(), e.to_string()))?;
@@ -107,8 +218,12 @@ impl Requests {
                 }
             }
 
+            self.breakers.fail(&parsed_url);
+
             return Err(MyError::Status(url.to_string(), res.status()));
         }
+
+        self.breakers.succeed(&parsed_url);
 
         let body = res
             .body()
@@ -119,6 +234,12 @@ impl Requests {
     }
 
     pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
+        let parsed_url = url.parse::<Url>()?;
+
+        if !self.breakers.should_try(&parsed_url) {
+            return Err(MyError::Breaker);
+        }
+
         info!("Fetching bytes for {}", url);
         let signer = self.signer();
 
@@ -137,6 +258,7 @@ impl Requests {
             .await;
 
         if res.is_err() {
+            self.breakers.fail(&parsed_url);
             self.count_err();
         }
 
@@ -163,8 +285,12 @@ impl Requests {
                 }
             }
 
+            self.breakers.fail(&parsed_url);
+
             return Err(MyError::Status(url.to_string(), res.status()));
         }
+
+        self.breakers.succeed(&parsed_url);
 
         let bytes = match res.body().limit(1024 * 1024 * 4).await {
             Err(e) => {
@@ -180,6 +306,10 @@ impl Requests {
     where
         T: serde::ser::Serialize,
     {
+        if !self.breakers.should_try(&inbox) {
+            return Err(MyError::Breaker);
+        }
+
         let signer = self.signer();
         let item_string = serde_json::to_string(item)?;
 
@@ -202,6 +332,7 @@ impl Requests {
 
         if res.is_err() {
             self.count_err();
+            self.breakers.fail(&inbox);
         }
 
         let mut res = res.map_err(|e| MyError::SendRequest(inbox.to_string(), e.to_string()))?;
@@ -216,8 +347,12 @@ impl Requests {
                     }
                 }
             }
+
+            self.breakers.fail(&inbox);
             return Err(MyError::Status(inbox.to_string(), res.status()));
         }
+
+        self.breakers.succeed(&inbox);
 
         Ok(())
     }
