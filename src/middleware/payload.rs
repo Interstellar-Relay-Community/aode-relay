@@ -1,16 +1,17 @@
 use actix_web::{
     dev::{Payload, Service, ServiceRequest, Transform},
     http::StatusCode,
+    web::BytesMut,
     HttpMessage, HttpResponse, ResponseError,
 };
-use bytes::BytesMut;
 use futures::{
+    channel::mpsc::channel,
     future::{ok, try_join, LocalBoxFuture, Ready},
+    sink::SinkExt,
     stream::StreamExt,
 };
 use log::{error, info};
 use std::task::{Context, Poll};
-use tokio::sync::mpsc::channel;
 
 #[derive(Clone, Debug)]
 pub struct DebugPayload(pub bool);
@@ -68,7 +69,7 @@ where
 
     fn call(&mut self, mut req: S::Request) -> Self::Future {
         if self.0 {
-            let (mut tx, rx) = channel(1);
+            let (mut tx, rx) = channel(0);
 
             let mut pl = req.take_payload();
             req.set_payload(Payload::Stream(Box::pin(rx)));

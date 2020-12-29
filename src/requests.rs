@@ -1,7 +1,8 @@
 use crate::error::MyError;
 use activitystreams::url::Url;
-use actix_web::{client::Client, http::header::Date};
-use bytes::Bytes;
+use actix_web::{client::Client, http::header::Date, web::Bytes};
+use async_mutex::Mutex;
+use async_rwlock::RwLock;
 use chrono::{DateTime, Utc};
 use http_signature_normalization_actix::prelude::*;
 use log::{debug, info, warn};
@@ -13,14 +14,14 @@ use std::{
     rc::Rc,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Mutex,
+        Arc,
     },
     time::SystemTime,
 };
 
 #[derive(Clone)]
 pub struct Breakers {
-    inner: Arc<Mutex<HashMap<String, Breaker>>>,
+    inner: Arc<RwLock<HashMap<String, Arc<Mutex<Breaker>>>>>,
 }
 
 impl Breakers {
@@ -28,32 +29,47 @@ impl Breakers {
         Self::default()
     }
 
-    fn should_try(&self, url: &Url) -> bool {
+    async fn should_try(&self, url: &Url) -> bool {
         if let Some(domain) = url.domain() {
-            self.inner
-                .lock()
-                .expect("Breakers poisoned")
-                .get(domain)
-                .map(|breaker| breaker.should_try())
-                .unwrap_or(true)
+            if let Some(breaker) = self.inner.read().await.get(domain) {
+                breaker.lock().await.should_try()
+            } else {
+                true
+            }
         } else {
             false
         }
     }
 
-    fn fail(&self, url: &Url) {
+    async fn fail(&self, url: &Url) {
         if let Some(domain) = url.domain() {
-            let mut hm = self.inner.lock().expect("Breakers poisoned");
-            let entry = hm.entry(domain.to_owned()).or_insert(Breaker::default());
-            entry.fail();
+            if let Some(breaker) = self.inner.read().await.get(domain) {
+                let owned_breaker = Arc::clone(&breaker);
+                drop(breaker);
+                owned_breaker.lock().await.fail();
+            } else {
+                let mut hm = self.inner.write().await;
+                let breaker = hm
+                    .entry(domain.to_owned())
+                    .or_insert(Arc::new(Mutex::new(Breaker::default())));
+                breaker.lock().await.fail();
+            }
         }
     }
 
-    fn succeed(&self, url: &Url) {
+    async fn succeed(&self, url: &Url) {
         if let Some(domain) = url.domain() {
-            let mut hm = self.inner.lock().expect("Breakers poisoned");
-            let entry = hm.entry(domain.to_owned()).or_insert(Breaker::default());
-            entry.succeed();
+            if let Some(breaker) = self.inner.read().await.get(domain) {
+                let owned_breaker = Arc::clone(&breaker);
+                drop(breaker);
+                owned_breaker.lock().await.succeed();
+            } else {
+                let mut hm = self.inner.write().await;
+                let breaker = hm
+                    .entry(domain.to_owned())
+                    .or_insert(Arc::new(Mutex::new(Breaker::default())));
+                breaker.lock().await.succeed();
+            }
         }
     }
 }
@@ -61,7 +77,7 @@ impl Breakers {
 impl Default for Breakers {
     fn default() -> Self {
         Breakers {
-            inner: Arc::new(Mutex::new(HashMap::new())),
+            inner: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
@@ -180,7 +196,7 @@ impl Requests {
     {
         let parsed_url = url.parse::<Url>()?;
 
-        if !self.breakers.should_try(&parsed_url) {
+        if !self.breakers.should_try(&parsed_url).await {
             return Err(MyError::Breaker);
         }
 
@@ -202,7 +218,7 @@ impl Requests {
 
         if res.is_err() {
             self.count_err();
-            self.breakers.fail(&parsed_url);
+            self.breakers.fail(&parsed_url).await;
         }
 
         let mut res = res.map_err(|e| MyError::SendRequest(url.to_string(), e.to_string()))?;
@@ -218,12 +234,12 @@ impl Requests {
                 }
             }
 
-            self.breakers.fail(&parsed_url);
+            self.breakers.fail(&parsed_url).await;
 
             return Err(MyError::Status(url.to_string(), res.status()));
         }
 
-        self.breakers.succeed(&parsed_url);
+        self.breakers.succeed(&parsed_url).await;
 
         let body = res
             .body()
@@ -236,7 +252,7 @@ impl Requests {
     pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
         let parsed_url = url.parse::<Url>()?;
 
-        if !self.breakers.should_try(&parsed_url) {
+        if !self.breakers.should_try(&parsed_url).await {
             return Err(MyError::Breaker);
         }
 
@@ -258,7 +274,7 @@ impl Requests {
             .await;
 
         if res.is_err() {
-            self.breakers.fail(&parsed_url);
+            self.breakers.fail(&parsed_url).await;
             self.count_err();
         }
 
@@ -285,12 +301,12 @@ impl Requests {
                 }
             }
 
-            self.breakers.fail(&parsed_url);
+            self.breakers.fail(&parsed_url).await;
 
             return Err(MyError::Status(url.to_string(), res.status()));
         }
 
-        self.breakers.succeed(&parsed_url);
+        self.breakers.succeed(&parsed_url).await;
 
         let bytes = match res.body().limit(1024 * 1024 * 4).await {
             Err(e) => {
@@ -306,7 +322,7 @@ impl Requests {
     where
         T: serde::ser::Serialize,
     {
-        if !self.breakers.should_try(&inbox) {
+        if !self.breakers.should_try(&inbox).await {
             return Err(MyError::Breaker);
         }
 
@@ -332,7 +348,7 @@ impl Requests {
 
         if res.is_err() {
             self.count_err();
-            self.breakers.fail(&inbox);
+            self.breakers.fail(&inbox).await;
         }
 
         let mut res = res.map_err(|e| MyError::SendRequest(inbox.to_string(), e.to_string()))?;
@@ -348,11 +364,11 @@ impl Requests {
                 }
             }
 
-            self.breakers.fail(&inbox);
+            self.breakers.fail(&inbox).await;
             return Err(MyError::Status(inbox.to_string(), res.status()));
         }
 
-        self.breakers.succeed(&inbox);
+        self.breakers.succeed(&inbox).await;
 
         Ok(())
     }

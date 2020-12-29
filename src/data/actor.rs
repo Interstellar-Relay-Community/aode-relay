@@ -1,8 +1,8 @@
 use crate::{apub::AcceptedActors, db::Db, error::MyError, requests::Requests};
 use activitystreams::{prelude::*, uri, url::Url};
+use async_rwlock::RwLock;
 use log::error;
 use std::{collections::HashSet, sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
 use uuid::Uuid;
 

@@ -11,13 +11,13 @@ use actix_rt::{
     time::{interval_at, Instant},
 };
 use actix_web::web;
+use async_rwlock::RwLock;
 use futures::{join, try_join};
 use log::{error, info};
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RSAPrivateKey, RSAPublicKey};
 use std::{collections::HashSet, sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct State {

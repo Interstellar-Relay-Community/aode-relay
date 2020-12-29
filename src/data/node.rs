@@ -1,12 +1,12 @@
 use crate::{db::Db, error::MyError};
 use activitystreams::{uri, url::Url};
+use async_rwlock::RwLock;
 use log::{debug, error};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use tokio::sync::RwLock;
 use tokio_postgres::types::Json;
 use uuid::Uuid;
 

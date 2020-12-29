@@ -1,11 +1,11 @@
 use crate::{db::Db, error::MyError};
 use activitystreams::url::Url;
+use actix_web::web::Bytes;
 use async_mutex::Mutex;
-use bytes::Bytes;
+use async_rwlock::RwLock;
 use futures::join;
 use lru::LruCache;
 use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 use ttl_cache::TtlCache;
 use uuid::Uuid;
 

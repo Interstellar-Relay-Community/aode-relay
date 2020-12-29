@@ -3,7 +3,6 @@ use actix_web::{
     http::header::{CacheControl, CacheDirective},
     web, HttpResponse,
 };
-use bytes::Bytes;
 use uuid::Uuid;
 
 pub async fn route(
@@ -30,7 +29,7 @@ pub async fn route(
     Ok(HttpResponse::NotFound().finish())
 }
 
-fn cached(content_type: String, bytes: Bytes) -> HttpResponse {
+fn cached(content_type: String, bytes: web::Bytes) -> HttpResponse {
     HttpResponse::Ok()
         .set(CacheControl(vec![
             CacheDirective::Public,
