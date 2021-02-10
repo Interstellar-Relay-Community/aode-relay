@@ -39,7 +39,7 @@ RUN \
 FROM arm32v7-builder as builder
 
 ARG TAG=master
-ARG REPOSITORY=https://git.asonix.dog/asonix/ap-relay
+ARG REPOSITORY=https://git.asonix.dog/asonix/relay
 ARG BINARY=relay
 
 RUN \
