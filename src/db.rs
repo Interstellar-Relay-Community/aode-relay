@@ -169,20 +169,24 @@ impl Inner {
 
     fn is_allowed(&self, domain: &str) -> bool {
         let prefix = domain_prefix(domain);
+        let reverse_domain = domain_key(domain);
 
         if self.restricted_mode {
             self.allowed_domains
                 .scan_prefix(prefix)
                 .keys()
                 .filter_map(|res| res.ok())
-                .any(|rdnn| domain.starts_with(String::from_utf8_lossy(&rdnn).as_ref()))
+                .any(|rdnn| {
+                    let rdnn_string = String::from_utf8_lossy(&rdnn);
+                    reverse_domain.starts_with(rdnn_string.as_ref())
+                })
         } else {
             !self
                 .blocked_domains
                 .scan_prefix(prefix)
                 .keys()
                 .filter_map(|res| res.ok())
-                .any(|rdnn| domain.starts_with(String::from_utf8_lossy(&rdnn).as_ref()))
+                .any(|rdnn| reverse_domain.starts_with(String::from_utf8_lossy(&rdnn).as_ref()))
         }
     }
 }
