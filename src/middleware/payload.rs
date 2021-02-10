@@ -1,14 +1,12 @@
 use actix_web::{
     dev::{Payload, Service, ServiceRequest, Transform},
-    http::StatusCode,
+    http::{Method, StatusCode},
     web::BytesMut,
     HttpMessage, HttpResponse, ResponseError,
 };
 use futures::{
-    channel::mpsc::channel,
-    future::{ok, try_join, LocalBoxFuture, Ready},
-    sink::SinkExt,
-    stream::StreamExt,
+    future::{ok, LocalBoxFuture, Ready, TryFutureExt},
+    stream::{once, TryStreamExt},
 };
 use log::{error, info};
 use std::task::{Context, Poll};
@@ -68,40 +66,23 @@ where
     }
 
     fn call(&mut self, mut req: S::Request) -> Self::Future {
-        if self.0 {
-            let (mut tx, rx) = channel(0);
-
-            let mut pl = req.take_payload();
-            req.set_payload(Payload::Stream(Box::pin(rx)));
+        if self.0 && req.method() == Method::POST {
+            let pl = req.take_payload();
+            req.set_payload(Payload::Stream(Box::pin(once(
+                pl.try_fold(BytesMut::new(), |mut acc, bytes| async {
+                    acc.extend(bytes);
+                    Ok(acc)
+                })
+                .map_ok(|bytes| {
+                    let bytes = bytes.freeze();
+                    info!("{}", String::from_utf8_lossy(&bytes));
+                    bytes
+                }),
+            ))));
 
             let fut = self.1.call(req);
 
-            let payload_fut = async move {
-                let mut bytes = BytesMut::new();
-
-                while let Some(res) = pl.next().await {
-                    let b = res.map_err(|e| {
-                        error!("Payload error, {}", e);
-                        DebugError
-                    })?;
-                    bytes.extend(b);
-                }
-
-                info!("{}", String::from_utf8_lossy(bytes.as_ref()));
-
-                tx.send(Ok(bytes.freeze())).await.map_err(|e| {
-                    error!("Error sending bytes, {}", e);
-                    DebugError
-                })?;
-
-                Ok(()) as Result<(), actix_web::Error>
-            };
-
-            Box::pin(async move {
-                let (res, _) = try_join(fut, payload_fut).await?;
-
-                Ok(res)
-            })
+            Box::pin(async move { fut.await })
         } else {
             let fut = self.1.call(req);
 

@@ -63,7 +63,7 @@ impl MyVerify {
             actor_id
         } else {
             self.0
-                .fetch_json::<PublicKeyResponse>(public_key_id.as_str())
+                .fetch::<PublicKeyResponse>(public_key_id.as_str())
                 .await?
                 .actor_id()
                 .ok_or_else(|| MyError::MissingId)?

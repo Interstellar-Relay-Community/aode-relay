@@ -39,11 +39,20 @@ impl Breakers {
 
     async fn fail(&self, url: &Url) {
         if let Some(domain) = url.domain() {
-            if let Some(breaker) = self.inner.read().await.get(domain) {
-                let owned_breaker = Arc::clone(&breaker);
-                drop(breaker);
-                owned_breaker.lock().await.fail();
-            } else {
+            let should_write = {
+                let read = self.inner.read().await;
+
+                if let Some(breaker) = read.get(domain) {
+                    let owned_breaker = Arc::clone(&breaker);
+                    drop(breaker);
+                    owned_breaker.lock().await.fail();
+                    false
+                } else {
+                    true
+                }
+            };
+
+            if should_write {
                 let mut hm = self.inner.write().await;
                 let breaker = hm
                     .entry(domain.to_owned())
@@ -55,11 +64,20 @@ impl Breakers {
 
     async fn succeed(&self, url: &Url) {
         if let Some(domain) = url.domain() {
-            if let Some(breaker) = self.inner.read().await.get(domain) {
-                let owned_breaker = Arc::clone(&breaker);
-                drop(breaker);
-                owned_breaker.lock().await.succeed();
-            } else {
+            let should_write = {
+                let read = self.inner.read().await;
+
+                if let Some(breaker) = read.get(domain) {
+                    let owned_breaker = Arc::clone(&breaker);
+                    drop(breaker);
+                    owned_breaker.lock().await.succeed();
+                    false
+                } else {
+                    true
+                }
+            };
+
+            if should_write {
                 let mut hm = self.inner.write().await;
                 let breaker = hm
                     .entry(domain.to_owned())
