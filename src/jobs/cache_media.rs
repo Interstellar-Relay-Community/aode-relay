@@ -15,7 +15,7 @@ impl CacheMedia {
     }
 
     async fn perform(self, state: JobState) -> Result<(), Error> {
-        if state.media.get_bytes(self.uuid).await.is_some() {
+        if !state.media.is_outdated(self.uuid).await? {
             return Ok(());
         }
 
@@ -25,7 +25,7 @@ impl CacheMedia {
             state
                 .media
                 .store_bytes(self.uuid, content_type, bytes)
-                .await;
+                .await?;
         }
 
         Ok(())

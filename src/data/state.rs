@@ -6,38 +6,31 @@ use crate::{
     requests::{Breakers, Requests},
 };
 use activitystreams::url::Url;
-use actix_rt::{
-    spawn,
-    time::{interval_at, Instant},
-};
 use actix_web::web;
 use async_rwlock::RwLock;
-use futures::{join, try_join};
-use log::{error, info};
+use log::info;
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RSAPrivateKey, RSAPublicKey};
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct State {
-    pub public_key: RSAPublicKey,
+    pub(crate) public_key: RSAPublicKey,
     private_key: RSAPrivateKey,
     config: Config,
-    actor_id_cache: Arc<RwLock<LruCache<Url, Url>>>,
-    blocks: Arc<RwLock<HashSet<String>>>,
-    whitelists: Arc<RwLock<HashSet<String>>>,
-    listeners: Arc<RwLock<HashSet<Url>>>,
+    object_cache: Arc<RwLock<LruCache<Url, Url>>>,
     node_cache: NodeCache,
     breakers: Breakers,
+    pub(crate) db: Db,
 }
 
 impl State {
-    pub fn node_cache(&self) -> NodeCache {
+    pub(crate) fn node_cache(&self) -> NodeCache {
         self.node_cache.clone()
     }
 
-    pub fn requests(&self) -> Requests {
+    pub(crate) fn requests(&self) -> Requests {
         Requests::new(
             self.config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),
@@ -51,168 +44,64 @@ impl State {
         )
     }
 
-    pub async fn bust_whitelist(&self, whitelist: &str) {
-        self.whitelists.write().await.remove(whitelist);
-    }
-
-    pub async fn bust_block(&self, block: &str) {
-        self.blocks.write().await.remove(block);
-    }
-
-    pub async fn bust_listener(&self, inbox: &Url) {
-        self.listeners.write().await.remove(inbox);
-    }
-
-    pub async fn listeners(&self) -> Vec<Url> {
-        self.listeners.read().await.iter().cloned().collect()
-    }
-
-    pub async fn blocks(&self) -> Vec<String> {
-        self.blocks.read().await.iter().cloned().collect()
-    }
-
-    pub async fn listeners_without(&self, inbox: &Url, domain: &str) -> Vec<Url> {
-        self.listeners
-            .read()
-            .await
+    pub(crate) async fn inboxes_without(
+        &self,
+        existing_inbox: &Url,
+        domain: &str,
+    ) -> Result<Vec<Url>, MyError> {
+        Ok(self
+            .db
+            .inboxes()
+            .await?
             .iter()
-            .filter_map(|listener| {
-                if let Some(dom) = listener.domain() {
-                    if listener != inbox && dom != domain {
-                        return Some(listener.clone());
+            .filter_map(|inbox| {
+                if let Some(dom) = inbox.domain() {
+                    if inbox != existing_inbox && dom != domain {
+                        return Some(inbox.clone());
                     }
                 }
 
                 None
             })
-            .collect()
+            .collect())
     }
 
-    pub async fn is_whitelisted(&self, actor_id: &Url) -> bool {
-        if !self.config.whitelist_mode() {
-            return true;
-        }
-
-        if let Some(domain) = actor_id.domain() {
-            return self.whitelists.read().await.contains(domain);
-        }
-
-        false
+    pub(crate) async fn is_cached(&self, object_id: &Url) -> bool {
+        self.object_cache.read().await.contains(object_id)
     }
 
-    pub async fn is_blocked(&self, actor_id: &Url) -> bool {
-        if let Some(domain) = actor_id.domain() {
-            return self.blocks.read().await.contains(domain);
-        }
-
-        true
+    pub(crate) async fn cache(&self, object_id: Url, actor_id: Url) {
+        self.object_cache.write().await.put(object_id, actor_id);
     }
 
-    pub async fn is_listener(&self, actor_id: &Url) -> bool {
-        self.listeners.read().await.contains(actor_id)
-    }
+    pub(crate) async fn build(config: Config, db: Db) -> Result<Self, MyError> {
+        let private_key = if let Ok(Some(key)) = db.private_key().await {
+            key
+        } else {
+            info!("Generating new keys");
+            let key = web::block(move || {
+                let mut rng = thread_rng();
+                RSAPrivateKey::new(&mut rng, 4096)
+            })
+            .await?;
 
-    pub async fn is_cached(&self, object_id: &Url) -> bool {
-        self.actor_id_cache.read().await.contains(object_id)
-    }
+            db.update_private_key(&key).await?;
 
-    pub async fn cache(&self, object_id: Url, actor_id: Url) {
-        self.actor_id_cache.write().await.put(object_id, actor_id);
-    }
-
-    pub async fn cache_block(&self, host: String) {
-        self.blocks.write().await.insert(host);
-    }
-
-    pub async fn cache_whitelist(&self, host: String) {
-        self.whitelists.write().await.insert(host);
-    }
-
-    pub async fn cache_listener(&self, listener: Url) {
-        self.listeners.write().await.insert(listener);
-    }
-
-    pub async fn rehydrate(&self, db: &Db) -> Result<(), MyError> {
-        let f1 = db.hydrate_blocks();
-        let f2 = db.hydrate_whitelists();
-        let f3 = db.hydrate_listeners();
-
-        let (blocks, whitelists, listeners) = try_join!(f1, f2, f3)?;
-
-        join!(
-            async move {
-                *self.listeners.write().await = listeners;
-            },
-            async move {
-                *self.whitelists.write().await = whitelists;
-            },
-            async move {
-                *self.blocks.write().await = blocks;
-            }
-        );
-
-        Ok(())
-    }
-
-    pub async fn hydrate(config: Config, db: &Db) -> Result<Self, MyError> {
-        let f1 = db.hydrate_blocks();
-        let f2 = db.hydrate_whitelists();
-        let f3 = db.hydrate_listeners();
-
-        let f4 = async move {
-            if let Ok(Some(key)) = db.hydrate_private_key().await {
-                Ok(key)
-            } else {
-                info!("Generating new keys");
-                let key = web::block(move || {
-                    let mut rng = thread_rng();
-                    RSAPrivateKey::new(&mut rng, 4096)
-                })
-                .await?;
-
-                db.update_private_key(&key).await?;
-
-                Ok(key)
-            }
+            key
         };
 
-        let (blocks, whitelists, listeners, private_key) = try_join!(f1, f2, f3, f4)?;
-
         let public_key = private_key.to_public_key();
-        let listeners = Arc::new(RwLock::new(listeners));
 
         let state = State {
             public_key,
             private_key,
             config,
-            actor_id_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
-            blocks: Arc::new(RwLock::new(blocks)),
-            whitelists: Arc::new(RwLock::new(whitelists)),
-            listeners: listeners.clone(),
-            node_cache: NodeCache::new(db.clone(), listeners),
+            object_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
+            node_cache: NodeCache::new(db.clone()),
             breakers: Breakers::default(),
+            db,
         };
 
-        state.spawn_rehydrate(db.clone());
-
         Ok(state)
-    }
-
-    fn spawn_rehydrate(&self, db: Db) {
-        let state = self.clone();
-        spawn(async move {
-            let start = Instant::now();
-            let duration = Duration::from_secs(60 * 10);
-
-            let mut interval = interval_at(start, duration);
-
-            loop {
-                interval.tick().await;
-
-                if let Err(e) = state.rehydrate(&db).await {
-                    error!("Error rehydrating, {}", e);
-                }
-            }
-        });
     }
 }

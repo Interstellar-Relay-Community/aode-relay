@@ -1,7 +1,7 @@
 use crate::{
     apub::AcceptedActivities,
     config::UrlKind,
-    data::Actor,
+    db::Actor,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
 use background_jobs::ActixJob;
@@ -19,11 +19,9 @@ impl Undo {
     }
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
-        let was_following = state.actors.is_following(&self.actor.id).await;
+        let was_following = state.state.db.is_connected(self.actor.id.clone()).await?;
 
-        if state.actors.unfollower(&self.actor).await?.is_some() {
-            state.db.remove_listener(self.actor.inbox.clone()).await?;
-        }
+        state.actors.unfollower(&self.actor).await?;
 
         if was_following {
             let my_id = state.config.generate_url(UrlKind::Actor);

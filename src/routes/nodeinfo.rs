@@ -46,14 +46,16 @@ pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::J
         },
         metadata: Metadata {
             peers: state
-                .listeners()
+                .db
+                .inboxes()
                 .await
+                .unwrap_or(vec![])
                 .iter()
                 .filter_map(|listener| listener.domain())
                 .map(|s| s.to_owned())
                 .collect(),
             blocks: if config.publish_blocks() {
-                Some(state.blocks().await)
+                Some(state.db.blocks().await.unwrap_or(vec![]))
             } else {
                 None
             },

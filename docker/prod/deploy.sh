@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 TAG=$1
-MIGRATIONS=$2
 
 function require() {
     if [ "$1" = "" ]; then
@@ -15,11 +14,10 @@ function print_help() {
     echo "build.sh"
     echo ""
     echo "Usage:"
-    echo "      build.sh [tag] [migrations]"
+    echo "      build.sh [tag]"
     echo ""
     echo "Args:"
     echo "      tag: The git tag to create and publish"
-    echo "      migrations: (optional) Whether to build the migrations container as well"
 }
 
 function build_image() {
@@ -61,12 +59,3 @@ build_image "asonix/relay" "$TAG" "amd64"
 
 ./manifest.sh "asonix/relay" "$TAG"
 ./manifest.sh "asonix/relay" "latest"
-
-if [ "${MIGRATIONS}" = "migrations" ]; then
-    build_image "asonix/relay-migrations" "$TAG" arm64v8
-    build_image "asonix/relay-migrations" "$TAG" arm32v7
-    build_image "asonix/relay-migrations" "$TAG" amd64
-
-    ./manifest.sh "asonix/relay-migrations" "$TAG"
-    ./manifest.sh "asonix/relay-migrations" "latest"
-fi

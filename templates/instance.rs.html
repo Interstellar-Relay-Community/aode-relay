@@ -1,4 +1,4 @@
-@use crate::{data::{Contact, Instance}, templates::admin};
+@use crate::{db::{Contact, Instance}, templates::admin};
 @use activitystreams::url::Url;
 
 @(instance: &Instance, software: Option<&str>, contact: Option<&Contact>, base: &Url)

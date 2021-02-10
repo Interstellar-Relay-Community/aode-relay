@@ -1,7 +1,8 @@
 use crate::{
     apub::{AcceptedActivities, AcceptedUndoObjects, UndoTypes, ValidTypes},
     config::{Config, UrlKind},
-    data::{Actor, ActorCache, State},
+    data::{ActorCache, State},
+    db::Actor,
     error::MyError,
     jobs::apub::{Announce, Follow, Forward, Reject, Undo},
     jobs::JobServer,
@@ -12,7 +13,6 @@ use activitystreams::{
     activity, base::AnyBase, prelude::*, primitives::OneOrMany, public, url::Url,
 };
 use actix_web::{web, HttpResponse};
-use futures::join;
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 use log::error;
 
@@ -35,21 +35,14 @@ pub async fn route(
         .await?
         .into_inner();
 
-    let (is_blocked, is_whitelisted, is_listener) = join!(
-        state.is_blocked(&actor.id),
-        state.is_whitelisted(&actor.id),
-        state.is_listener(&actor.inbox)
-    );
+    let is_allowed = state.db.is_allowed(actor.id.clone()).await?;
+    let is_connected = state.db.is_connected(actor.id.clone()).await?;
 
-    if is_blocked {
-        return Err(MyError::Blocked(actor.id.to_string()));
+    if !is_allowed {
+        return Err(MyError::NotAllowed(actor.id.to_string()));
     }
 
-    if !is_whitelisted {
-        return Err(MyError::Whitelist(actor.id.to_string()));
-    }
-
-    if !is_listener && !valid_without_listener(&input)? {
+    if !is_connected && !valid_without_listener(&input)? {
         return Err(MyError::NotSubscribed(actor.inbox.to_string()));
     }
 
@@ -73,9 +66,9 @@ pub async fn route(
         ValidTypes::Announce | ValidTypes::Create => {
             handle_announce(&state, &jobs, input, actor).await?
         }
-        ValidTypes::Follow => handle_follow(&config, &jobs, input, actor, is_listener).await?,
+        ValidTypes::Follow => handle_follow(&config, &jobs, input, actor, is_connected).await?,
         ValidTypes::Delete | ValidTypes::Update => handle_forward(&jobs, input, actor).await?,
-        ValidTypes::Undo => handle_undo(&config, &jobs, input, actor, is_listener).await?,
+        ValidTypes::Undo => handle_undo(&config, &jobs, input, actor, is_connected).await?,
     };
 
     Ok(accepted(serde_json::json!({})))

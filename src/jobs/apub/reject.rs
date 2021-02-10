@@ -1,6 +1,6 @@
 use crate::{
     config::UrlKind,
-    data::Actor,
+    db::Actor,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
 use background_jobs::ActixJob;
@@ -11,9 +11,7 @@ pub struct Reject(pub Actor);
 
 impl Reject {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
-        if state.actors.unfollower(&self.0).await?.is_some() {
-            state.db.remove_listener(self.0.inbox.clone()).await?;
-        }
+        state.actors.unfollower(&self.0).await?;
 
         let my_id = state.config.generate_url(UrlKind::Actor);
         let undo = generate_undo_follow(&state.config, &self.0.id, &my_id)?;

@@ -1,7 +1,7 @@
 use crate::{
     apub::AcceptedActivities,
     config::{Config, UrlKind},
-    data::Actor,
+    db::Actor,
     error::MyError,
     jobs::{apub::prepare_activity, Deliver, JobState},
 };
@@ -36,14 +36,16 @@ impl Follow {
         let my_id = state.config.generate_url(UrlKind::Actor);
 
         // if following relay directly, not just following 'public', followback
-        if self.input.object_is(&my_id) && !state.actors.is_following(&self.actor.id).await {
+        if self.input.object_is(&my_id)
+            && !state.state.db.is_connected(self.actor.id.clone()).await?
+        {
             let follow = generate_follow(&state.config, &self.actor.id, &my_id)?;
             state
                 .job_server
                 .queue(Deliver::new(self.actor.inbox.clone(), follow)?)?;
         }
 
-        state.actors.follower(&self.actor).await?;
+        state.actors.follower(self.actor.clone()).await?;
 
         let accept = generate_accept_follow(
             &state.config,

@@ -4,7 +4,6 @@ use actix_web::{
     http::StatusCode,
     HttpResponse,
 };
-use deadpool::managed::{PoolError, TimeoutType};
 use http_signature_normalization_actix::PrepareSignError;
 use log::error;
 use rsa_pem::KeyError;
@@ -18,9 +17,6 @@ pub enum MyError {
     #[error("Error in configuration, {0}")]
     Config(#[from] config::ConfigError),
 
-    #[error("Error in db, {0}")]
-    DbError(#[from] tokio_postgres::error::Error),
-
     #[error("Couldn't parse key, {0}")]
     Key(#[from] KeyError),
 
@@ -32,6 +28,9 @@ pub enum MyError {
 
     #[error("Couldn't sign string, {0}")]
     Rsa(rsa::errors::Error),
+
+    #[error("Couldn't use db, {0}")]
+    Sled(#[from] sled::Error),
 
     #[error("Couldn't do the json thing, {0}")]
     Json(#[from] serde_json::Error),
@@ -48,11 +47,8 @@ pub enum MyError {
     #[error("Actor ({0}), or Actor's server, is not subscribed")]
     NotSubscribed(String),
 
-    #[error("Actor is blocked, {0}")]
-    Blocked(String),
-
-    #[error("Actor is not whitelisted, {0}")]
-    Whitelist(String),
+    #[error("Actor is not allowed, {0}")]
+    NotAllowed(String),
 
     #[error("Cannot make decisions for foreign actor, {0}")]
     WrongActor(String),
@@ -77,9 +73,6 @@ pub enum MyError {
 
     #[error("Couldn't flush buffer")]
     FlushBuffer,
-
-    #[error("Timed out while waiting on db pool, {0:?}")]
-    DbTimeout(TimeoutType),
 
     #[error("Invalid algorithm provided to verifier, {0}")]
     Algorithm(String),
@@ -127,10 +120,9 @@ pub enum MyError {
 impl ResponseError for MyError {
     fn status_code(&self) -> StatusCode {
         match self {
-            MyError::Blocked(_)
-            | MyError::Whitelist(_)
-            | MyError::WrongActor(_)
-            | MyError::BadActor(_, _) => StatusCode::FORBIDDEN,
+            MyError::NotAllowed(_) | MyError::WrongActor(_) | MyError::BadActor(_, _) => {
+                StatusCode::FORBIDDEN
+            }
             MyError::NotSubscribed(_) => StatusCode::UNAUTHORIZED,
             MyError::Duplicate => StatusCode::ACCEPTED,
             MyError::Kind(_) | MyError::MissingKind | MyError::MissingId | MyError::ObjectCount => {
@@ -157,18 +149,6 @@ where
         match e {
             BlockingError::Error(e) => e.into(),
             BlockingError::Canceled => MyError::Canceled,
-        }
-    }
-}
-
-impl<T> From<PoolError<T>> for MyError
-where
-    T: Into<MyError>,
-{
-    fn from(e: PoolError<T>) -> Self {
-        match e {
-            PoolError::Backend(e) => e.into(),
-            PoolError::Timeout(t) => MyError::DbTimeout(t),
         }
     }
 }

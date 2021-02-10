@@ -1,6 +1,7 @@
 use crate::{
     config::{Config, UrlKind},
-    data::{Actor, State},
+    data::State,
+    db::Actor,
     error::MyError,
 };
 use activitystreams::{
@@ -23,7 +24,7 @@ pub use self::{announce::Announce, follow::Follow, forward::Forward, reject::Rej
 async fn get_inboxes(state: &State, actor: &Actor, object_id: &Url) -> Result<Vec<Url>, MyError> {
     let domain = object_id.host().ok_or(MyError::Domain)?.to_string();
 
-    Ok(state.listeners_without(&actor.inbox, &domain).await)
+    state.inboxes_without(&actor.inbox, &domain).await
 }
 
 fn prepare_activity<T, U, V, Kind>(

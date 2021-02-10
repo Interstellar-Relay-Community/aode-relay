@@ -8,7 +8,7 @@ use activitystreams::{uri, url::Url};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};
-use std::net::IpAddr;
+use std::{net::IpAddr, path::PathBuf};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -17,13 +17,14 @@ pub struct ParsedConfig {
     addr: IpAddr,
     port: u16,
     debug: bool,
-    whitelist_mode: bool,
+    restricted_mode: bool,
     validate_signatures: bool,
     https: bool,
     database_url: String,
     pretty_log: bool,
     publish_blocks: bool,
     max_connections: usize,
+    sled_path: PathBuf,
 }
 
 #[derive(Clone, Debug)]
@@ -32,13 +33,14 @@ pub struct Config {
     addr: IpAddr,
     port: u16,
     debug: bool,
-    whitelist_mode: bool,
+    restricted_mode: bool,
     validate_signatures: bool,
     database_url: String,
     pretty_log: bool,
     publish_blocks: bool,
     max_connections: usize,
     base_uri: Url,
+    sled_path: PathBuf,
 }
 
 pub enum UrlKind {
@@ -62,12 +64,13 @@ impl Config {
             .set_default("addr", "127.0.0.1")?
             .set_default("port", 8080)?
             .set_default("debug", true)?
-            .set_default("whitelist_mode", false)?
+            .set_default("restricted_mode", false)?
             .set_default("validate_signatures", false)?
             .set_default("https", false)?
             .set_default("pretty_log", true)?
             .set_default("publish_blocks", false)?
             .set_default("max_connections", 2)?
+            .set_default("sled_path", "./sled/db-0-34")?
             .merge(Environment::new())?;
 
         let config: ParsedConfig = config.try_into()?;
@@ -80,14 +83,19 @@ impl Config {
             addr: config.addr,
             port: config.port,
             debug: config.debug,
-            whitelist_mode: config.whitelist_mode,
+            restricted_mode: config.restricted_mode,
             validate_signatures: config.validate_signatures,
             database_url: config.database_url,
             pretty_log: config.pretty_log,
             publish_blocks: config.publish_blocks,
             max_connections: config.max_connections,
             base_uri,
+            sled_path: config.sled_path,
         })
+    }
+
+    pub fn sled_path(&self) -> &PathBuf {
+        &self.sled_path
     }
 
     pub fn pretty_log(&self) -> bool {
@@ -135,8 +143,8 @@ impl Config {
         self.publish_blocks
     }
 
-    pub fn whitelist_mode(&self) -> bool {
-        self.whitelist_mode
+    pub fn restricted_mode(&self) -> bool {
+        self.restricted_mode
     }
 
     pub fn database_url(&self) -> &str {
@@ -156,7 +164,7 @@ impl Config {
     }
 
     pub fn software_version(&self) -> String {
-        "v0.1.0-main".to_owned()
+        "v0.2.0-main".to_owned()
     }
 
     pub fn source_code(&self) -> String {

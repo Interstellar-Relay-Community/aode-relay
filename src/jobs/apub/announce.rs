@@ -1,6 +1,6 @@
 use crate::{
     config::{Config, UrlKind},
-    data::Actor,
+    db::Actor,
     error::MyError,
     jobs::{
         apub::{get_inboxes, prepare_activity},

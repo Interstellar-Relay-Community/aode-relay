@@ -8,11 +8,11 @@ pub struct Listeners;
 
 impl Listeners {
     async fn perform(self, state: JobState) -> Result<(), Error> {
-        for listener in state.state.listeners().await {
+        for actor_id in state.state.db.connected_ids().await? {
             state
                 .job_server
-                .queue(QueryInstance::new(listener.clone()))?;
-            state.job_server.queue(QueryNodeinfo::new(listener))?;
+                .queue(QueryInstance::new(actor_id.clone()))?;
+            state.job_server.queue(QueryNodeinfo::new(actor_id))?;
         }
 
         Ok(())

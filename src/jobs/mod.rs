@@ -13,7 +13,7 @@ pub use self::{
 
 use crate::{
     config::Config,
-    data::{ActorCache, Media, NodeCache, State},
+    data::{ActorCache, MediaCache, NodeCache, State},
     db::Db,
     error::MyError,
     jobs::process_listeners::Listeners,
@@ -35,7 +35,7 @@ pub fn create_workers(
     state: State,
     actors: ActorCache,
     job_server: JobServer,
-    media: Media,
+    media: MediaCache,
     config: Config,
 ) {
     let remote_handle = job_server.remote.clone();
@@ -72,7 +72,7 @@ pub struct JobState {
     state: State,
     actors: ActorCache,
     config: Config,
-    media: Media,
+    media: MediaCache,
     node_cache: NodeCache,
     job_server: JobServer,
 }
@@ -88,7 +88,7 @@ impl JobState {
         state: State,
         actors: ActorCache,
         job_server: JobServer,
-        media: Media,
+        media: MediaCache,
         config: Config,
     ) -> Self {
         JobState {

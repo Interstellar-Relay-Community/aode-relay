@@ -1,341 +1,146 @@
-use crate::{db::Db, error::MyError};
-use activitystreams::{uri, url::Url};
-use async_rwlock::RwLock;
-use log::{debug, error};
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-    time::{Duration, SystemTime},
+use crate::{
+    db::{Contact, Db, Info, Instance},
+    error::MyError,
 };
-use tokio_postgres::types::Json;
-use uuid::Uuid;
-
-pub type ListenersCache = Arc<RwLock<HashSet<Url>>>;
+use activitystreams::url::Url;
+use std::time::{Duration, SystemTime};
 
 #[derive(Clone)]
 pub struct NodeCache {
     db: Db,
-    listeners: ListenersCache,
-    nodes: Arc<RwLock<HashMap<Url, Node>>>,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct Node {
+    pub(crate) base: Url,
+    pub(crate) info: Option<Info>,
+    pub(crate) instance: Option<Instance>,
+    pub(crate) contact: Option<Contact>,
 }
 
 impl NodeCache {
-    pub fn new(db: Db, listeners: ListenersCache) -> Self {
-        NodeCache {
-            db,
-            listeners,
-            nodes: Arc::new(RwLock::new(HashMap::new())),
-        }
+    pub(crate) fn new(db: Db) -> Self {
+        NodeCache { db }
     }
 
-    pub async fn nodes(&self) -> Vec<Node> {
-        let listeners: HashSet<_> = self.listeners.read().await.clone();
+    pub(crate) async fn nodes(&self) -> Result<Vec<Node>, MyError> {
+        let infos = self.db.connected_info().await?;
+        let instances = self.db.connected_instance().await?;
+        let contacts = self.db.connected_contact().await?;
 
-        self.nodes
-            .read()
-            .await
-            .iter()
-            .filter_map(|(k, v)| {
-                if listeners.contains(k) {
-                    Some(v.clone())
-                } else {
-                    None
-                }
+        let vec = self
+            .db
+            .connected_ids()
+            .await?
+            .into_iter()
+            .map(move |actor_id| {
+                let info = infos.get(&actor_id).map(|info| info.clone());
+                let instance = instances.get(&actor_id).map(|instance| instance.clone());
+                let contact = contacts.get(&actor_id).map(|contact| contact.clone());
+
+                Node::new(actor_id)
+                    .info(info)
+                    .instance(instance)
+                    .contact(contact)
             })
-            .collect()
+            .collect();
+
+        Ok(vec)
     }
 
-    pub async fn is_nodeinfo_outdated(&self, listener: &Url) -> bool {
-        let read_guard = self.nodes.read().await;
-
-        let node = match read_guard.get(listener) {
-            None => {
-                debug!("No node for listener {}", listener);
-                return true;
-            }
-            Some(node) => node,
-        };
-
-        match node.info.as_ref() {
-            Some(nodeinfo) => nodeinfo.outdated(),
-            None => {
-                debug!("No info for node {}", node.base);
-                true
-            }
-        }
+    pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: Url) -> bool {
+        self.db
+            .info(actor_id)
+            .await
+            .map(|opt| opt.map(|info| info.outdated()).unwrap_or(true))
+            .unwrap_or(true)
     }
 
-    pub async fn is_contact_outdated(&self, listener: &Url) -> bool {
-        let read_guard = self.nodes.read().await;
-
-        let node = match read_guard.get(listener) {
-            None => {
-                debug!("No node for listener {}", listener);
-                return true;
-            }
-            Some(node) => node,
-        };
-
-        match node.contact.as_ref() {
-            Some(contact) => contact.outdated(),
-            None => {
-                debug!("No contact for node {}", node.base);
-                true
-            }
-        }
+    pub(crate) async fn is_contact_outdated(&self, actor_id: Url) -> bool {
+        self.db
+            .contact(actor_id)
+            .await
+            .map(|opt| opt.map(|contact| contact.outdated()).unwrap_or(true))
+            .unwrap_or(true)
     }
 
-    pub async fn is_instance_outdated(&self, listener: &Url) -> bool {
-        let read_guard = self.nodes.read().await;
-
-        let node = match read_guard.get(listener) {
-            None => {
-                debug!("No node for listener {}", listener);
-                return true;
-            }
-            Some(node) => node,
-        };
-
-        match node.instance.as_ref() {
-            Some(instance) => instance.outdated(),
-            None => {
-                debug!("No instance for node {}", node.base);
-                true
-            }
-        }
+    pub(crate) async fn is_instance_outdated(&self, actor_id: Url) -> bool {
+        self.db
+            .instance(actor_id)
+            .await
+            .map(|opt| opt.map(|instance| instance.outdated()).unwrap_or(true))
+            .unwrap_or(true)
     }
 
-    pub async fn cache_by_id(&self, id: Uuid) {
-        if let Err(e) = self.do_cache_by_id(id).await {
-            error!("Error loading node into cache, {}", e);
-        }
-    }
-
-    pub async fn bust_by_id(&self, id: Uuid) {
-        if let Err(e) = self.do_bust_by_id(id).await {
-            error!("Error busting node cache, {}", e);
-        }
-    }
-
-    async fn do_bust_by_id(&self, id: Uuid) -> Result<(), MyError> {
-        let row_opt = self
-            .db
-            .pool()
-            .get()
-            .await?
-            .query_opt(
-                "SELECT ls.actor_id
-                 FROM listeners AS ls
-                 INNER JOIN nodes AS nd ON nd.listener_id = ls.id
-                 WHERE nd.id = $1::UUID
-                 LIMIT 1;",
-                &[&id],
-            )
-            .await?;
-
-        let row = if let Some(row) = row_opt {
-            row
-        } else {
-            return Ok(());
-        };
-
-        let listener: String = row.try_get(0)?;
-
-        self.nodes.write().await.remove(&uri!(listener));
-
-        Ok(())
-    }
-
-    async fn do_cache_by_id(&self, id: Uuid) -> Result<(), MyError> {
-        let row_opt = self
-            .db
-            .pool()
-            .get()
-            .await?
-            .query_opt(
-                "SELECT ls.actor_id, nd.nodeinfo, nd.instance, nd.contact
-                 FROM nodes AS nd
-                 INNER JOIN listeners AS ls ON nd.listener_id = ls.id
-                 WHERE nd.id = $1::UUID
-                 LIMIT 1;",
-                &[&id],
-            )
-            .await?;
-
-        let row = if let Some(row) = row_opt {
-            row
-        } else {
-            return Ok(());
-        };
-
-        let listener: String = row.try_get(0)?;
-        let listener = uri!(listener);
-        let info: Option<Json<Info>> = row.try_get(1)?;
-        let instance: Option<Json<Instance>> = row.try_get(2)?;
-        let contact: Option<Json<Contact>> = row.try_get(3)?;
-
-        {
-            let mut write_guard = self.nodes.write().await;
-            let node = write_guard
-                .entry(listener.clone())
-                .or_insert_with(|| Node::new(listener));
-
-            if let Some(info) = info {
-                node.info = Some(info.0);
-            }
-            if let Some(instance) = instance {
-                node.instance = Some(instance.0);
-            }
-            if let Some(contact) = contact {
-                node.contact = Some(contact.0);
-            }
-        }
-
-        Ok(())
-    }
-
-    pub async fn set_info(
+    pub(crate) async fn set_info(
         &self,
-        listener: &Url,
+        actor_id: Url,
         software: String,
         version: String,
         reg: bool,
     ) -> Result<(), MyError> {
-        if !self.listeners.read().await.contains(listener) {
-            let mut nodes = self.nodes.write().await;
-            nodes.remove(listener);
-            return Ok(());
-        }
-
-        let node = {
-            let mut write_guard = self.nodes.write().await;
-            let node = write_guard
-                .entry(listener.clone())
-                .or_insert_with(|| Node::new(listener.clone()));
-            node.set_info(software, version, reg);
-            node.clone()
-        };
-        self.save(listener, &node).await?;
-        Ok(())
+        self.db
+            .save_info(
+                actor_id,
+                Info {
+                    software,
+                    version,
+                    reg,
+                    updated: SystemTime::now(),
+                },
+            )
+            .await
     }
 
-    pub async fn set_instance(
+    pub(crate) async fn set_instance(
         &self,
-        listener: &Url,
+        actor_id: Url,
         title: String,
         description: String,
         version: String,
         reg: bool,
         requires_approval: bool,
     ) -> Result<(), MyError> {
-        if !self.listeners.read().await.contains(listener) {
-            let mut nodes = self.nodes.write().await;
-            nodes.remove(listener);
-            return Ok(());
-        }
-
-        let node = {
-            let mut write_guard = self.nodes.write().await;
-            let node = write_guard
-                .entry(listener.clone())
-                .or_insert_with(|| Node::new(listener.clone()));
-            node.set_instance(title, description, version, reg, requires_approval);
-            node.clone()
-        };
-        self.save(listener, &node).await?;
-        Ok(())
+        self.db
+            .save_instance(
+                actor_id,
+                Instance {
+                    title,
+                    description,
+                    version,
+                    reg,
+                    requires_approval,
+                    updated: SystemTime::now(),
+                },
+            )
+            .await
     }
 
-    pub async fn set_contact(
+    pub(crate) async fn set_contact(
         &self,
-        listener: &Url,
+        actor_id: Url,
         username: String,
         display_name: String,
         url: Url,
         avatar: Url,
     ) -> Result<(), MyError> {
-        if !self.listeners.read().await.contains(listener) {
-            let mut nodes = self.nodes.write().await;
-            nodes.remove(listener);
-            return Ok(());
-        }
-
-        let node = {
-            let mut write_guard = self.nodes.write().await;
-            let node = write_guard
-                .entry(listener.clone())
-                .or_insert_with(|| Node::new(listener.clone()));
-            node.set_contact(username, display_name, url, avatar);
-            node.clone()
-        };
-        self.save(listener, &node).await?;
-        Ok(())
-    }
-
-    pub async fn save(&self, listener: &Url, node: &Node) -> Result<(), MyError> {
-        let row_opt = self
-            .db
-            .pool()
-            .get()
-            .await?
-            .query_opt(
-                "SELECT id FROM listeners WHERE actor_id = $1::TEXT LIMIT 1;",
-                &[&listener.as_str()],
-            )
-            .await?;
-
-        let id: Uuid = if let Some(row) = row_opt {
-            row.try_get(0)?
-        } else {
-            return Err(MyError::NotSubscribed(listener.as_str().to_owned()));
-        };
-
         self.db
-            .pool()
-            .get()
-            .await?
-            .execute(
-                "INSERT INTO nodes (
-                listener_id,
-                nodeinfo,
-                instance,
-                contact,
-                created_at,
-                updated_at
-             ) VALUES (
-                $1::UUID,
-                $2::JSONB,
-                $3::JSONB,
-                $4::JSONB,
-                'now',
-                'now'
-             ) ON CONFLICT (listener_id)
-             DO UPDATE SET
-                nodeinfo = $2::JSONB,
-                instance = $3::JSONB,
-                contact = $4::JSONB;",
-                &[
-                    &id,
-                    &Json(&node.info),
-                    &Json(&node.instance),
-                    &Json(&node.contact),
-                ],
+            .save_contact(
+                actor_id,
+                Contact {
+                    username,
+                    display_name,
+                    url,
+                    avatar,
+                    updated: SystemTime::now(),
+                },
             )
-            .await?;
-        Ok(())
+            .await
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct Node {
-    pub base: Url,
-    pub info: Option<Info>,
-    pub instance: Option<Instance>,
-    pub contact: Option<Contact>,
 }
 
 impl Node {
-    pub fn new(mut url: Url) -> Self {
+    fn new(mut url: Url) -> Self {
         url.set_fragment(None);
         url.set_query(None);
         url.set_path("");
@@ -348,96 +153,38 @@ impl Node {
         }
     }
 
-    fn set_info(&mut self, software: String, version: String, reg: bool) -> &mut Self {
-        self.info = Some(Info {
-            software,
-            version,
-            reg,
-            updated: SystemTime::now(),
-        });
+    fn info(mut self, info: Option<Info>) -> Self {
+        self.info = info;
         self
     }
 
-    fn set_instance(
-        &mut self,
-        title: String,
-        description: String,
-        version: String,
-        reg: bool,
-        requires_approval: bool,
-    ) -> &mut Self {
-        self.instance = Some(Instance {
-            title,
-            description,
-            version,
-            reg,
-            requires_approval,
-            updated: SystemTime::now(),
-        });
+    fn instance(mut self, instance: Option<Instance>) -> Self {
+        self.instance = instance;
         self
     }
 
-    fn set_contact(
-        &mut self,
-        username: String,
-        display_name: String,
-        url: Url,
-        avatar: Url,
-    ) -> &mut Self {
-        self.contact = Some(Contact {
-            username,
-            display_name,
-            url: url.into(),
-            avatar: avatar.into(),
-            updated: SystemTime::now(),
-        });
+    fn contact(mut self, contact: Option<Contact>) -> Self {
+        self.contact = contact;
         self
     }
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Info {
-    pub software: String,
-    pub version: String,
-    pub reg: bool,
-    pub updated: SystemTime,
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Instance {
-    pub title: String,
-    pub description: String,
-    pub version: String,
-    pub reg: bool,
-    pub requires_approval: bool,
-    pub updated: SystemTime,
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Contact {
-    pub username: String,
-    pub display_name: String,
-    pub url: Url,
-    pub avatar: Url,
-    pub updated: SystemTime,
 }
 
 static TEN_MINUTES: Duration = Duration::from_secs(60 * 10);
 
 impl Info {
-    pub fn outdated(&self) -> bool {
+    pub(crate) fn outdated(&self) -> bool {
         self.updated + TEN_MINUTES < SystemTime::now()
     }
 }
 
 impl Instance {
-    pub fn outdated(&self) -> bool {
+    pub(crate) fn outdated(&self) -> bool {
         self.updated + TEN_MINUTES < SystemTime::now()
     }
 }
 
 impl Contact {
-    pub fn outdated(&self) -> bool {
+    pub(crate) fn outdated(&self) -> bool {
         self.updated + TEN_MINUTES < SystemTime::now()
     }
 }

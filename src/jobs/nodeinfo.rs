@@ -6,20 +6,24 @@ use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryNodeinfo {
-    listener: Url,
+    actor_id: Url,
 }
 
 impl QueryNodeinfo {
-    pub fn new(listener: Url) -> Self {
-        QueryNodeinfo { listener }
+    pub fn new(actor_id: Url) -> Self {
+        QueryNodeinfo { actor_id }
     }
 
     async fn perform(self, state: JobState) -> Result<(), Error> {
-        if !state.node_cache.is_nodeinfo_outdated(&self.listener).await {
+        if !state
+            .node_cache
+            .is_nodeinfo_outdated(self.actor_id.clone())
+            .await
+        {
             return Ok(());
         }
 
-        let mut well_known_uri = self.listener.clone();
+        let mut well_known_uri = self.actor_id.clone();
         well_known_uri.set_fragment(None);
         well_known_uri.set_query(None);
         well_known_uri.set_path(".well-known/nodeinfo");
@@ -40,7 +44,7 @@ impl QueryNodeinfo {
         state
             .node_cache
             .set_info(
-                &self.listener,
+                self.actor_id.clone(),
                 nodeinfo.software.name,
                 nodeinfo.software.version,
                 nodeinfo.open_registrations,

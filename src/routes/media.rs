@@ -1,4 +1,4 @@
-use crate::{data::Media, error::MyError, requests::Requests};
+use crate::{data::MediaCache, error::MyError, requests::Requests};
 use actix_web::{
     http::header::{CacheControl, CacheDirective},
     web, HttpResponse,
@@ -6,13 +6,13 @@ use actix_web::{
 use uuid::Uuid;
 
 pub async fn route(
-    media: web::Data<Media>,
+    media: web::Data<MediaCache>,
     requests: web::Data<Requests>,
     uuid: web::Path<Uuid>,
 ) -> Result<HttpResponse, MyError> {
     let uuid = uuid.into_inner();
 
-    if let Some((content_type, bytes)) = media.get_bytes(uuid).await {
+    if let Some((content_type, bytes)) = media.get_bytes(uuid).await? {
         return Ok(cached(content_type, bytes));
     }
 
@@ -21,7 +21,7 @@ pub async fn route(
 
         media
             .store_bytes(uuid, content_type.clone(), bytes.clone())
-            .await;
+            .await?;
 
         return Ok(cached(content_type, bytes));
     }

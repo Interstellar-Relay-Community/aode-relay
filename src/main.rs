@@ -1,4 +1,3 @@
-use actix_rt::Arbiter;
 use actix_web::{
     middleware::{Compress, Logger},
     web, App, HttpServer,
@@ -12,14 +11,13 @@ mod db;
 mod error;
 mod jobs;
 mod middleware;
-mod notify;
 mod requests;
 mod routes;
 
 use self::{
     args::Args,
     config::Config,
-    data::{ActorCache, Media, State},
+    data::{ActorCache, MediaCache, State},
     db::Db,
     jobs::{create_server, create_workers},
     middleware::{DebugPayload, RelayResolver},
@@ -35,7 +33,7 @@ async fn main() -> Result<(), anyhow::Error> {
     if config.debug() {
         std::env::set_var(
             "RUST_LOG",
-            "debug,tokio_postgres=info,h2=info,trust_dns_resolver=info,trust_dns_proto=info,rustls=info,html5ever=info",
+            "debug,h2=info,trust_dns_resolver=info,trust_dns_proto=info,rustls=info,html5ever=info",
         )
     } else {
         std::env::set_var("RUST_LOG", "info")
@@ -51,73 +49,33 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let args = Args::new();
 
-    if args.jobs_only() && args.no_jobs() {
-        return Err(anyhow::Error::msg(
-            "Either the server or the jobs must be run",
-        ));
-    }
-
-    if !args.blocks().is_empty() || !args.whitelists().is_empty() {
+    if !args.blocks().is_empty() || !args.allowed().is_empty() {
         if args.undo() {
-            db.remove_blocks(args.blocks()).await?;
-            db.remove_whitelists(args.whitelists()).await?;
+            db.remove_blocks(args.blocks().to_vec()).await?;
+            db.remove_allows(args.allowed().to_vec()).await?;
         } else {
-            db.add_blocks(args.blocks()).await?;
-            db.add_whitelists(args.whitelists()).await?;
+            db.add_blocks(args.blocks().to_vec()).await?;
+            db.add_allows(args.allowed().to_vec()).await?;
         }
         return Ok(());
     }
 
-    let media = Media::new(db.clone());
-    let state = State::hydrate(config.clone(), &db).await?;
+    let media = MediaCache::new(db.clone());
+    let state = State::build(config.clone(), db.clone()).await?;
     let actors = ActorCache::new(db.clone());
     let job_server = create_server();
 
-    notify::Notifier::new(config.database_url().parse()?)
-        .register(notify::NewBlocks(state.clone()))
-        .register(notify::NewWhitelists(state.clone()))
-        .register(notify::NewListeners(state.clone(), job_server.clone()))
-        .register(notify::NewActors(actors.clone()))
-        .register(notify::NewNodes(state.node_cache()))
-        .register(notify::RmBlocks(state.clone()))
-        .register(notify::RmWhitelists(state.clone()))
-        .register(notify::RmListeners(state.clone()))
-        .register(notify::RmActors(actors.clone()))
-        .register(notify::RmNodes(state.node_cache()))
-        .start();
-
-    if args.jobs_only() {
-        for _ in 0..num_cpus::get() {
-            let state = state.clone();
-            let actors = actors.clone();
-            let job_server = job_server.clone();
-            let media = media.clone();
-            let config = config.clone();
-            let db = db.clone();
-
-            Arbiter::new().exec_fn(move || {
-                create_workers(db, state, actors, job_server, media, config);
-            });
-        }
-        actix_rt::signal::ctrl_c().await?;
-        return Ok(());
-    }
-
-    let no_jobs = args.no_jobs();
+    create_workers(
+        db.clone(),
+        state.clone(),
+        actors.clone(),
+        job_server.clone(),
+        media.clone(),
+        config.clone(),
+    );
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {
-        if !no_jobs {
-            create_workers(
-                db.clone(),
-                state.clone(),
-                actors.clone(),
-                job_server.clone(),
-                media.clone(),
-                config.clone(),
-            );
-        }
-
         App::new()
             .wrap(Compress::default())
             .wrap(Logger::default())

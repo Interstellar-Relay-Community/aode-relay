@@ -5,32 +5,35 @@ use crate::{
 use activitystreams::url::Url;
 use anyhow::Error;
 use background_jobs::ActixJob;
-use futures::join;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryInstance {
-    listener: Url,
+    actor_id: Url,
 }
 
 impl QueryInstance {
-    pub fn new(listener: Url) -> Self {
+    pub fn new(actor_id: Url) -> Self {
         QueryInstance {
-            listener: listener.into(),
+            actor_id: actor_id.into(),
         }
     }
 
     async fn perform(self, state: JobState) -> Result<(), Error> {
-        let (o1, o2) = join!(
-            state.node_cache.is_contact_outdated(&self.listener),
-            state.node_cache.is_instance_outdated(&self.listener),
-        );
+        let contact_outdated = state
+            .node_cache
+            .is_contact_outdated(self.actor_id.clone())
+            .await;
+        let instance_outdated = state
+            .node_cache
+            .is_instance_outdated(self.actor_id.clone())
+            .await;
 
-        if !(o1 || o2) {
+        if !(contact_outdated || instance_outdated) {
             return Ok(());
         }
 
-        let mut instance_uri = self.listener.clone();
+        let mut instance_uri = self.actor_id.clone();
         instance_uri.set_fragment(None);
         instance_uri.set_query(None);
         instance_uri.set_path("api/v1/instance");
@@ -47,11 +50,11 @@ impl QueryInstance {
         };
 
         if let Some(mut contact) = instance.contact {
-            let uuid = if let Some(uuid) = state.media.get_uuid(&contact.avatar).await? {
+            let uuid = if let Some(uuid) = state.media.get_uuid(contact.avatar.clone()).await? {
                 contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).into();
                 uuid
             } else {
-                let uuid = state.media.store_url(&contact.avatar).await?;
+                let uuid = state.media.store_url(contact.avatar.clone()).await?;
                 contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).into();
                 uuid
             };
@@ -61,7 +64,7 @@ impl QueryInstance {
             state
                 .node_cache
                 .set_contact(
-                    &self.listener,
+                    self.actor_id.clone(),
                     contact.username,
                     contact.display_name,
                     contact.url,
@@ -75,7 +78,7 @@ impl QueryInstance {
         state
             .node_cache
             .set_instance(
-                &self.listener,
+                self.actor_id.clone(),
                 instance.title,
                 description,
                 instance.version,

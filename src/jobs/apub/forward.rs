@@ -1,6 +1,6 @@
 use crate::{
     apub::AcceptedActivities,
-    data::Actor,
+    db::Actor,
     error::MyError,
     jobs::{apub::get_inboxes, DeliverMany, JobState},
 };

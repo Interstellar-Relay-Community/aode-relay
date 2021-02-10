@@ -1,11 +1,11 @@
 use crate::{
+    apub::AcceptedActors,
     data::{ActorCache, State},
     error::MyError,
     requests::Requests,
 };
-use activitystreams::uri;
+use activitystreams::{base::BaseExt, uri, url::Url};
 use actix_web::web;
-use futures::join;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::error;
 use rsa::{hash::Hash, padding::PaddingScheme, PublicKey, RSAPublicKey};
@@ -24,51 +24,82 @@ impl MyVerify {
         signature: String,
         signing_string: String,
     ) -> Result<bool, MyError> {
-        let mut uri = uri!(key_id);
+        let public_key_id = uri!(key_id);
 
-        let (is_blocked, is_whitelisted) =
-            join!(self.2.is_blocked(&uri), self.2.is_whitelisted(&uri));
-
-        if is_blocked {
-            return Err(MyError::Blocked(key_id));
-        }
-
-        if !is_whitelisted {
-            return Err(MyError::Whitelist(key_id));
-        }
-
-        uri.set_fragment(None);
-        let actor = self.1.get(&uri, &self.0).await?;
-        let was_cached = actor.is_cached();
-        let actor = actor.into_inner();
-
-        match algorithm {
-            Some(Algorithm::Hs2019) => (),
-            Some(Algorithm::Deprecated(DeprecatedAlgorithm::RsaSha256)) => (),
-            Some(other) => {
-                return Err(MyError::Algorithm(other.to_string()));
+        let actor_id = if let Some(mut actor_id) = self
+            .2
+            .db
+            .actor_id_from_public_key_id(public_key_id.clone())
+            .await?
+        {
+            if !self.2.db.is_allowed(actor_id.clone()).await? {
+                return Err(MyError::NotAllowed(key_id));
             }
-            None => (),
-        };
 
-        let res = do_verify(&actor.public_key, signature.clone(), signing_string.clone()).await;
+            actor_id.set_fragment(None);
+            let actor = self.1.get(&actor_id, &self.0).await?;
+            let was_cached = actor.is_cached();
+            let actor = actor.into_inner();
 
-        if let Err(e) = res {
-            if !was_cached {
-                return Err(e);
+            match algorithm {
+                Some(Algorithm::Hs2019) => (),
+                Some(Algorithm::Deprecated(DeprecatedAlgorithm::RsaSha256)) => (),
+                Some(other) => {
+                    return Err(MyError::Algorithm(other.to_string()));
+                }
+                None => (),
+            };
+
+            let res = do_verify(&actor.public_key, signature.clone(), signing_string.clone()).await;
+
+            if let Err(e) = res {
+                if !was_cached {
+                    return Err(e);
+                }
+            } else {
+                return Ok(true);
             }
+
+            actor_id
         } else {
-            return Ok(true);
-        }
+            self.0
+                .fetch_json::<PublicKeyResponse>(public_key_id.as_str())
+                .await?
+                .actor_id()
+                .ok_or_else(|| MyError::MissingId)?
+        };
 
         // Previously we verified the sig from an actor's local cache
         //
         // Now we make sure we fetch an updated actor
-        let actor = self.1.get_no_cache(&uri, &self.0).await?;
+        let actor = self.1.get_no_cache(&actor_id, &self.0).await?;
 
         do_verify(&actor.public_key, signature, signing_string).await?;
 
         Ok(true)
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+#[serde(rename_all = "camelCase")]
+enum PublicKeyResponse {
+    PublicKey {
+        #[allow(dead_code)]
+        id: Url,
+        owner: Url,
+        #[allow(dead_code)]
+        public_key_pem: String,
+    },
+    Actor(AcceptedActors),
+}
+
+impl PublicKeyResponse {
+    fn actor_id(&self) -> Option<Url> {
+        match self {
+            PublicKeyResponse::PublicKey { owner, .. } => Some(owner.clone()),
+            PublicKeyResponse::Actor(actor) => actor.id_unchecked().map(|url| url.clone()),
+        }
     }
 }
 
