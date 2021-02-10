@@ -194,8 +194,10 @@ impl Inner {
 impl Db {
     pub(crate) fn build(config: &Config) -> Result<Self, MyError> {
         let db = sled::open(config.sled_path())?;
-        let restricted_mode = config.restricted_mode();
+        Self::build_inner(config.restricted_mode(), db)
+    }
 
+    fn build_inner(restricted_mode: bool, db: sled::Db) -> Result<Self, MyError> {
         Ok(Db {
             inner: Arc::new(Inner {
                 actor_id_actor: db.open_tree("actor-id-actor")?,
@@ -620,4 +622,30 @@ fn url_from_ivec(ivec: sled::IVec) -> Option<Url> {
 
 fn uuid_from_ivec(ivec: sled::IVec) -> Option<Uuid> {
     Uuid::from_slice(&ivec).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Db;
+    use activitystreams::url::Url;
+    use std::future::Future;
+
+    #[test]
+    fn connect_and_verify() {
+        run(|db| async move {
+            let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            db.add_connection(example_actor.clone()).await.unwrap();
+            assert!(db.is_connected(example_actor).await.unwrap());
+        })
+    }
+
+    fn run<F, Fut>(f: F)
+    where
+        F: Fn(Db) -> Fut,
+        Fut: Future<Output = ()> + 'static,
+    {
+        let db =
+            Db::build_inner(true, sled::Config::new().temporary(true).open().unwrap()).unwrap();
+        actix_rt::System::new("test").block_on((f)(db));
+    }
 }
