@@ -56,13 +56,13 @@ impl ActorCache {
             .map(MaybeCached::Fetched)
     }
 
-    pub(crate) async fn follower(&self, actor: Actor) -> Result<(), MyError> {
-        self.db.add_listener(actor.id.clone()).await?;
+    pub(crate) async fn add_connection(&self, actor: Actor) -> Result<(), MyError> {
+        self.db.add_connection(actor.id.clone()).await?;
         self.db.save_actor(actor).await
     }
 
-    pub(crate) async fn unfollower(&self, actor: &Actor) -> Result<(), MyError> {
-        self.db.remove_listener(actor.id.clone()).await
+    pub(crate) async fn remove_connection(&self, actor: &Actor) -> Result<(), MyError> {
+        self.db.remove_connection(actor.id.clone()).await
     }
 
     pub(crate) async fn get_no_cache(

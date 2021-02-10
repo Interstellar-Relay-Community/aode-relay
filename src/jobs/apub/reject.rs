@@ -11,7 +11,7 @@ pub(crate) struct Reject(pub(crate) Actor);
 
 impl Reject {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
-        state.actors.unfollower(&self.0).await?;
+        state.actors.remove_connection(&self.0).await?;
 
         let my_id = state.config.generate_url(UrlKind::Actor);
         let undo = generate_undo_follow(&state.config, &self.0.id, &my_id)?;

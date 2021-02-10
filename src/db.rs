@@ -474,7 +474,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn remove_listener(&self, actor_id: Url) -> Result<(), MyError> {
+    pub(crate) async fn remove_connection(&self, actor_id: Url) -> Result<(), MyError> {
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids
@@ -485,7 +485,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn add_listener(&self, actor_id: Url) -> Result<(), MyError> {
+    pub(crate) async fn add_connection(&self, actor_id: Url) -> Result<(), MyError> {
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids

@@ -15,24 +15,16 @@ use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Follow {
-    is_listener: bool,
     input: AcceptedActivities,
     actor: Actor,
 }
 
 impl Follow {
-    pub fn new(is_listener: bool, input: AcceptedActivities, actor: Actor) -> Self {
-        Follow {
-            is_listener,
-            input,
-            actor,
-        }
+    pub fn new(input: AcceptedActivities, actor: Actor) -> Self {
+        Follow { input, actor }
     }
 
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
-        if !self.is_listener {
-            state.db.add_listener(self.actor.inbox.clone()).await?;
-        }
         let my_id = state.config.generate_url(UrlKind::Actor);
 
         // if following relay directly, not just following 'public', followback
@@ -45,7 +37,7 @@ impl Follow {
                 .queue(Deliver::new(self.actor.inbox.clone(), follow)?)?;
         }
 
-        state.actors.follower(self.actor.clone()).await?;
+        state.actors.add_connection(self.actor.clone()).await?;
 
         let accept = generate_accept_follow(
             &state.config,

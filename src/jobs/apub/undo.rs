@@ -21,7 +21,7 @@ impl Undo {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
         let was_following = state.state.db.is_connected(self.actor.id.clone()).await?;
 
-        state.actors.unfollower(&self.actor).await?;
+        state.actors.remove_connection(&self.actor).await?;
 
         if was_following {
             let my_id = state.config.generate_url(UrlKind::Actor);

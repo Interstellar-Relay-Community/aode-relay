@@ -66,7 +66,7 @@ pub(crate) async fn route(
         ValidTypes::Announce | ValidTypes::Create => {
             handle_announce(&state, &jobs, input, actor).await?
         }
-        ValidTypes::Follow => handle_follow(&config, &jobs, input, actor, is_connected).await?,
+        ValidTypes::Follow => handle_follow(&config, &jobs, input, actor).await?,
         ValidTypes::Delete | ValidTypes::Update => handle_forward(&jobs, input, actor).await?,
         ValidTypes::Undo => handle_undo(&config, &jobs, input, actor, is_connected).await?,
     };
@@ -207,7 +207,6 @@ async fn handle_follow(
     jobs: &JobServer,
     input: AcceptedActivities,
     actor: Actor,
-    is_listener: bool,
 ) -> Result<(), MyError> {
     let my_id: Url = config.generate_url(UrlKind::Actor);
 
@@ -217,7 +216,7 @@ async fn handle_follow(
         )?));
     }
 
-    jobs.queue(Follow::new(is_listener, input, actor))?;
+    jobs.queue(Follow::new(input, actor))?;
 
     Ok(())
 }
