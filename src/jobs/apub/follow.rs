@@ -3,7 +3,7 @@ use crate::{
     config::{Config, UrlKind},
     db::Actor,
     error::MyError,
-    jobs::{apub::prepare_activity, Deliver, JobState},
+    jobs::{apub::prepare_activity, Deliver, JobState, QueryInstance, QueryNodeinfo},
 };
 use activitystreams::{
     activity::{Accept as AsAccept, Follow as AsFollow},
@@ -49,6 +49,13 @@ impl Follow {
         state
             .job_server
             .queue(Deliver::new(self.actor.inbox, accept)?)?;
+
+        state
+            .job_server
+            .queue(QueryInstance::new(self.actor.id.clone()))?;
+
+        state.job_server.queue(QueryNodeinfo::new(self.actor.id))?;
+
         Ok(())
     }
 }
