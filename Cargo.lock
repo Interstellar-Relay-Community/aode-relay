@@ -1944,7 +1944,6 @@ dependencies = [
  "anyhow",
  "async-mutex",
  "async-rwlock",
- "async-trait",
  "background-jobs",
  "base64 0.13.0",
  "chrono",
@@ -1969,7 +1968,6 @@ dependencies = [
  "sled",
  "structopt",
  "thiserror",
- "ttl_cache",
  "uuid",
 ]
 
@@ -2729,15 +2727,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "trust-dns-proto",
-]
-
-[[package]]
-name = "ttl_cache"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4189890526f0168710b6ee65ceaedf1460c48a14318ceec933cb26baa492096a"
-dependencies = [
- "linked-hash-map 0.5.4",
 ]
 
 [[package]]
