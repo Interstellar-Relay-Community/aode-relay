@@ -43,7 +43,7 @@ pub(crate) async fn route(
     }
 
     if !is_connected && !valid_without_listener(&input)? {
-        return Err(MyError::NotSubscribed(actor.inbox.to_string()));
+        return Err(MyError::NotSubscribed(actor.id.to_string()));
     }
 
     if config.validate_signatures() && verified.is_none() {
@@ -155,7 +155,7 @@ async fn handle_undo(
             jobs.queue(Forward::new(input, actor))?;
             return Ok(());
         } else {
-            return Err(MyError::NotSubscribed(actor.inbox.to_string()));
+            return Err(MyError::NotSubscribed(actor.id.to_string()));
         }
     }
 
