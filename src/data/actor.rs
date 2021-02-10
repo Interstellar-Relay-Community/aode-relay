@@ -57,13 +57,11 @@ impl ActorCache {
     }
 
     pub(crate) async fn add_connection(&self, actor: Actor) -> Result<(), MyError> {
-        log::debug!("Adding connection: {}", actor.id);
         self.db.add_connection(actor.id.clone()).await?;
         self.db.save_actor(actor).await
     }
 
     pub(crate) async fn remove_connection(&self, actor: &Actor) -> Result<(), MyError> {
-        log::debug!("Removing connection: {}", actor.id);
         self.db.remove_connection(actor.id.clone()).await
     }
 

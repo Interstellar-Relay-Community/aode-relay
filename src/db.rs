@@ -485,6 +485,7 @@ impl Db {
     }
 
     pub(crate) async fn remove_connection(&self, actor_id: Url) -> Result<(), MyError> {
+        log::debug!("Removing Connection: {}", actor_id);
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids
@@ -496,6 +497,7 @@ impl Db {
     }
 
     pub(crate) async fn add_connection(&self, actor_id: Url) -> Result<(), MyError> {
+        log::debug!("Adding Connection: {}", actor_id);
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids
@@ -645,6 +647,40 @@ mod tests {
             let example_sub_actor: Url = "http://example.com/users/fake".parse().unwrap();
             db.add_connection(example_actor.clone()).await.unwrap();
             assert!(db.is_connected(example_sub_actor).await.unwrap());
+        })
+    }
+
+    #[test]
+    fn disconnect_and_verify() {
+        run(|db| async move {
+            let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            let example_sub_actor: Url = "http://example.com/users/fake".parse().unwrap();
+            db.add_connection(example_actor.clone()).await.unwrap();
+            assert!(db.is_connected(example_sub_actor.clone()).await.unwrap());
+
+            db.remove_connection(example_actor).await.unwrap();
+            assert!(!db.is_connected(example_sub_actor).await.unwrap());
+        })
+    }
+
+    #[test]
+    fn connected_actor_in_connected_list() {
+        run(|db| async move {
+            let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            db.add_connection(example_actor.clone()).await.unwrap();
+
+            assert!(db.connected_ids().await.unwrap().contains(&example_actor));
+        })
+    }
+
+    #[test]
+    fn disconnected_actor_not_in_connected_list() {
+        run(|db| async move {
+            let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            db.add_connection(example_actor.clone()).await.unwrap();
+            db.remove_connection(example_actor.clone()).await.unwrap();
+
+            assert!(!db.connected_ids().await.unwrap().contains(&example_actor));
         })
     }
 
