@@ -420,11 +420,19 @@ impl Db {
             .await
     }
 
-    pub(crate) async fn is_connected(&self, id: Url) -> Result<bool, MyError> {
+    pub(crate) async fn is_connected(&self, mut id: Url) -> Result<bool, MyError> {
+        id.set_path("");
+        id.set_query(None);
+        id.set_fragment(None);
+
         self.unblock(move |inner| {
             let connected = inner
                 .connected_actor_ids
-                .contains_key(id.as_str().as_bytes())?;
+                .scan_prefix(id.as_str().as_bytes())
+                .values()
+                .filter_map(|res| res.ok())
+                .next()
+                .is_some();
 
             Ok(connected)
         })
@@ -634,8 +642,9 @@ mod tests {
     fn connect_and_verify() {
         run(|db| async move {
             let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            let example_sub_actor: Url = "http://example.com/users/fake".parse().unwrap();
             db.add_connection(example_actor.clone()).await.unwrap();
-            assert!(db.is_connected(example_actor).await.unwrap());
+            assert!(db.is_connected(example_sub_actor).await.unwrap());
         })
     }
 
