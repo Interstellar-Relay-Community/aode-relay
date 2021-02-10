@@ -10,22 +10,20 @@ $ ./relay
 To learn about any other tasks, the `--help` flag can be passed
 ```bash
 $ ./relay --help
-relay 0.1.0
+relay 0.2.0
 An activitypub relay
 
 USAGE:
     relay [FLAGS] [OPTIONS]
 
 FLAGS:
-    -h, --help         Prints help information
-    -j, --jobs-only    Only process background jobs, do not start the relay server
-    -n, --no-jobs      Only run the relay server, do not process background jobs
-    -u, --undo         Undo whitelisting or blocking domains
-    -V, --version      Prints version information
+    -h, --help       Prints help information
+    -u, --undo       Undo allowing or blocking domains
+    -V, --version    Prints version information
 
 OPTIONS:
-    -b <blocks>...            A list of domains that should be blocked
-    -w <whitelists>...        A list of domains that should be whitelisted
+    -a <allowed>...        A list of domains that should be allowed
+    -b <blocks>...         A list of domains that should be blocked
 ```
 
 To add domains to the blocklist, use the `-b` flag and pass a list of domains
@@ -36,13 +34,13 @@ To remove domains from the blocklist, simply pass the `-u` flag along with `-b`
 ```bash
 $ ./relay -ub asonix.dog blimps.xyz
 ```
-The same rules apply for whitelisting domains, although domains are whitelisted with the `-w` flag
+The same rules apply for allowing domains, although domains are allowed with the `-a` flag
 ```bash
-$ ./relay -w asonix.dog blimps.xyz
-$ ./relay -uw asonix.dog blimps.xyz
+$ ./relay -a asonix.dog blimps.xyz
+$ ./relay -ua asonix.dog blimps.xyz
 ```
 
-Whitelisted domains are only checked against incoming activities if `WHITELIST_MODE` is enabled.
+Allowed domains are only checked against incoming activities if `RESTRICTED_MODE` is enabled.
 Blocks can be published in the nodeinfo metadata by setting `PUBLISH_BLOCKS` to true
 
 For advanced setups, it may be useful to run the relay API and the background tasks in separate
@@ -87,7 +85,7 @@ HOSTNAME=localhost:8080
 ADDR=127.0.0.1
 PORT=8080
 DEBUG=true
-WHITELIST_MODE=false
+RESTRICTED_MODE=false
 VALIDATE_SIGNATURES=false
 HTTPS=false
 DATABASE_URL=
@@ -101,7 +99,7 @@ HOSTNAME=relay.my.tld
 ADDR=0.0.0.0
 PORT=8080
 DEBUG=false
-WHITELIST_MODE=false
+RESTRICTED_MODE=false
 VALIDATE_SIGNATURES=true
 HTTPS=true
 DATABASE_URL=postgres://pg_user:pg_pass@pg_host:pg_port/pg_database
