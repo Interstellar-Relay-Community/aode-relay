@@ -1933,7 +1933,7 @@ checksum = "b5eb417147ba9860a96cfe72a0b93bf88fee1744b5636ec99ab20c1aa9376581"
 
 [[package]]
 name = "relay"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
