@@ -2,7 +2,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "relay", about = "An activitypub relay")]
-pub struct Args {
+pub(crate) struct Args {
     #[structopt(short, help = "A list of domains that should be blocked")]
     blocks: Vec<String>,
 
@@ -14,19 +14,19 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::from_args()
     }
 
-    pub fn blocks(&self) -> &[String] {
+    pub(crate) fn blocks(&self) -> &[String] {
         &self.blocks
     }
 
-    pub fn allowed(&self) -> &[String] {
+    pub(crate) fn allowed(&self) -> &[String] {
         &self.allowed
     }
 
-    pub fn undo(&self) -> bool {
+    pub(crate) fn undo(&self) -> bool {
         self.undo
     }
 }

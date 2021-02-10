@@ -14,7 +14,7 @@ use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone)]
-pub struct MyVerify(pub Requests, pub ActorCache, pub State);
+pub(crate) struct MyVerify(pub Requests, pub ActorCache, pub State);
 
 impl MyVerify {
     async fn verify(

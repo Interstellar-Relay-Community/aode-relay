@@ -5,17 +5,17 @@ use crate::{
     error::MyError,
     routes::ok,
 };
-use activitystreams_ext::Ext1;
 use activitystreams::{
     actor::{ApActor, Application, Endpoints},
     context,
     prelude::*,
     security,
 };
+use activitystreams_ext::Ext1;
 use actix_web::{web, Responder};
 use rsa_pem::KeyExt;
 
-pub async fn route(
+pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<impl Responder, MyError> {

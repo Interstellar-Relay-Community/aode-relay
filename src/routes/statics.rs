@@ -4,7 +4,7 @@ use actix_web::{
     web, HttpResponse,
 };
 
-pub async fn route(filename: web::Path<String>) -> HttpResponse {
+pub(crate) async fn route(filename: web::Path<String>) -> HttpResponse {
     if let Some(data) = StaticFile::get(&filename.into_inner()) {
         HttpResponse::Ok()
             .set(CacheControl(vec![

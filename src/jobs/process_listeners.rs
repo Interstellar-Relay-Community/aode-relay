@@ -4,7 +4,7 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Listeners;
+pub(crate) struct Listeners;
 
 impl Listeners {
     async fn perform(self, state: JobState) -> Result<(), Error> {

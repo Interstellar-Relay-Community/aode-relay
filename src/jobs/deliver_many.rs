@@ -8,13 +8,13 @@ use background_jobs::ActixJob;
 use futures::future::{ready, Ready};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct DeliverMany {
+pub(crate) struct DeliverMany {
     to: Vec<Url>,
     data: serde_json::Value,
 }
 
 impl DeliverMany {
-    pub fn new<T>(to: Vec<Url>, data: T) -> Result<Self, MyError>
+    pub(crate) fn new<T>(to: Vec<Url>, data: T) -> Result<Self, MyError>
     where
         T: serde::ser::Serialize,
     {

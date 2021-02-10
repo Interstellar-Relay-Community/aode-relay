@@ -12,7 +12,7 @@ use std::{net::IpAddr, path::PathBuf};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize)]
-pub struct ParsedConfig {
+pub(crate) struct ParsedConfig {
     hostname: String,
     addr: IpAddr,
     port: u16,
@@ -20,10 +20,8 @@ pub struct ParsedConfig {
     restricted_mode: bool,
     validate_signatures: bool,
     https: bool,
-    database_url: String,
     pretty_log: bool,
     publish_blocks: bool,
-    max_connections: usize,
     sled_path: PathBuf,
 }
 
@@ -35,10 +33,8 @@ pub struct Config {
     debug: bool,
     restricted_mode: bool,
     validate_signatures: bool,
-    database_url: String,
     pretty_log: bool,
     publish_blocks: bool,
-    max_connections: usize,
     base_uri: Url,
     sled_path: PathBuf,
 }
@@ -57,7 +53,7 @@ pub enum UrlKind {
 }
 
 impl Config {
-    pub fn build() -> Result<Self, MyError> {
+    pub(crate) fn build() -> Result<Self, MyError> {
         let mut config = config::Config::new();
         config
             .set_default("hostname", "localhost:8080")?
@@ -69,7 +65,6 @@ impl Config {
             .set_default("https", false)?
             .set_default("pretty_log", true)?
             .set_default("publish_blocks", false)?
-            .set_default("max_connections", 2)?
             .set_default("sled_path", "./sled/db-0-34")?
             .merge(Environment::new())?;
 
@@ -85,32 +80,26 @@ impl Config {
             debug: config.debug,
             restricted_mode: config.restricted_mode,
             validate_signatures: config.validate_signatures,
-            database_url: config.database_url,
             pretty_log: config.pretty_log,
             publish_blocks: config.publish_blocks,
-            max_connections: config.max_connections,
             base_uri,
             sled_path: config.sled_path,
         })
     }
 
-    pub fn sled_path(&self) -> &PathBuf {
+    pub(crate) fn sled_path(&self) -> &PathBuf {
         &self.sled_path
     }
 
-    pub fn pretty_log(&self) -> bool {
+    pub(crate) fn pretty_log(&self) -> bool {
         self.pretty_log
     }
 
-    pub fn max_connections(&self) -> usize {
-        self.max_connections
-    }
-
-    pub fn validate_signatures(&self) -> bool {
+    pub(crate) fn validate_signatures(&self) -> bool {
         self.validate_signatures
     }
 
-    pub fn digest_middleware(&self) -> VerifyDigest<Sha256> {
+    pub(crate) fn digest_middleware(&self) -> VerifyDigest<Sha256> {
         if self.validate_signatures {
             VerifyDigest::new(Sha256::new())
         } else {
@@ -118,7 +107,7 @@ impl Config {
         }
     }
 
-    pub fn signature_middleware(
+    pub(crate) fn signature_middleware(
         &self,
         requests: Requests,
         actors: ActorCache,
@@ -131,47 +120,43 @@ impl Config {
         }
     }
 
-    pub fn bind_address(&self) -> (IpAddr, u16) {
+    pub(crate) fn bind_address(&self) -> (IpAddr, u16) {
         (self.addr, self.port)
     }
 
-    pub fn debug(&self) -> bool {
+    pub(crate) fn debug(&self) -> bool {
         self.debug
     }
 
-    pub fn publish_blocks(&self) -> bool {
+    pub(crate) fn publish_blocks(&self) -> bool {
         self.publish_blocks
     }
 
-    pub fn restricted_mode(&self) -> bool {
+    pub(crate) fn restricted_mode(&self) -> bool {
         self.restricted_mode
     }
 
-    pub fn database_url(&self) -> &str {
-        &self.database_url
-    }
-
-    pub fn hostname(&self) -> &str {
+    pub(crate) fn hostname(&self) -> &str {
         &self.hostname
     }
 
-    pub fn generate_resource(&self) -> String {
+    pub(crate) fn generate_resource(&self) -> String {
         format!("relay@{}", self.hostname)
     }
 
-    pub fn software_name(&self) -> String {
+    pub(crate) fn software_name(&self) -> String {
         "AodeRelay".to_owned()
     }
 
-    pub fn software_version(&self) -> String {
+    pub(crate) fn software_version(&self) -> String {
         "v0.2.0-main".to_owned()
     }
 
-    pub fn source_code(&self) -> String {
+    pub(crate) fn source_code(&self) -> String {
         "https://git.asonix.dog/asonix/ap-relay".to_owned()
     }
 
-    pub fn generate_url(&self, kind: UrlKind) -> Url {
+    pub(crate) fn generate_url(&self, kind: UrlKind) -> Url {
         let mut url = self.base_uri.clone();
 
         match kind {

@@ -12,7 +12,7 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Announce {
+pub(crate) struct Announce {
     object_id: Url,
     actor: Actor,
 }

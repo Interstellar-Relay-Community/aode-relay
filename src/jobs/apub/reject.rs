@@ -7,7 +7,7 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Reject(pub Actor);
+pub(crate) struct Reject(pub(crate) Actor);
 
 impl Reject {
     async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {

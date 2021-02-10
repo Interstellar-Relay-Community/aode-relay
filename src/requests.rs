@@ -20,15 +20,11 @@ use std::{
 };
 
 #[derive(Clone)]
-pub struct Breakers {
+pub(crate) struct Breakers {
     inner: Arc<RwLock<HashMap<String, Arc<Mutex<Breaker>>>>>,
 }
 
 impl Breakers {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     async fn should_try(&self, url: &Url) -> bool {
         if let Some(domain) = url.domain() {
             if let Some(breaker) = self.inner.read().await.get(domain) {
@@ -127,7 +123,7 @@ impl Default for Breaker {
 }
 
 #[derive(Clone)]
-pub struct Requests {
+pub(crate) struct Requests {
     client: Rc<RefCell<Client>>,
     consecutive_errors: Rc<AtomicUsize>,
     error_limit: usize,
@@ -139,7 +135,7 @@ pub struct Requests {
 }
 
 impl Requests {
-    pub fn new(
+    pub(crate) fn new(
         key_id: String,
         private_key: RSAPrivateKey,
         user_agent: String,
@@ -176,14 +172,14 @@ impl Requests {
         self.consecutive_errors.swap(0, Ordering::Relaxed);
     }
 
-    pub async fn fetch_json<T>(&self, url: &str) -> Result<T, MyError>
+    pub(crate) async fn fetch_json<T>(&self, url: &str) -> Result<T, MyError>
     where
         T: serde::de::DeserializeOwned,
     {
         self.do_fetch(url, "application/json").await
     }
 
-    pub async fn fetch<T>(&self, url: &str) -> Result<T, MyError>
+    pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, MyError>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -249,7 +245,7 @@ impl Requests {
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
-    pub async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
+    pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
         let parsed_url = url.parse::<Url>()?;
 
         if !self.breakers.should_try(&parsed_url).await {
@@ -318,7 +314,7 @@ impl Requests {
         Ok((content_type, bytes))
     }
 
-    pub async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), MyError>
+    pub(crate) async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), MyError>
     where
         T: serde::ser::Serialize,
     {

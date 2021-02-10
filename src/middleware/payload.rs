@@ -14,15 +14,15 @@ use log::{error, info};
 use std::task::{Context, Poll};
 
 #[derive(Clone, Debug)]
-pub struct DebugPayload(pub bool);
+pub(crate) struct DebugPayload(pub bool);
 
 #[doc(hidden)]
 #[derive(Clone, Debug)]
-pub struct DebugPayloadMiddleware<S>(bool, S);
+pub(crate) struct DebugPayloadMiddleware<S>(bool, S);
 
 #[derive(Clone, Debug, thiserror::Error)]
 #[error("Failed to read payload")]
-pub struct DebugError;
+pub(crate) struct DebugError;
 
 impl ResponseError for DebugError {
     fn status_code(&self) -> StatusCode {

@@ -16,7 +16,7 @@ use actix_web::{web, HttpResponse};
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 use log::error;
 
-pub async fn route(
+pub(crate) async fn route(
     state: web::Data<State>,
     actors: web::Data<ActorCache>,
     config: web::Data<Config>,

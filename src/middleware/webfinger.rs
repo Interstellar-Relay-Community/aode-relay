@@ -7,11 +7,11 @@ use actix_webfinger::{Resolver, Webfinger};
 use rsa_magic_public_key::AsMagicPublicKey;
 use std::{future::Future, pin::Pin};
 
-pub struct RelayResolver;
+pub(crate) struct RelayResolver;
 
 #[derive(Clone, Debug, thiserror::Error)]
 #[error("Error resolving webfinger data")]
-pub struct RelayError;
+pub(crate) struct RelayError;
 
 type FutResult<T, E> = dyn Future<Output = Result<T, E>>;
 

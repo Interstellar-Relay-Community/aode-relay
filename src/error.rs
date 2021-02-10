@@ -10,7 +10,7 @@ use rsa_pem::KeyError;
 use std::{convert::Infallible, fmt::Debug, io::Error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum MyError {
+pub(crate) enum MyError {
     #[error("Error queueing job, {0}")]
     Queue(anyhow::Error),
 
@@ -88,9 +88,6 @@ pub enum MyError {
 
     #[error("Response from {0} has invalid status code, {1}")]
     Status(String, StatusCode),
-
-    #[error("Uri {0} is missing host")]
-    Host(String),
 
     #[error("Expected an Object, found something else")]
     ObjectFormat,

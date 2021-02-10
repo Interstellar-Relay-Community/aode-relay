@@ -6,7 +6,7 @@ mod instance;
 mod nodeinfo;
 mod process_listeners;
 
-pub use self::{
+pub(crate) use self::{
     cache_media::CacheMedia, deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance,
     nodeinfo::QueryNodeinfo,
 };
@@ -22,7 +22,7 @@ use crate::{
 use background_jobs::{memory_storage::Storage, Job, QueueHandle, WorkerConfig};
 use std::time::Duration;
 
-pub fn create_server() -> JobServer {
+pub(crate) fn create_server() -> JobServer {
     let shared = background_jobs::create_server(Storage::new());
 
     shared.every(Duration::from_secs(60 * 5), Listeners);
@@ -30,7 +30,7 @@ pub fn create_server() -> JobServer {
     JobServer::new(shared)
 }
 
-pub fn create_workers(
+pub(crate) fn create_workers(
     db: Db,
     state: State,
     actors: ActorCache,
@@ -66,7 +66,7 @@ pub fn create_workers(
 }
 
 #[derive(Clone)]
-pub struct JobState {
+pub(crate) struct JobState {
     db: Db,
     requests: Requests,
     state: State,
@@ -78,7 +78,7 @@ pub struct JobState {
 }
 
 #[derive(Clone)]
-pub struct JobServer {
+pub(crate) struct JobServer {
     remote: QueueHandle,
 }
 
@@ -111,7 +111,7 @@ impl JobServer {
         }
     }
 
-    pub fn queue<J>(&self, job: J) -> Result<(), MyError>
+    pub(crate) fn queue<J>(&self, job: J) -> Result<(), MyError>
     where
         J: Job,
     {

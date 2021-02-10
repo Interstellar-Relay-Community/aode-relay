@@ -2,6 +2,6 @@ mod payload;
 mod verifier;
 mod webfinger;
 
-pub use payload::DebugPayload;
-pub use verifier::MyVerify;
-pub use webfinger::RelayResolver;
+pub(crate) use payload::DebugPayload;
+pub(crate) use verifier::MyVerify;
+pub(crate) use webfinger::RelayResolver;

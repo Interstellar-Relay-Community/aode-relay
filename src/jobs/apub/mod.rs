@@ -19,7 +19,9 @@ mod forward;
 mod reject;
 mod undo;
 
-pub use self::{announce::Announce, follow::Follow, forward::Forward, reject::Reject, undo::Undo};
+pub(crate) use self::{
+    announce::Announce, follow::Follow, forward::Forward, reject::Reject, undo::Undo,
+};
 
 async fn get_inboxes(state: &State, actor: &Actor, object_id: &Url) -> Result<Vec<Url>, MyError> {
     let domain = object_id.host().ok_or(MyError::Domain)?.to_string();

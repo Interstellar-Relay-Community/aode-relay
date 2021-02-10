@@ -5,7 +5,7 @@ mod media;
 mod nodeinfo;
 mod statics;
 
-pub use self::{
+pub(crate) use self::{
     actor::route as actor,
     inbox::route as inbox,
     index::route as index,

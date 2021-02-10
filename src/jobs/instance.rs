@@ -8,12 +8,12 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct QueryInstance {
+pub(crate) struct QueryInstance {
     actor_id: Url,
 }
 
 impl QueryInstance {
-    pub fn new(actor_id: Url) -> Self {
+    pub(crate) fn new(actor_id: Url) -> Self {
         QueryInstance {
             actor_id: actor_id.into(),
         }

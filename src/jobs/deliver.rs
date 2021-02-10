@@ -5,13 +5,13 @@ use background_jobs::{ActixJob, Backoff};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Deliver {
+pub(crate) struct Deliver {
     to: Url,
     data: serde_json::Value,
 }
 
 impl Deliver {
-    pub fn new<T>(to: Url, data: T) -> Result<Self, MyError>
+    pub(crate) fn new<T>(to: Url, data: T) -> Result<Self, MyError>
     where
         T: serde::ser::Serialize,
     {

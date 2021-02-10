@@ -5,12 +5,12 @@ use std::{future::Future, pin::Pin};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct CacheMedia {
+pub(crate) struct CacheMedia {
     uuid: Uuid,
 }
 
 impl CacheMedia {
-    pub fn new(uuid: Uuid) -> Self {
+    pub(crate) fn new(uuid: Uuid) -> Self {
         CacheMedia { uuid }
     }
 

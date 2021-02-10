@@ -14,7 +14,7 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Follow {
+pub(crate) struct Follow {
     is_listener: bool,
     input: AcceptedActivities,
     actor: Actor,

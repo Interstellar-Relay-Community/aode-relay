@@ -5,7 +5,7 @@ use actix_web::{
 };
 use uuid::Uuid;
 
-pub async fn route(
+pub(crate) async fn route(
     media: web::Data<MediaCache>,
     requests: web::Data<Requests>,
     uuid: web::Path<Uuid>,

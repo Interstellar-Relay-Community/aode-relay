@@ -8,13 +8,13 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Undo {
+pub(crate) struct Undo {
     input: AcceptedActivities,
     actor: Actor,
 }
 
 impl Undo {
-    pub fn new(input: AcceptedActivities, actor: Actor) -> Self {
+    pub(crate) fn new(input: AcceptedActivities, actor: Actor) -> Self {
         Undo { input, actor }
     }
 

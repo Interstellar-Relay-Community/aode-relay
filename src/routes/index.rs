@@ -4,7 +4,7 @@ use log::error;
 use rand::{seq::SliceRandom, thread_rng};
 use std::io::BufWriter;
 
-pub async fn route(
+pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, MyError> {

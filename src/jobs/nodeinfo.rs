@@ -5,12 +5,12 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct QueryNodeinfo {
+pub(crate) struct QueryNodeinfo {
     actor_id: Url,
 }
 
 impl QueryNodeinfo {
-    pub fn new(actor_id: Url) -> Self {
+    pub(crate) fn new(actor_id: Url) -> Self {
         QueryNodeinfo { actor_id }
     }
 

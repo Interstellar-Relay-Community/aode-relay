@@ -5,7 +5,7 @@ use crate::{
 use actix_web::{web, Responder};
 use actix_webfinger::Link;
 
-pub async fn well_known(config: web::Data<Config>) -> impl Responder {
+pub(crate) async fn well_known(config: web::Data<Config>) -> impl Responder {
     web::Json(Links {
         links: vec![Link {
             rel: "http://nodeinfo.diaspora.software/ns/schema/2.0".to_owned(),
@@ -22,7 +22,10 @@ struct Links {
     links: Vec<Link>,
 }
 
-pub async fn route(config: web::Data<Config>, state: web::Data<State>) -> web::Json<NodeInfo> {
+pub(crate) async fn route(
+    config: web::Data<Config>,
+    state: web::Data<State>,
+) -> web::Json<NodeInfo> {
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {

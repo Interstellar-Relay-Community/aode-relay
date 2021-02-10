@@ -9,7 +9,7 @@ use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Forward {
+pub(crate) struct Forward {
     input: AcceptedActivities,
     actor: Actor,
 }

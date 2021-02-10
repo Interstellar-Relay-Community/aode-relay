@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Arc, time::SystemTime};
 use uuid::Uuid;
 
 #[derive(Clone)]
-pub struct Db {
+pub(crate) struct Db {
     inner: Arc<Inner>,
 }
 
@@ -39,7 +39,7 @@ pub struct Actor {
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct MediaMeta {
+pub(crate) struct MediaMeta {
     pub(crate) media_type: String,
     pub(crate) saved_at: SystemTime,
 }

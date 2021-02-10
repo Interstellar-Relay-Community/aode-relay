@@ -15,19 +15,19 @@ pub struct MediaCache {
 }
 
 impl MediaCache {
-    pub fn new(db: Db) -> Self {
+    pub(crate) fn new(db: Db) -> Self {
         MediaCache { db }
     }
 
-    pub async fn get_uuid(&self, url: Url) -> Result<Option<Uuid>, MyError> {
+    pub(crate) async fn get_uuid(&self, url: Url) -> Result<Option<Uuid>, MyError> {
         self.db.media_id(url).await
     }
 
-    pub async fn get_url(&self, uuid: Uuid) -> Result<Option<Url>, MyError> {
+    pub(crate) async fn get_url(&self, uuid: Uuid) -> Result<Option<Url>, MyError> {
         self.db.media_url(uuid).await
     }
 
-    pub async fn is_outdated(&self, uuid: Uuid) -> Result<bool, MyError> {
+    pub(crate) async fn is_outdated(&self, uuid: Uuid) -> Result<bool, MyError> {
         if let Some(meta) = self.db.media_meta(uuid).await? {
             if meta.saved_at + MEDIA_DURATION > SystemTime::now() {
                 return Ok(false);
@@ -37,7 +37,7 @@ impl MediaCache {
         Ok(true)
     }
 
-    pub async fn get_bytes(&self, uuid: Uuid) -> Result<Option<(String, Bytes)>, MyError> {
+    pub(crate) async fn get_bytes(&self, uuid: Uuid) -> Result<Option<(String, Bytes)>, MyError> {
         if let Some(meta) = self.db.media_meta(uuid).await? {
             if meta.saved_at + MEDIA_DURATION > SystemTime::now() {
                 return self
@@ -51,7 +51,7 @@ impl MediaCache {
         Ok(None)
     }
 
-    pub async fn store_url(&self, url: Url) -> Result<Uuid, MyError> {
+    pub(crate) async fn store_url(&self, url: Url) -> Result<Uuid, MyError> {
         let uuid = Uuid::new_v4();
 
         self.db.save_url(url, uuid).await?;
@@ -59,7 +59,7 @@ impl MediaCache {
         Ok(uuid)
     }
 
-    pub async fn store_bytes(
+    pub(crate) async fn store_bytes(
         &self,
         uuid: Uuid,
         media_type: String,
