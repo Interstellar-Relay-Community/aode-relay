@@ -83,7 +83,7 @@ impl State {
                 let mut rng = thread_rng();
                 RSAPrivateKey::new(&mut rng, 4096)
             })
-            .await?;
+            .await??;
 
             db.update_private_key(&key).await?;
 

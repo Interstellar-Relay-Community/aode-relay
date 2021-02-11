@@ -124,7 +124,7 @@ async fn do_verify(
 
         Ok(()) as Result<(), MyError>
     })
-    .await?;
+    .await??;
 
     Ok(())
 }

@@ -32,13 +32,12 @@ impl ResponseError for DebugError {
     }
 }
 
-impl<S> Transform<S> for DebugPayload
+impl<S> Transform<S, ServiceRequest> for DebugPayload
 where
-    S: Service<Request = ServiceRequest, Error = actix_web::Error>,
+    S: Service<ServiceRequest, Error = actix_web::Error>,
     S::Future: 'static,
     S::Error: 'static,
 {
-    type Request = S::Request;
     type Response = S::Response;
     type Error = S::Error;
     type InitError = ();
@@ -50,22 +49,21 @@ where
     }
 }
 
-impl<S> Service for DebugPayloadMiddleware<S>
+impl<S> Service<ServiceRequest> for DebugPayloadMiddleware<S>
 where
-    S: Service<Request = ServiceRequest, Error = actix_web::Error>,
+    S: Service<ServiceRequest, Error = actix_web::Error>,
     S::Future: 'static,
     S::Error: 'static,
 {
-    type Request = S::Request;
     type Response = S::Response;
     type Error = S::Error;
     type Future = LocalBoxFuture<'static, Result<S::Response, S::Error>>;
 
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.1.poll_ready(cx)
     }
 
-    fn call(&mut self, mut req: S::Request) -> Self::Future {
+    fn call(&self, mut req: ServiceRequest) -> Self::Future {
         if self.0 && req.method() == Method::POST {
             let pl = req.take_payload();
             req.set_payload(Payload::Stream(Box::pin(once(

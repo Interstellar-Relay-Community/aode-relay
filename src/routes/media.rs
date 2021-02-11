@@ -31,7 +31,7 @@ pub(crate) async fn route(
 
 fn cached(content_type: String, bytes: web::Bytes) -> HttpResponse {
     HttpResponse::Ok()
-        .set(CacheControl(vec![
+        .insert_header(CacheControl(vec![
             CacheDirective::Public,
             CacheDirective::MaxAge(60 * 60 * 24),
             CacheDirective::Extension("immutable".to_owned(), None),

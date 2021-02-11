@@ -23,7 +23,7 @@ fn ok<T>(item: T) -> HttpResponse
 where
     T: Serialize,
 {
-    HttpResponse::Ok().content_type(CONTENT_TYPE).json(item)
+    HttpResponse::Ok().content_type(CONTENT_TYPE).json(&item)
 }
 
 fn accepted<T>(item: T) -> HttpResponse
@@ -32,5 +32,5 @@ where
 {
     HttpResponse::Accepted()
         .content_type(CONTENT_TYPE)
-        .json(item)
+        .json(&item)
 }

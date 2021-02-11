@@ -7,12 +7,12 @@ use actix_web::{
 pub(crate) async fn route(filename: web::Path<String>) -> HttpResponse {
     if let Some(data) = StaticFile::get(&filename.into_inner()) {
         HttpResponse::Ok()
-            .set(CacheControl(vec![
+            .insert_header(CacheControl(vec![
                 CacheDirective::Public,
                 CacheDirective::MaxAge(60 * 60 * 24),
                 CacheDirective::Extension("immutable".to_owned(), None),
             ]))
-            .set(ContentType(data.mime.clone()))
+            .insert_header(ContentType(data.mime.clone()))
             .body(data.content)
     } else {
         HttpResponse::NotFound()

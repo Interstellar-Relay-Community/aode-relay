@@ -131,22 +131,16 @@ impl ResponseError for MyError {
 
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
-            .header("Content-Type", "application/activity+json")
-            .json(serde_json::json!({
+            .insert_header(("Content-Type", "application/activity+json"))
+            .json(&serde_json::json!({
                 "error": self.to_string(),
             }))
     }
 }
 
-impl<T> From<BlockingError<T>> for MyError
-where
-    T: Into<MyError> + Debug,
-{
-    fn from(e: BlockingError<T>) -> Self {
-        match e {
-            BlockingError::Error(e) => e.into(),
-            BlockingError::Canceled => MyError::Canceled,
-        }
+impl From<BlockingError> for MyError {
+    fn from(_: BlockingError) -> Self {
+        MyError::Canceled
     }
 }
 

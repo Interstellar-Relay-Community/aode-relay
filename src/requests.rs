@@ -219,8 +219,8 @@ impl Requests {
         let client: Client = self.client.borrow().clone();
         let res = client
             .get(url)
-            .header("Accept", accept)
-            .set(Date(SystemTime::now().into()))
+            .insert_header(("Accept", accept))
+            .insert_header(Date(SystemTime::now().into()))
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -276,8 +276,8 @@ impl Requests {
         let client: Client = self.client.borrow().clone();
         let res = client
             .get(url)
-            .header("Accept", "*/*")
-            .set(Date(SystemTime::now().into()))
+            .insert_header(("Accept", "*/*"))
+            .insert_header(Date(SystemTime::now().into()))
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -346,9 +346,9 @@ impl Requests {
         let client: Client = self.client.borrow().clone();
         let res = client
             .post(inbox.as_str())
-            .header("Accept", "application/activity+json")
-            .header("Content-Type", "application/activity+json")
-            .set(Date(SystemTime::now().into()))
+            .insert_header(("Accept", "application/activity+json"))
+            .insert_header(("Content-Type", "application/activity+json"))
+            .insert_header(Date(SystemTime::now().into()))
             .signature_with_digest(
                 self.config.clone(),
                 self.key_id.clone(),

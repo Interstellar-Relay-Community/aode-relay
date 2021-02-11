@@ -227,7 +227,7 @@ impl Db {
     {
         let inner = self.inner.clone();
 
-        let t = actix_web::web::block(move || (f)(&inner)).await?;
+        let t = actix_web::web::block(move || (f)(&inner)).await??;
 
         Ok(t)
     }
