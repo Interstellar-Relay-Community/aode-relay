@@ -33,12 +33,13 @@ impl QueryContact {
             .fetch::<AcceptedActors>(self.contact_id.as_str())
             .await?;
 
-        if let Some((username, display_name, url, avatar)) = to_contact(contact) {
-            state
-                .node_cache
-                .set_contact(self.actor_id, username, display_name, url, avatar)
-                .await?;
-        }
+        let (username, display_name, url, avatar) = to_contact(contact)
+            .ok_or_else(|| anyhow::anyhow!("Failed to extract fields from contact"))?;
+
+        state
+            .node_cache
+            .set_contact(self.actor_id, username, display_name, url, avatar)
+            .await?;
 
         Ok(())
     }
