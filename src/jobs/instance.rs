@@ -14,9 +14,7 @@ pub(crate) struct QueryInstance {
 
 impl QueryInstance {
     pub(crate) fn new(actor_id: Url) -> Self {
-        QueryInstance {
-            actor_id: actor_id.into(),
-        }
+        QueryInstance { actor_id }
     }
 
     async fn perform(self, state: JobState) -> Result<(), Error> {

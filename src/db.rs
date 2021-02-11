@@ -691,6 +691,6 @@ mod tests {
     {
         let db =
             Db::build_inner(true, sled::Config::new().temporary(true).open().unwrap()).unwrap();
-        actix_rt::System::new("test").block_on((f)(db));
+        actix_rt::System::new().block_on((f)(db));
     }
 }
