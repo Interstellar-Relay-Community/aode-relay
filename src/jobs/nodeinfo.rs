@@ -51,7 +51,7 @@ impl QueryNodeinfo {
             )
             .await?;
 
-        if let Some(accounts) = nodeinfo.staff_accounts {
+        if let Some(accounts) = nodeinfo.metadata.and_then(|meta| meta.staff_accounts) {
             if let Some(contact_id) = accounts.get(0) {
                 state
                     .job_server
@@ -82,6 +82,12 @@ struct Nodeinfo {
 
     software: Software,
     open_registrations: bool,
+    metadata: Option<Metadata>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Metadata {
     staff_accounts: Option<Vec<Url>>,
 }
 
@@ -187,6 +193,7 @@ impl<'de> serde::de::Deserialize<'de> for SupportedNodeinfo {
 #[cfg(test)]
 mod tests {
     use super::{Nodeinfo, WellKnown};
+    use activitystreams::url::Url;
 
     const BANANA_DOG: &'static str = r#"{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.0","href":"https://banana.dog/nodeinfo/2.0"},{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://banana.dog/nodeinfo/2.1"}]}"#;
     const ASONIX_DOG: &'static str = r#"{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.0","href":"https://asonix.dog/nodeinfo/2.0"}]}"#;
@@ -202,7 +209,15 @@ mod tests {
     #[test]
     fn hyena_network() {
         is_supported(HYNET);
-        de::<Nodeinfo>(HYNET_NODEINFO);
+        let nodeinfo = de::<Nodeinfo>(HYNET_NODEINFO);
+        let accounts = nodeinfo.metadata.unwrap().staff_accounts.unwrap();
+        assert_eq!(accounts.len(), 2);
+        assert_eq!(
+            accounts[0],
+            "https://soc.hyena.network/users/HyNET"
+                .parse::<Url>()
+                .unwrap()
+        );
     }
 
     #[test]
