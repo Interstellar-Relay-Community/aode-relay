@@ -23,6 +23,7 @@ pub(crate) struct ParsedConfig {
     pretty_log: bool,
     publish_blocks: bool,
     sled_path: PathBuf,
+    source_repo: Url,
 }
 
 #[derive(Clone, Debug)]
@@ -37,6 +38,7 @@ pub struct Config {
     publish_blocks: bool,
     base_uri: Url,
     sled_path: PathBuf,
+    source_repo: Url,
 }
 
 pub enum UrlKind {
@@ -66,6 +68,7 @@ impl Config {
             .set_default("pretty_log", true)?
             .set_default("publish_blocks", false)?
             .set_default("sled_path", "./sled/db-0-34")?
+            .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?
             .merge(Environment::new())?;
 
         let config: ParsedConfig = config.try_into()?;
@@ -84,6 +87,7 @@ impl Config {
             publish_blocks: config.publish_blocks,
             base_uri,
             sled_path: config.sled_path,
+            source_repo: config.source_repo,
         })
     }
 
@@ -152,8 +156,8 @@ impl Config {
         "v0.2.0-main".to_owned()
     }
 
-    pub(crate) fn source_code(&self) -> String {
-        "https://git.asonix.dog/asonix/ap-relay".to_owned()
+    pub(crate) fn source_code(&self) -> &Url {
+        &self.source_repo
     }
 
     pub(crate) fn generate_url(&self, kind: UrlKind) -> Url {
