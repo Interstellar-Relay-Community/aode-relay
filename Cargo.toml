@@ -1,7 +1,7 @@
 [package]
 name = "relay"
 description = "A simple activitypub relay"
-version = "0.2.10"
+version = "0.2.11"
 authors = ["asonix <asonix@asonix.dog>"]
 license-file = "LICENSE"
 readme = "README.md"
@@ -14,6 +14,7 @@ build = "src/build.rs"
 
 [dependencies]
 anyhow = "1.0"
+actix-http = "=3.0.0-beta.3"
 actix-rt = "2.0.2"
 actix-web = { version = "4.0.0-beta.3", default-features = false, features = ["rustls", "compress"] }
 actix-webfinger = "0.4.0-beta.2"
@@ -22,6 +23,7 @@ activitystreams-ext = "0.1.0-alpha.2"
 ammonia = "3.1.0"
 async-mutex = "1.0.1"
 async-rwlock = "1.3.0"
+awc = "=3.0.0-beta.2"
 background-jobs = "0.9.0"
 base64 = "0.13"
 chrono = "0.4.19"
