@@ -1,8 +1,9 @@
 use crate::error::MyError;
 use activitystreams::url::Url;
-use actix_web::{client::Client, http::header::Date, web::Bytes};
+use actix_web::{http::header::Date, web::Bytes};
 use async_mutex::Mutex;
 use async_rwlock::RwLock;
+use awc::Client;
 use chrono::{DateTime, Utc};
 use http_signature_normalization_actix::prelude::*;
 use log::{debug, info, warn};
