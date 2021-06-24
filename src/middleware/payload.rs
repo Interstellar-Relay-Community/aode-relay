@@ -1,8 +1,8 @@
 use actix_web::{
-    dev::{Body, Payload, Service, ServiceRequest, Transform},
+    dev::{Payload, Service, ServiceRequest, Transform},
     http::{Method, StatusCode},
     web::BytesMut,
-    BaseHttpResponse, HttpMessage, ResponseError,
+    HttpMessage, HttpResponse, ResponseError,
 };
 use futures::{
     future::{ok, LocalBoxFuture, Ready, TryFutureExt},
@@ -27,8 +27,8 @@ impl ResponseError for DebugError {
         StatusCode::BAD_REQUEST
     }
 
-    fn error_response(&self) -> BaseHttpResponse<Body> {
-        BaseHttpResponse::new(self.status_code())
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::new(self.status_code())
     }
 }
 

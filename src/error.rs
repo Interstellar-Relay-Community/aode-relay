@@ -1,9 +1,8 @@
 use activitystreams::{error::DomainError, url::ParseError};
 use actix_web::{
-    dev::Body,
     error::{BlockingError, ResponseError},
     http::StatusCode,
-    BaseHttpResponse,
+    HttpResponse,
 };
 use http_signature_normalization_actix::PrepareSignError;
 use log::error;
@@ -130,8 +129,8 @@ impl ResponseError for MyError {
         }
     }
 
-    fn error_response(&self) -> BaseHttpResponse<Body> {
-        BaseHttpResponse::build(self.status_code())
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
             .insert_header(("Content-Type", "application/activity+json"))
             .body(
                 serde_json::to_string(&serde_json::json!({
