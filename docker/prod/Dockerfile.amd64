@@ -51,7 +51,7 @@ RUN \
  cargo build --release --target $TARGET && \
  $TOOL-strip target/$TARGET/release/$BINARY
 
-FROM amd64/alpine:3.13
+FROM amd64/alpine:3.14
 
 ARG UID=991
 ARG GID=991
