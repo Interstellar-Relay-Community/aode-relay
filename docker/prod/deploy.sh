@@ -25,7 +25,7 @@ function build_image() {
     tag=$2
     arch=$3
 
-    docker build \
+    sudo docker build \
         --pull \
         --build-arg TAG="${tag}" \
         -f "Dockerfile.${arch}" \
@@ -33,14 +33,14 @@ function build_image() {
         -t "${repo}:latest-${arch}" \
         .
 
-    docker push "${repo}:${tag}-${arch}"
-    docker push "${repo}:latest-${arch}"
+    sudo docker push "${repo}:${tag}-${arch}"
+    sudo docker push "${repo}:latest-${arch}"
 }
 
 require "$TAG" "tag"
 
-if ! docker run --rm -it arm64v8/ubuntu:19.10 /bin/bash -c 'echo "docker is configured correctly"'; then
-    echo "docker is not configured to run on qemu-emulated architectures, fixing will require sudo"
+if ! sudo docker run --rm -it arm64v8/ubuntu:19.10 /bin/bash -c 'echo "docker is configured correctly"'; then
+    echo "docker is not configured to run on qemu-emulated architectures"
     sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 fi
 
