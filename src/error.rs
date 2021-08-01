@@ -6,7 +6,6 @@ use actix_web::{
 };
 use http_signature_normalization_actix::PrepareSignError;
 use log::error;
-use rsa_pem::KeyError;
 use std::{convert::Infallible, fmt::Debug, io::Error};
 
 #[derive(Debug, thiserror::Error)]
@@ -18,7 +17,7 @@ pub(crate) enum MyError {
     Config(#[from] config::ConfigError),
 
     #[error("Couldn't parse key, {0}")]
-    Key(#[from] KeyError),
+    Pkcs8(#[from] rsa::pkcs8::Error),
 
     #[error("Couldn't parse URI, {0}")]
     Uri(#[from] ParseError),

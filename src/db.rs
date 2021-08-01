@@ -1,8 +1,10 @@
 use crate::{config::Config, error::MyError};
 use activitystreams::url::Url;
 use actix_web::web::Bytes;
-use rsa::RSAPrivateKey;
-use rsa_pem::KeyExt;
+use rsa::{
+    pkcs8::{FromPrivateKey, ToPrivateKey},
+    RsaPrivateKey,
+};
 use sled::Tree;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 use uuid::Uuid;
@@ -582,11 +584,11 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn private_key(&self) -> Result<Option<RSAPrivateKey>, MyError> {
+    pub(crate) async fn private_key(&self) -> Result<Option<RsaPrivateKey>, MyError> {
         self.unblock(|inner| {
             if let Some(ivec) = inner.settings.get("private-key")? {
                 let key_str = String::from_utf8_lossy(&ivec);
-                let key = RSAPrivateKey::from_pem_pkcs8(&key_str)?;
+                let key = RsaPrivateKey::from_pkcs8_pem(&key_str)?;
 
                 Ok(Some(key))
             } else {
@@ -598,9 +600,9 @@ impl Db {
 
     pub(crate) async fn update_private_key(
         &self,
-        private_key: &RSAPrivateKey,
+        private_key: &RsaPrivateKey,
     ) -> Result<(), MyError> {
-        let pem_pkcs8 = private_key.to_pem_pkcs8()?;
+        let pem_pkcs8 = private_key.to_pkcs8_pem()?;
 
         self.unblock(move |inner| {
             inner

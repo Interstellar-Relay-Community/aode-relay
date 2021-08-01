@@ -8,8 +8,7 @@ use activitystreams::{base::BaseExt, uri, url::Url};
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use log::error;
-use rsa::{hash::Hash, padding::PaddingScheme, PublicKey, RSAPublicKey};
-use rsa_pem::KeyExt;
+use rsa::{hash::Hash, padding::PaddingScheme, pkcs8::FromPublicKey, PublicKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
 
@@ -108,7 +107,7 @@ async fn do_verify(
     signature: String,
     signing_string: String,
 ) -> Result<(), MyError> {
-    let public_key = RSAPublicKey::from_pem_pkcs8(public_key)?;
+    let public_key = RsaPublicKey::from_public_key_pem(public_key)?;
 
     web::block(move || {
         let decoded = base64::decode(signature)?;

@@ -11,13 +11,13 @@ use async_rwlock::RwLock;
 use log::info;
 use lru::LruCache;
 use rand::thread_rng;
-use rsa::{RSAPrivateKey, RSAPublicKey};
+use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct State {
-    pub(crate) public_key: RSAPublicKey,
-    private_key: RSAPrivateKey,
+    pub(crate) public_key: RsaPublicKey,
+    private_key: RsaPrivateKey,
     config: Config,
     object_cache: Arc<RwLock<LruCache<Url, Url>>>,
     node_cache: NodeCache,
@@ -81,7 +81,7 @@ impl State {
             info!("Generating new keys");
             let key = web::block(move || {
                 let mut rng = thread_rng();
-                RSAPrivateKey::new(&mut rng, 4096)
+                RsaPrivateKey::new(&mut rng, 4096)
             })
             .await??;
 

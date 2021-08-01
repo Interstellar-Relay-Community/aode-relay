@@ -7,7 +7,7 @@ use awc::Client;
 use chrono::{DateTime, Utc};
 use http_signature_normalization_actix::prelude::*;
 use log::{debug, info, warn};
-use rsa::{hash::Hash, padding::PaddingScheme, RSAPrivateKey};
+use rsa::{hash::Hash, padding::PaddingScheme, RsaPrivateKey};
 use sha2::{Digest, Sha256};
 use std::{
     cell::RefCell,
@@ -148,7 +148,7 @@ pub(crate) struct Requests {
     error_limit: usize,
     key_id: String,
     user_agent: String,
-    private_key: RSAPrivateKey,
+    private_key: RsaPrivateKey,
     config: Config,
     breakers: Breakers,
 }
@@ -156,7 +156,7 @@ pub(crate) struct Requests {
 impl Requests {
     pub(crate) fn new(
         key_id: String,
-        private_key: RSAPrivateKey,
+        private_key: RsaPrivateKey,
         user_agent: String,
         breakers: Breakers,
     ) -> Self {
@@ -396,7 +396,7 @@ impl Requests {
 }
 
 struct Signer {
-    private_key: RSAPrivateKey,
+    private_key: RsaPrivateKey,
 }
 
 impl Signer {

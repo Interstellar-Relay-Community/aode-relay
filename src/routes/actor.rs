@@ -13,7 +13,7 @@ use activitystreams::{
 };
 use activitystreams_ext::Ext1;
 use actix_web::{web, Responder};
-use rsa_pem::KeyExt;
+use rsa::pkcs8::ToPublicKey;
 
 pub(crate) async fn route(
     state: web::Data<State>,
@@ -25,7 +25,7 @@ pub(crate) async fn route(
             public_key: PublicKeyInner {
                 id: config.generate_url(UrlKind::MainKey).into(),
                 owner: config.generate_url(UrlKind::Actor).into(),
-                public_key_pem: state.public_key.to_pem_pkcs8()?,
+                public_key_pem: state.public_key.to_public_key_pem()?,
             },
         },
     );
