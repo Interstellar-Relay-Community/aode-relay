@@ -49,7 +49,7 @@ impl State {
             self.config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),
             format!(
-                "Actix Web 3.0.0-alpha.1 ({}/{}; +{})",
+                "Actix Web 4.0.0-beta.9 ({}/{}; +{})",
                 self.config.software_name(),
                 self.config.software_version(),
                 self.config.generate_url(UrlKind::Index),

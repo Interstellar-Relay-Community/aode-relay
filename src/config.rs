@@ -145,7 +145,7 @@ impl Config {
     }
 
     pub(crate) fn software_version(&self) -> String {
-        "v0.2.0-main".to_owned()
+        "v0.3.0-main".to_owned()
     }
 
     pub(crate) fn source_code(&self) -> &Url {
