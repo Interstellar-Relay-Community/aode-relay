@@ -58,7 +58,7 @@ async fn main() -> Result<(), anyhow::Error> {
                         .tonic()
                         .with_endpoint(url.as_str()),
                 )
-                .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
+                .install_batch(opentelemetry::runtime::Tokio)?;
 
         let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 

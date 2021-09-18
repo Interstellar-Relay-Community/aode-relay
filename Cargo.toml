@@ -30,7 +30,7 @@ dotenv = "0.15.0"
 futures-util = "0.3.17"
 lru = "0.6.0"
 mime = "0.3.16"
-opentelemetry = { version = "0.16", features = ["rt-tokio-current-thread"] }
+opentelemetry = { version = "0.16", features = ["rt-tokio"] }
 opentelemetry-otlp = "0.9"
 rand = "0.8"
 rsa = "0.5"

@@ -40,7 +40,7 @@ impl ActorCache {
         ActorCache { db }
     }
 
-    #[tracing::instrument(name = "Get Actor", skip(requests))]
+    #[tracing::instrument(name = "Get Actor")]
     pub(crate) async fn get(
         &self,
         id: &Url,
@@ -68,7 +68,7 @@ impl ActorCache {
         self.db.remove_connection(actor.id.clone()).await
     }
 
-    #[tracing::instrument(name = "Fetch remote actor", skip(requests))]
+    #[tracing::instrument(name = "Fetch remote actor")]
     pub(crate) async fn get_no_cache(&self, id: &Url, requests: &Requests) -> Result<Actor, Error> {
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
