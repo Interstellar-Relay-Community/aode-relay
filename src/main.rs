@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpServer};
+use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
@@ -46,14 +47,18 @@ async fn main() -> Result<(), anyhow::Error> {
         .with(format_layer);
 
     if let Some(url) = config.opentelemetry_url() {
-        let tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(
-                opentelemetry_otlp::new_exporter()
-                    .tonic()
-                    .with_endpoint(url.as_str()),
-            )
-            .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
+        let tracer =
+            opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
+                    Resource::new(vec![KeyValue::new("service.name", config.software_name())]),
+                ))
+                .with_exporter(
+                    opentelemetry_otlp::new_exporter()
+                        .tonic()
+                        .with_endpoint(url.as_str()),
+                )
+                .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
 
         let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
