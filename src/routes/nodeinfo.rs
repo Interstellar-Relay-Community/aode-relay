@@ -5,6 +5,7 @@ use crate::{
 use actix_web::{web, Responder};
 use actix_webfinger::Link;
 
+#[tracing::instrument(name = "Well Known NodeInfo")]
 pub(crate) async fn well_known(config: web::Data<Config>) -> impl Responder {
     web::Json(Links {
         links: vec![Link {
@@ -22,6 +23,7 @@ struct Links {
     links: Vec<Link>,
 }
 
+#[tracing::instrument(name = "NodeInfo")]
 pub(crate) async fn route(
     config: web::Data<Config>,
     state: web::Data<State>,

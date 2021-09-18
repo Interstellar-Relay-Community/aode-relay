@@ -2,6 +2,7 @@ use crate::{
     apub::AcceptedActivities,
     config::UrlKind,
     db::Actor,
+    error::Error,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
 use background_jobs::ActixJob;
@@ -18,7 +19,8 @@ impl Undo {
         Undo { input, actor }
     }
 
-    async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
+    #[tracing::instrument(name = "Undo")]
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         let was_following = state.state.db.is_connected(self.actor.id.clone()).await?;
 
         state.actors.remove_connection(&self.actor).await?;
@@ -42,6 +44,6 @@ impl ActixJob for Undo {
     const NAME: &'static str = "relay::jobs::apub::Undo";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }

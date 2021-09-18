@@ -1,11 +1,11 @@
 use crate::{
     db::{Contact, Db, Info, Instance},
-    error::MyError,
+    error::Error,
 };
 use activitystreams::url::Url;
 use std::time::{Duration, SystemTime};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NodeCache {
     db: Db,
 }
@@ -23,7 +23,8 @@ impl NodeCache {
         NodeCache { db }
     }
 
-    pub(crate) async fn nodes(&self) -> Result<Vec<Node>, MyError> {
+    #[tracing::instrument(name = "Get nodes")]
+    pub(crate) async fn nodes(&self) -> Result<Vec<Node>, Error> {
         let infos = self.db.connected_info().await?;
         let instances = self.db.connected_instance().await?;
         let contacts = self.db.connected_contact().await?;
@@ -48,6 +49,7 @@ impl NodeCache {
         Ok(vec)
     }
 
+    #[tracing::instrument(name = "Is NodeInfo Outdated")]
     pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: Url) -> bool {
         self.db
             .info(actor_id)
@@ -56,6 +58,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
+    #[tracing::instrument(name = "Is Contact Outdated")]
     pub(crate) async fn is_contact_outdated(&self, actor_id: Url) -> bool {
         self.db
             .contact(actor_id)
@@ -64,6 +67,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
+    #[tracing::instrument(name = "Is Instance Outdated")]
     pub(crate) async fn is_instance_outdated(&self, actor_id: Url) -> bool {
         self.db
             .instance(actor_id)
@@ -72,13 +76,14 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
+    #[tracing::instrument(name = "Save node info")]
     pub(crate) async fn set_info(
         &self,
         actor_id: Url,
         software: String,
         version: String,
         reg: bool,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         self.db
             .save_info(
                 actor_id,
@@ -92,6 +97,7 @@ impl NodeCache {
             .await
     }
 
+    #[tracing::instrument(name = "Save instance info")]
     pub(crate) async fn set_instance(
         &self,
         actor_id: Url,
@@ -100,7 +106,7 @@ impl NodeCache {
         version: String,
         reg: bool,
         requires_approval: bool,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         self.db
             .save_instance(
                 actor_id,
@@ -116,6 +122,7 @@ impl NodeCache {
             .await
     }
 
+    #[tracing::instrument(name = "Save contact info")]
     pub(crate) async fn set_contact(
         &self,
         actor_id: Url,
@@ -123,7 +130,7 @@ impl NodeCache {
         display_name: String,
         url: Url,
         avatar: Url,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         self.db
             .save_contact(
                 actor_id,

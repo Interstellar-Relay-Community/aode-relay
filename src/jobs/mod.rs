@@ -16,7 +16,7 @@ use crate::{
     config::Config,
     data::{ActorCache, MediaCache, NodeCache, State},
     db::Db,
-    error::MyError,
+    error::{Error, ErrorKind},
     jobs::process_listeners::Listeners,
     requests::Requests,
 };
@@ -67,7 +67,7 @@ pub(crate) fn create_workers(
     .start(remote_handle);
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct JobState {
     db: Db,
     requests: Requests,
@@ -82,6 +82,14 @@ pub(crate) struct JobState {
 #[derive(Clone)]
 pub(crate) struct JobServer {
     remote: QueueHandle,
+}
+
+impl std::fmt::Debug for JobServer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JobServer")
+            .field("queue_handle", &"QueueHandle")
+            .finish()
+    }
 }
 
 impl JobState {
@@ -113,10 +121,13 @@ impl JobServer {
         }
     }
 
-    pub(crate) fn queue<J>(&self, job: J) -> Result<(), MyError>
+    pub(crate) fn queue<J>(&self, job: J) -> Result<(), Error>
     where
         J: Job,
     {
-        self.remote.queue(job).map_err(MyError::Queue)
+        self.remote
+            .queue(job)
+            .map_err(ErrorKind::Queue)
+            .map_err(Into::into)
     }
 }

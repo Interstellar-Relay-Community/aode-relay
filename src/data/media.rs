@@ -1,6 +1,6 @@
 use crate::{
     db::{Db, MediaMeta},
-    error::MyError,
+    error::Error,
 };
 use activitystreams::url::Url;
 use actix_web::web::Bytes;
@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 static MEDIA_DURATION: Duration = Duration::from_secs(60 * 60 * 24 * 2);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MediaCache {
     db: Db,
 }
@@ -19,15 +19,18 @@ impl MediaCache {
         MediaCache { db }
     }
 
-    pub(crate) async fn get_uuid(&self, url: Url) -> Result<Option<Uuid>, MyError> {
+    #[tracing::instrument(name = "Get media uuid")]
+    pub(crate) async fn get_uuid(&self, url: Url) -> Result<Option<Uuid>, Error> {
         self.db.media_id(url).await
     }
 
-    pub(crate) async fn get_url(&self, uuid: Uuid) -> Result<Option<Url>, MyError> {
+    #[tracing::instrument(name = "Get media url")]
+    pub(crate) async fn get_url(&self, uuid: Uuid) -> Result<Option<Url>, Error> {
         self.db.media_url(uuid).await
     }
 
-    pub(crate) async fn is_outdated(&self, uuid: Uuid) -> Result<bool, MyError> {
+    #[tracing::instrument(name = "Is media outdated")]
+    pub(crate) async fn is_outdated(&self, uuid: Uuid) -> Result<bool, Error> {
         if let Some(meta) = self.db.media_meta(uuid).await? {
             if meta.saved_at + MEDIA_DURATION > SystemTime::now() {
                 return Ok(false);
@@ -37,7 +40,8 @@ impl MediaCache {
         Ok(true)
     }
 
-    pub(crate) async fn get_bytes(&self, uuid: Uuid) -> Result<Option<(String, Bytes)>, MyError> {
+    #[tracing::instrument(name = "Get media bytes")]
+    pub(crate) async fn get_bytes(&self, uuid: Uuid) -> Result<Option<(String, Bytes)>, Error> {
         if let Some(meta) = self.db.media_meta(uuid).await? {
             if meta.saved_at + MEDIA_DURATION > SystemTime::now() {
                 return self
@@ -51,7 +55,8 @@ impl MediaCache {
         Ok(None)
     }
 
-    pub(crate) async fn store_url(&self, url: Url) -> Result<Uuid, MyError> {
+    #[tracing::instrument(name = "Store media url")]
+    pub(crate) async fn store_url(&self, url: Url) -> Result<Uuid, Error> {
         let uuid = Uuid::new_v4();
 
         self.db.save_url(url, uuid).await?;
@@ -59,12 +64,13 @@ impl MediaCache {
         Ok(uuid)
     }
 
+    #[tracing::instrument(name = "store media bytes", skip(bytes))]
     pub(crate) async fn store_bytes(
         &self,
         uuid: Uuid,
         media_type: String,
         bytes: Bytes,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         self.db
             .save_bytes(
                 uuid,

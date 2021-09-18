@@ -1,6 +1,8 @@
-use crate::jobs::{JobState, QueryContact};
+use crate::{
+    error::Error,
+    jobs::{JobState, QueryContact},
+};
 use activitystreams::url::Url;
-use anyhow::Error;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
@@ -14,6 +16,7 @@ impl QueryNodeinfo {
         QueryNodeinfo { actor_id }
     }
 
+    #[tracing::instrument(name = "Query node info")]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         if !state
             .node_cache
@@ -65,12 +68,12 @@ impl QueryNodeinfo {
 
 impl ActixJob for QueryNodeinfo {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
     const NAME: &'static str = "relay::jobs::QueryNodeinfo";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }
 

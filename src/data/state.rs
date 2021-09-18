@@ -2,17 +2,17 @@ use crate::{
     config::{Config, UrlKind},
     data::NodeCache,
     db::Db,
-    error::MyError,
+    error::Error,
     requests::{Breakers, Requests},
 };
 use activitystreams::url::Url;
 use actix_web::web;
 use async_rwlock::RwLock;
-use log::info;
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::Arc;
+use tracing::info;
 
 #[derive(Clone)]
 pub struct State {
@@ -23,6 +23,20 @@ pub struct State {
     node_cache: NodeCache,
     breakers: Breakers,
     pub(crate) db: Db,
+}
+
+impl std::fmt::Debug for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("State")
+            .field("public_key", &"PublicKey")
+            .field("private_key", &"[redacted]")
+            .field("config", &self.config)
+            .field("object_cache", &"Object Cache")
+            .field("node_cache", &self.node_cache)
+            .field("breakers", &self.breakers)
+            .field("db", &self.db)
+            .finish()
+    }
 }
 
 impl State {
@@ -44,11 +58,12 @@ impl State {
         )
     }
 
+    #[tracing::instrument(name = "Get inboxes for other domains")]
     pub(crate) async fn inboxes_without(
         &self,
         existing_inbox: &Url,
         domain: &str,
-    ) -> Result<Vec<Url>, MyError> {
+    ) -> Result<Vec<Url>, Error> {
         Ok(self
             .db
             .inboxes()
@@ -74,8 +89,10 @@ impl State {
         self.object_cache.write().await.put(object_id, actor_id);
     }
 
-    pub(crate) async fn build(config: Config, db: Db) -> Result<Self, MyError> {
+    #[tracing::instrument(name = "Building state")]
+    pub(crate) async fn build(config: Config, db: Db) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {
+            info!("Using existing key");
             key
         } else {
             info!("Generating new keys");

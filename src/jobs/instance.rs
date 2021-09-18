@@ -1,9 +1,9 @@
 use crate::{
     config::UrlKind,
+    error::Error,
     jobs::{cache_media::CacheMedia, JobState},
 };
 use activitystreams::url::Url;
-use anyhow::Error;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
@@ -17,6 +17,7 @@ impl QueryInstance {
         QueryInstance { actor_id }
     }
 
+    #[tracing::instrument(name = "Query instance")]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let contact_outdated = state
             .node_cache
@@ -91,12 +92,12 @@ impl QueryInstance {
 
 impl ActixJob for QueryInstance {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
     const NAME: &'static str = "relay::jobs::QueryInstance";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }
 

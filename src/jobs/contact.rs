@@ -1,6 +1,9 @@
-use crate::{apub::AcceptedActors, jobs::JobState};
+use crate::{
+    apub::AcceptedActors,
+    error::{Error, ErrorKind},
+    jobs::JobState,
+};
 use activitystreams::{object::Image, prelude::*, url::Url};
-use anyhow::Error;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
@@ -33,8 +36,8 @@ impl QueryContact {
             .fetch::<AcceptedActors>(self.contact_id.as_str())
             .await?;
 
-        let (username, display_name, url, avatar) = to_contact(contact)
-            .ok_or_else(|| anyhow::anyhow!("Failed to extract fields from contact"))?;
+        let (username, display_name, url, avatar) =
+            to_contact(contact).ok_or_else(|| ErrorKind::Extract("contact"))?;
 
         state
             .node_cache
@@ -63,12 +66,12 @@ fn to_contact(contact: AcceptedActors) -> Option<(String, String, Url, Url)> {
 
 impl ActixJob for QueryContact {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
     const NAME: &'static str = "relay::jobs::QueryContact";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }
 

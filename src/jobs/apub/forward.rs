@@ -1,7 +1,7 @@
 use crate::{
     apub::AcceptedActivities,
     db::Actor,
-    error::MyError,
+    error::{Error, ErrorKind},
     jobs::{apub::get_inboxes, DeliverMany, JobState},
 };
 use activitystreams::prelude::*;
@@ -19,12 +19,13 @@ impl Forward {
         Forward { input, actor }
     }
 
-    async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
+    #[tracing::instrument(name = "Forward")]
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         let object_id = self
             .input
             .object()
             .as_single_id()
-            .ok_or(MyError::MissingId)?;
+            .ok_or(ErrorKind::MissingId)?;
 
         let inboxes = get_inboxes(&state.state, &self.actor, object_id).await?;
 
@@ -43,6 +44,6 @@ impl ActixJob for Forward {
     const NAME: &'static str = "relay::jobs::apub::Forward";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     data::{ActorCache, State},
-    error::MyError,
+    error::Error,
     middleware::MyVerify,
     requests::Requests,
 };
@@ -20,7 +20,6 @@ pub(crate) struct ParsedConfig {
     restricted_mode: bool,
     validate_signatures: bool,
     https: bool,
-    pretty_log: bool,
     publish_blocks: bool,
     sled_path: PathBuf,
     source_repo: Url,
@@ -34,7 +33,6 @@ pub struct Config {
     debug: bool,
     restricted_mode: bool,
     validate_signatures: bool,
-    pretty_log: bool,
     publish_blocks: bool,
     base_uri: Url,
     sled_path: PathBuf,
@@ -55,7 +53,7 @@ pub enum UrlKind {
 }
 
 impl Config {
-    pub(crate) fn build() -> Result<Self, MyError> {
+    pub(crate) fn build() -> Result<Self, Error> {
         let mut config = config::Config::new();
         config
             .set_default("hostname", "localhost:8080")?
@@ -65,7 +63,6 @@ impl Config {
             .set_default("restricted_mode", false)?
             .set_default("validate_signatures", false)?
             .set_default("https", false)?
-            .set_default("pretty_log", true)?
             .set_default("publish_blocks", false)?
             .set_default("sled_path", "./sled/db-0-34")?
             .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?
@@ -83,7 +80,6 @@ impl Config {
             debug: config.debug,
             restricted_mode: config.restricted_mode,
             validate_signatures: config.validate_signatures,
-            pretty_log: config.pretty_log,
             publish_blocks: config.publish_blocks,
             base_uri,
             sled_path: config.sled_path,
@@ -93,10 +89,6 @@ impl Config {
 
     pub(crate) fn sled_path(&self) -> &PathBuf {
         &self.sled_path
-    }
-
-    pub(crate) fn pretty_log(&self) -> bool {
-        self.pretty_log
     }
 
     pub(crate) fn validate_signatures(&self) -> bool {

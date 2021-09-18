@@ -1,7 +1,8 @@
-use actix_web::{
-    middleware::{Compress, Logger},
-    web, App, HttpServer,
-};
+use actix_web::{web, App, HttpServer};
+use tracing_actix_web::TracingLogger;
+use tracing_error::ErrorLayer;
+use tracing_log::LogTracer;
+use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, EnvFilter};
 
 mod apub;
 mod args;
@@ -28,22 +29,22 @@ use self::{
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
 
+    LogTracer::init()?;
+
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+
+    let format_layer = tracing_subscriber::fmt::layer()
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .pretty();
+
+    let subscriber = tracing_subscriber::Registry::default()
+        .with(env_filter)
+        .with(ErrorLayer::default())
+        .with(format_layer);
+
+    tracing::subscriber::set_global_default(subscriber)?;
+
     let config = Config::build()?;
-
-    if config.debug() {
-        std::env::set_var(
-            "RUST_LOG",
-            "debug,h2=info,trust_dns_resolver=info,trust_dns_proto=info,rustls=info,html5ever=info",
-        )
-    } else {
-        std::env::set_var("RUST_LOG", "info")
-    }
-
-    if config.pretty_log() {
-        pretty_env_logger::init();
-    } else {
-        env_logger::init();
-    }
 
     let db = Db::build(&config)?;
 
@@ -77,8 +78,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let bind_address = config.bind_address();
     HttpServer::new(move || {
         App::new()
-            .wrap(Compress::default())
-            .wrap(Logger::default())
+            .wrap(TracingLogger::default())
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
             .app_data(web::Data::new(state.requests()))

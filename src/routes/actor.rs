@@ -2,7 +2,7 @@ use crate::{
     apub::{PublicKey, PublicKeyInner},
     config::{Config, UrlKind},
     data::State,
-    error::MyError,
+    error::Error,
     routes::ok,
 };
 use activitystreams::{
@@ -15,10 +15,11 @@ use activitystreams_ext::Ext1;
 use actix_web::{web, Responder};
 use rsa::pkcs8::ToPublicKey;
 
+#[tracing::instrument(name = "Actor")]
 pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
-) -> Result<impl Responder, MyError> {
+) -> Result<impl Responder, Error> {
     let mut application = Ext1::new(
         ApActor::new(config.generate_url(UrlKind::Inbox), Application::new()),
         PublicKey {

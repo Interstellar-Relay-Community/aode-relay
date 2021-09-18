@@ -1,7 +1,7 @@
 use crate::{
     config::{Config, UrlKind},
     db::Actor,
-    error::MyError,
+    error::Error,
     jobs::{
         apub::{get_inboxes, prepare_activity},
         DeliverMany, JobState,
@@ -22,7 +22,8 @@ impl Announce {
         Announce { object_id, actor }
     }
 
-    async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
+    #[tracing::instrument(name = "Announce")]
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         let activity_id = state.config.generate_url(UrlKind::Activity);
 
         let announce = generate_announce(&state.config, &activity_id, &self.object_id)?;
@@ -41,7 +42,7 @@ fn generate_announce(
     config: &Config,
     activity_id: &Url,
     object_id: &Url,
-) -> Result<AsAnnounce, MyError> {
+) -> Result<AsAnnounce, Error> {
     let announce = AsAnnounce::new(config.generate_url(UrlKind::Actor), object_id.clone());
 
     prepare_activity(
@@ -58,6 +59,6 @@ impl ActixJob for Announce {
     const NAME: &'static str = "relay::jobs::apub::Announce";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }

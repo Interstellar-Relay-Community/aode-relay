@@ -1,4 +1,4 @@
-use crate::error::MyError;
+use crate::error::{Error, ErrorKind};
 use activitystreams::url::Url;
 use actix_web::{http::header::Date, web::Bytes};
 use async_mutex::Mutex;
@@ -6,7 +6,6 @@ use async_rwlock::RwLock;
 use awc::Client;
 use chrono::{DateTime, Utc};
 use http_signature_normalization_actix::prelude::*;
-use log::{debug, info, warn};
 use rsa::{hash::Hash, padding::PaddingScheme, RsaPrivateKey};
 use sha2::{Digest, Sha256};
 use std::{
@@ -19,10 +18,17 @@ use std::{
     },
     time::SystemTime,
 };
+use tracing::{debug, info, warn};
 
 #[derive(Clone)]
 pub(crate) struct Breakers {
     inner: Arc<RwLock<HashMap<String, Arc<Mutex<Breaker>>>>>,
+}
+
+impl std::fmt::Debug for Breakers {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Breakers").finish()
+    }
 }
 
 impl Breakers {
@@ -97,6 +103,7 @@ impl Default for Breakers {
     }
 }
 
+#[derive(Debug)]
 struct Breaker {
     failures: usize,
     last_attempt: DateTime<Utc>,
@@ -153,6 +160,21 @@ pub(crate) struct Requests {
     breakers: Breakers,
 }
 
+impl std::fmt::Debug for Requests {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Requests")
+            .field("client", &"Client")
+            .field("consecutive_errors", &"AtomicUsize")
+            .field("error_limit", &self.error_limit)
+            .field("key_id", &self.key_id)
+            .field("user_agent", &self.user_agent)
+            .field("private_key", &"[redacted]")
+            .field("config", &self.config)
+            .field("breakers", &self.breakers)
+            .finish()
+    }
+}
+
 impl Requests {
     pub(crate) fn new(
         key_id: String,
@@ -191,28 +213,28 @@ impl Requests {
         self.consecutive_errors.swap(0, Ordering::Relaxed);
     }
 
-    pub(crate) async fn fetch_json<T>(&self, url: &str) -> Result<T, MyError>
+    pub(crate) async fn fetch_json<T>(&self, url: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
         self.do_fetch(url, "application/json").await
     }
 
-    pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, MyError>
+    pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
         self.do_fetch(url, "application/activity+json").await
     }
 
-    async fn do_fetch<T>(&self, url: &str, accept: &str) -> Result<T, MyError>
+    async fn do_fetch<T>(&self, url: &str, accept: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
         let parsed_url = url.parse::<Url>()?;
 
         if !self.breakers.should_try(&parsed_url).await {
-            return Err(MyError::Breaker);
+            return Err(ErrorKind::Breaker.into());
         }
 
         let signer = self.signer();
@@ -236,7 +258,7 @@ impl Requests {
             self.breakers.fail(&parsed_url).await;
         }
 
-        let mut res = res.map_err(|e| MyError::SendRequest(url.to_string(), e.to_string()))?;
+        let mut res = res.map_err(|e| ErrorKind::SendRequest(url.to_string(), e.to_string()))?;
 
         self.reset_err();
 
@@ -251,7 +273,7 @@ impl Requests {
 
             self.breakers.fail(&parsed_url).await;
 
-            return Err(MyError::Status(url.to_string(), res.status()));
+            return Err(ErrorKind::Status(url.to_string(), res.status()).into());
         }
 
         self.breakers.succeed(&parsed_url).await;
@@ -259,16 +281,16 @@ impl Requests {
         let body = res
             .body()
             .await
-            .map_err(|e| MyError::ReceiveResponse(url.to_string(), e.to_string()))?;
+            .map_err(|e| ErrorKind::ReceiveResponse(url.to_string(), e.to_string()))?;
 
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
-    pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), MyError> {
+    pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), Error> {
         let parsed_url = url.parse::<Url>()?;
 
         if !self.breakers.should_try(&parsed_url).await {
-            return Err(MyError::Breaker);
+            return Err(ErrorKind::Breaker.into());
         }
 
         info!("Fetching bytes for {}", url);
@@ -293,7 +315,7 @@ impl Requests {
             self.count_err();
         }
 
-        let mut res = res.map_err(|e| MyError::SendRequest(url.to_string(), e.to_string()))?;
+        let mut res = res.map_err(|e| ErrorKind::SendRequest(url.to_string(), e.to_string()))?;
 
         self.reset_err();
 
@@ -301,10 +323,10 @@ impl Requests {
             if let Ok(s) = content_type.to_str() {
                 s.to_owned()
             } else {
-                return Err(MyError::ContentType);
+                return Err(ErrorKind::ContentType.into());
             }
         } else {
-            return Err(MyError::ContentType);
+            return Err(ErrorKind::ContentType.into());
         };
 
         if !res.status().is_success() {
@@ -318,14 +340,14 @@ impl Requests {
 
             self.breakers.fail(&parsed_url).await;
 
-            return Err(MyError::Status(url.to_string(), res.status()));
+            return Err(ErrorKind::Status(url.to_string(), res.status()).into());
         }
 
         self.breakers.succeed(&parsed_url).await;
 
         let bytes = match res.body().limit(1024 * 1024 * 4).await {
             Err(e) => {
-                return Err(MyError::ReceiveResponse(url.to_string(), e.to_string()));
+                return Err(ErrorKind::ReceiveResponse(url.to_string(), e.to_string()).into());
             }
             Ok(bytes) => bytes,
         };
@@ -333,12 +355,12 @@ impl Requests {
         Ok((content_type, bytes))
     }
 
-    pub(crate) async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), MyError>
+    pub(crate) async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), Error>
     where
         T: serde::ser::Serialize,
     {
         if !self.breakers.should_try(&inbox).await {
-            return Err(MyError::Breaker);
+            return Err(ErrorKind::Breaker.into());
         }
 
         let signer = self.signer();
@@ -366,7 +388,7 @@ impl Requests {
             self.breakers.fail(&inbox).await;
         }
 
-        let mut res = res.map_err(|e| MyError::SendRequest(inbox.to_string(), e.to_string()))?;
+        let mut res = res.map_err(|e| ErrorKind::SendRequest(inbox.to_string(), e.to_string()))?;
 
         self.reset_err();
 
@@ -380,7 +402,7 @@ impl Requests {
             }
 
             self.breakers.fail(&inbox).await;
-            return Err(MyError::Status(inbox.to_string(), res.status()));
+            return Err(ErrorKind::Status(inbox.to_string(), res.status()).into());
         }
 
         self.breakers.succeed(&inbox).await;
@@ -400,7 +422,7 @@ struct Signer {
 }
 
 impl Signer {
-    fn sign(&self, signing_string: &str) -> Result<String, MyError> {
+    fn sign(&self, signing_string: &str) -> Result<String, Error> {
         let hashed = Sha256::digest(signing_string.as_bytes());
         let bytes = self.private_key.sign(
             PaddingScheme::PKCS1v15Sign {

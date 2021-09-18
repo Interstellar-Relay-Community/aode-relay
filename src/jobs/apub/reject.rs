@@ -1,6 +1,7 @@
 use crate::{
     config::UrlKind,
     db::Actor,
+    error::Error,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
 use background_jobs::ActixJob;
@@ -10,7 +11,8 @@ use std::{future::Future, pin::Pin};
 pub(crate) struct Reject(pub(crate) Actor);
 
 impl Reject {
-    async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
+    #[tracing::instrument(name = "Reject")]
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         state.actors.remove_connection(&self.0).await?;
 
         let my_id = state.config.generate_url(UrlKind::Actor);
@@ -29,6 +31,6 @@ impl ActixJob for Reject {
     const NAME: &'static str = "relay::jobs::apub::Reject";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }

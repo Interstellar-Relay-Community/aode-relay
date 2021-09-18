@@ -15,26 +15,22 @@ build = "src/build.rs"
 [dependencies]
 anyhow = "1.0"
 actix-rt = "2.0.2"
-actix-web = { version = "4.0.0-beta.7", default-features = false, features = ["compress-brotli", "compress-gzip", "compress-zstd"] }
+actix-web = { version = "4.0.0-beta.7", default-features = false }
 actix-webfinger = "0.4.0-beta.3"
 activitystreams = "0.7.0-alpha.10"
 activitystreams-ext = "0.1.0-alpha.2"
 ammonia = "3.1.0"
 async-mutex = "1.0.1"
 async-rwlock = "1.3.0"
-awc = { version = "3.0.0-beta.6", default-features = false, features = ["compress-brotli", "compress-gzip", "compress-zstd", "rustls"] }
-background-jobs = "0.9.0"
+awc = { version = "3.0.0-beta.6", default-features = false, features = ["rustls"] }
 base64 = "0.13"
 chrono = "0.4.19"
 config = "0.11.0"
 dotenv = "0.15.0"
-env_logger = "0.9.0"
-futures = "0.3.12"
-http-signature-normalization-actix = { version = "0.5.0-beta.6", default-features = false, features = ["sha-2"] }
-log = "0.4"
+futures-util = "0.3.17"
+http-signature-normalization-actix = { version = "0.5.0-beta.7", default-features = false, features = ["sha-2"], git = "https://git.asonix.dog/asonix/http-signature-normalization" }
 lru = "0.6.0"
 mime = "0.3.16"
-pretty_env_logger = "0.4.0"
 rand = "0.8"
 rsa = "0.5"
 rsa-magic-public-key = "0.4.0"
@@ -44,7 +40,23 @@ sha2 = "0.9"
 sled = "0.34.6"
 structopt = "0.3.12"
 thiserror = "1.0"
+tracing = "0.1"
+tracing-actix-web = { version = "0.4.0-beta.12", git = "https://github.com/asonix/tracing-actix-web", branch = "asonix/tracing-error-work-around" }
+tracing-error = "0.1"
+tracing-futures = "0.2"
+tracing-log = "0.1"
+tracing-subscriber = { version = "0.2", features = ["ansi", "fmt"] }
 uuid = { version = "0.8", features = ["v4", "serde"] }
+
+[dependencies.background-jobs]
+version = "0.10.0"
+git = "https://git.asonix.dog/asonix/background-jobs"
+default-features = false
+features = [
+    "background-jobs-actix",
+    "error-logging"
+]
+
 
 [build-dependencies]
 anyhow = "1.0"

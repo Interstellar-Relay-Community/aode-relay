@@ -1,11 +1,10 @@
 use crate::{
-    error::MyError,
+    error::Error,
     jobs::{Deliver, JobState},
 };
 use activitystreams::url::Url;
-use anyhow::Error;
 use background_jobs::ActixJob;
-use futures::future::{ready, Ready};
+use std::future::{ready, Ready};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub(crate) struct DeliverMany {
@@ -14,7 +13,7 @@ pub(crate) struct DeliverMany {
 }
 
 impl DeliverMany {
-    pub(crate) fn new<T>(to: Vec<Url>, data: T) -> Result<Self, MyError>
+    pub(crate) fn new<T>(to: Vec<Url>, data: T) -> Result<Self, Error>
     where
         T: serde::ser::Serialize,
     {
@@ -24,6 +23,7 @@ impl DeliverMany {
         })
     }
 
+    #[tracing::instrument(name = "Deliver many")]
     fn perform(self, state: JobState) -> Result<(), Error> {
         for inbox in self.to {
             state
@@ -37,11 +37,11 @@ impl DeliverMany {
 
 impl ActixJob for DeliverMany {
     type State = JobState;
-    type Future = Ready<Result<(), Error>>;
+    type Future = Ready<Result<(), anyhow::Error>>;
 
     const NAME: &'static str = "relay::jobs::DeliverMany";
 
     fn run(self, state: Self::State) -> Self::Future {
-        ready(self.perform(state))
+        ready(self.perform(state).map_err(Into::into))
     }
 }

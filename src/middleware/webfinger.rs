@@ -4,16 +4,14 @@ use crate::{
 };
 use actix_web::web::Data;
 use actix_webfinger::{Resolver, Webfinger};
+use futures_util::future::LocalBoxFuture;
 use rsa_magic_public_key::AsMagicPublicKey;
-use std::{future::Future, pin::Pin};
 
 pub(crate) struct RelayResolver;
 
 #[derive(Clone, Debug, thiserror::Error)]
 #[error("Error resolving webfinger data")]
 pub(crate) struct RelayError;
-
-type FutResult<T, E> = dyn Future<Output = Result<T, E>>;
 
 impl Resolver for RelayResolver {
     type State = (Data<State>, Data<Config>);
@@ -23,7 +21,7 @@ impl Resolver for RelayResolver {
         account: &str,
         domain: &str,
         (state, config): Self::State,
-    ) -> Pin<Box<FutResult<Option<Webfinger>, Self::Error>>> {
+    ) -> LocalBoxFuture<'static, Result<Option<Webfinger>, Self::Error>> {
         let domain = domain.to_owned();
         let account = account.to_owned();
 

@@ -1,7 +1,7 @@
 use crate::{
     apub::AcceptedActors,
     db::{Actor, Db},
-    error::MyError,
+    error::{Error, ErrorKind},
     requests::Requests,
 };
 use activitystreams::{prelude::*, url::Url};
@@ -30,7 +30,7 @@ impl<T> MaybeCached<T> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ActorCache {
     db: Db,
 }
@@ -40,11 +40,12 @@ impl ActorCache {
         ActorCache { db }
     }
 
+    #[tracing::instrument(name = "Get Actor", skip(requests))]
     pub(crate) async fn get(
         &self,
         id: &Url,
         requests: &Requests,
-    ) -> Result<MaybeCached<Actor>, MyError> {
+    ) -> Result<MaybeCached<Actor>, Error> {
         if let Some(actor) = self.db.actor(id.clone()).await? {
             if actor.saved_at + REFETCH_DURATION > SystemTime::now() {
                 return Ok(MaybeCached::Cached(actor));
@@ -56,26 +57,25 @@ impl ActorCache {
             .map(MaybeCached::Fetched)
     }
 
-    pub(crate) async fn add_connection(&self, actor: Actor) -> Result<(), MyError> {
+    #[tracing::instrument(name = "Add Connection")]
+    pub(crate) async fn add_connection(&self, actor: Actor) -> Result<(), Error> {
         self.db.add_connection(actor.id.clone()).await?;
         self.db.save_actor(actor).await
     }
 
-    pub(crate) async fn remove_connection(&self, actor: &Actor) -> Result<(), MyError> {
+    #[tracing::instrument(name = "Remove Connection")]
+    pub(crate) async fn remove_connection(&self, actor: &Actor) -> Result<(), Error> {
         self.db.remove_connection(actor.id.clone()).await
     }
 
-    pub(crate) async fn get_no_cache(
-        &self,
-        id: &Url,
-        requests: &Requests,
-    ) -> Result<Actor, MyError> {
+    #[tracing::instrument(name = "Fetch remote actor", skip(requests))]
+    pub(crate) async fn get_no_cache(&self, id: &Url, requests: &Requests) -> Result<Actor, Error> {
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
-        let input_domain = id.domain().ok_or(MyError::MissingDomain)?;
+        let input_domain = id.domain().ok_or(ErrorKind::MissingDomain)?;
         let accepted_actor_id = accepted_actor
             .id(&input_domain)?
-            .ok_or(MyError::MissingId)?;
+            .ok_or(ErrorKind::MissingId)?;
 
         let inbox = get_inbox(&accepted_actor)?.clone();
 
@@ -93,7 +93,7 @@ impl ActorCache {
     }
 }
 
-fn get_inbox(actor: &AcceptedActors) -> Result<&Url, MyError> {
+fn get_inbox(actor: &AcceptedActors) -> Result<&Url, Error> {
     Ok(actor
         .endpoints()?
         .and_then(|e| e.shared_inbox)

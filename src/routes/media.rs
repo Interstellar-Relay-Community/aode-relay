@@ -1,15 +1,16 @@
-use crate::{data::MediaCache, error::MyError, requests::Requests};
+use crate::{data::MediaCache, error::Error, requests::Requests};
 use actix_web::{
     http::header::{CacheControl, CacheDirective},
     web, HttpResponse,
 };
 use uuid::Uuid;
 
+#[tracing::instrument(name = "Media")]
 pub(crate) async fn route(
     media: web::Data<MediaCache>,
     requests: web::Data<Requests>,
     uuid: web::Path<Uuid>,
-) -> Result<HttpResponse, MyError> {
+) -> Result<HttpResponse, Error> {
     let uuid = uuid.into_inner();
 
     if let Some((content_type, bytes)) = media.get_bytes(uuid).await? {

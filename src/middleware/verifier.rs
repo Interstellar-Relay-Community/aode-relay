@@ -1,28 +1,28 @@
 use crate::{
     apub::AcceptedActors,
     data::{ActorCache, State},
-    error::MyError,
+    error::{Error, ErrorKind},
     requests::Requests,
 };
 use activitystreams::{base::BaseExt, uri, url::Url};
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
-use log::error;
 use rsa::{hash::Hash, padding::PaddingScheme, pkcs8::FromPublicKey, PublicKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct MyVerify(pub Requests, pub ActorCache, pub State);
 
 impl MyVerify {
+    #[tracing::instrument("Verify signature")]
     async fn verify(
         &self,
         algorithm: Option<Algorithm>,
         key_id: String,
         signature: String,
         signing_string: String,
-    ) -> Result<bool, MyError> {
+    ) -> Result<bool, Error> {
         let public_key_id = uri!(key_id);
 
         let actor_id = if let Some(mut actor_id) = self
@@ -32,7 +32,7 @@ impl MyVerify {
             .await?
         {
             if !self.2.db.is_allowed(actor_id.clone()).await? {
-                return Err(MyError::NotAllowed(key_id));
+                return Err(ErrorKind::NotAllowed(key_id).into());
             }
 
             actor_id.set_fragment(None);
@@ -44,7 +44,7 @@ impl MyVerify {
                 Some(Algorithm::Hs2019) => (),
                 Some(Algorithm::Deprecated(DeprecatedAlgorithm::RsaSha256)) => (),
                 Some(other) => {
-                    return Err(MyError::Algorithm(other.to_string()));
+                    return Err(ErrorKind::Algorithm(other.to_string()).into());
                 }
                 None => (),
             };
@@ -65,7 +65,7 @@ impl MyVerify {
                 .fetch::<PublicKeyResponse>(public_key_id.as_str())
                 .await?
                 .actor_id()
-                .ok_or_else(|| MyError::MissingId)?
+                .ok_or_else(|| ErrorKind::MissingId)?
         };
 
         // Previously we verified the sig from an actor's local cache
@@ -106,7 +106,7 @@ async fn do_verify(
     public_key: &str,
     signature: String,
     signing_string: String,
-) -> Result<(), MyError> {
+) -> Result<(), Error> {
     let public_key = RsaPublicKey::from_public_key_pem(public_key)?;
 
     web::block(move || {
@@ -121,7 +121,7 @@ async fn do_verify(
             &decoded,
         )?;
 
-        Ok(()) as Result<(), MyError>
+        Ok(()) as Result<(), Error>
     })
     .await??;
 
@@ -129,7 +129,7 @@ async fn do_verify(
 }
 
 impl SignatureVerify for MyVerify {
-    type Error = MyError;
+    type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<bool, Self::Error>>>>;
 
     fn signature_verify(
@@ -144,10 +144,6 @@ impl SignatureVerify for MyVerify {
         Box::pin(async move {
             this.verify(algorithm, key_id, signature, signing_string)
                 .await
-                .map_err(|e| {
-                    error!("Failed to verify, {}", e);
-                    e
-                })
         })
     }
 }

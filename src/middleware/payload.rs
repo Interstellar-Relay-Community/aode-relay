@@ -1,15 +1,18 @@
 use actix_web::{
     dev::{Payload, Service, ServiceRequest, Transform},
-    http::{Method, StatusCode},
+    http::Method,
     web::BytesMut,
-    HttpMessage, HttpResponse, ResponseError,
+    HttpMessage,
 };
-use futures::{
-    future::{ok, LocalBoxFuture, Ready, TryFutureExt},
+use futures_util::{
+    future::{LocalBoxFuture, TryFutureExt},
     stream::{once, TryStreamExt},
 };
-use log::{error, info};
-use std::task::{Context, Poll};
+use std::{
+    future::{ready, Ready},
+    task::{Context, Poll},
+};
+use tracing::info;
 
 #[derive(Clone, Debug)]
 pub(crate) struct DebugPayload(pub bool);
@@ -17,20 +20,6 @@ pub(crate) struct DebugPayload(pub bool);
 #[doc(hidden)]
 #[derive(Clone, Debug)]
 pub(crate) struct DebugPayloadMiddleware<S>(bool, S);
-
-#[derive(Clone, Debug, thiserror::Error)]
-#[error("Failed to read payload")]
-pub(crate) struct DebugError;
-
-impl ResponseError for DebugError {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::BAD_REQUEST
-    }
-
-    fn error_response(&self) -> HttpResponse {
-        HttpResponse::new(self.status_code())
-    }
-}
 
 impl<S> Transform<S, ServiceRequest> for DebugPayload
 where
@@ -45,7 +34,7 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(DebugPayloadMiddleware(self.0, service))
+        ready(Ok(DebugPayloadMiddleware(self.0, service)))
     }
 }
 

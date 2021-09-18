@@ -1,4 +1,4 @@
-use crate::{config::Config, error::MyError};
+use crate::{config::Config, error::Error};
 use activitystreams::url::Url;
 use actix_web::web::Bytes;
 use rsa::{
@@ -9,7 +9,7 @@ use sled::Tree;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct Db {
     inner: Arc<Inner>,
 }
@@ -29,6 +29,14 @@ struct Inner {
     actor_id_instance: Tree,
     actor_id_contact: Tree,
     restricted_mode: bool,
+}
+
+impl std::fmt::Debug for Inner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Inner")
+            .field("restricted_mode", &self.restricted_mode)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -194,12 +202,12 @@ impl Inner {
 }
 
 impl Db {
-    pub(crate) fn build(config: &Config) -> Result<Self, MyError> {
+    pub(crate) fn build(config: &Config) -> Result<Self, Error> {
         let db = sled::open(config.sled_path())?;
         Self::build_inner(config.restricted_mode(), db)
     }
 
-    fn build_inner(restricted_mode: bool, db: sled::Db) -> Result<Self, MyError> {
+    fn build_inner(restricted_mode: bool, db: sled::Db) -> Result<Self, Error> {
         Ok(Db {
             inner: Arc::new(Inner {
                 actor_id_actor: db.open_tree("actor-id-actor")?,
@@ -222,8 +230,8 @@ impl Db {
 
     async fn unblock<T>(
         &self,
-        f: impl Fn(&Inner) -> Result<T, MyError> + Send + 'static,
-    ) -> Result<T, MyError>
+        f: impl Fn(&Inner) -> Result<T, Error> + Send + 'static,
+    ) -> Result<T, Error>
     where
         T: Send + 'static,
     {
@@ -234,11 +242,11 @@ impl Db {
         Ok(t)
     }
 
-    pub(crate) async fn connected_ids(&self) -> Result<Vec<Url>, MyError> {
+    pub(crate) async fn connected_ids(&self) -> Result<Vec<Url>, Error> {
         self.unblock(|inner| Ok(inner.connected().collect())).await
     }
 
-    pub(crate) async fn save_info(&self, actor_id: Url, info: Info) -> Result<(), MyError> {
+    pub(crate) async fn save_info(&self, actor_id: Url, info: Info) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&info)?;
 
@@ -251,7 +259,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn info(&self, actor_id: Url) -> Result<Option<Info>, MyError> {
+    pub(crate) async fn info(&self, actor_id: Url) -> Result<Option<Info>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_info.get(actor_id.as_str().as_bytes())? {
                 let info = serde_json::from_slice(&ivec)?;
@@ -263,7 +271,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn connected_info(&self) -> Result<HashMap<Url, Info>, MyError> {
+    pub(crate) async fn connected_info(&self) -> Result<HashMap<Url, Info>, Error> {
         self.unblock(|inner| Ok(inner.connected_info().collect()))
             .await
     }
@@ -272,7 +280,7 @@ impl Db {
         &self,
         actor_id: Url,
         instance: Instance,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&instance)?;
 
@@ -285,7 +293,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn instance(&self, actor_id: Url) -> Result<Option<Instance>, MyError> {
+    pub(crate) async fn instance(&self, actor_id: Url) -> Result<Option<Instance>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_instance.get(actor_id.as_str().as_bytes())? {
                 let instance = serde_json::from_slice(&ivec)?;
@@ -297,16 +305,12 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn connected_instance(&self) -> Result<HashMap<Url, Instance>, MyError> {
+    pub(crate) async fn connected_instance(&self) -> Result<HashMap<Url, Instance>, Error> {
         self.unblock(|inner| Ok(inner.connected_instance().collect()))
             .await
     }
 
-    pub(crate) async fn save_contact(
-        &self,
-        actor_id: Url,
-        contact: Contact,
-    ) -> Result<(), MyError> {
+    pub(crate) async fn save_contact(&self, actor_id: Url, contact: Contact) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&contact)?;
 
@@ -319,7 +323,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn contact(&self, actor_id: Url) -> Result<Option<Contact>, MyError> {
+    pub(crate) async fn contact(&self, actor_id: Url) -> Result<Option<Contact>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_contact.get(actor_id.as_str().as_bytes())? {
                 let contact = serde_json::from_slice(&ivec)?;
@@ -331,12 +335,12 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn connected_contact(&self) -> Result<HashMap<Url, Contact>, MyError> {
+    pub(crate) async fn connected_contact(&self) -> Result<HashMap<Url, Contact>, Error> {
         self.unblock(|inner| Ok(inner.connected_contact().collect()))
             .await
     }
 
-    pub(crate) async fn save_url(&self, url: Url, id: Uuid) -> Result<(), MyError> {
+    pub(crate) async fn save_url(&self, url: Url, id: Uuid) -> Result<(), Error> {
         self.unblock(move |inner| {
             inner
                 .media_id_media_url
@@ -354,7 +358,7 @@ impl Db {
         id: Uuid,
         meta: MediaMeta,
         bytes: Bytes,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&meta)?;
 
@@ -368,7 +372,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn media_id(&self, url: Url) -> Result<Option<Uuid>, MyError> {
+    pub(crate) async fn media_id(&self, url: Url) -> Result<Option<Uuid>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_url_media_id.get(url.as_str().as_bytes())? {
                 Ok(uuid_from_ivec(ivec))
@@ -379,7 +383,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn media_url(&self, id: Uuid) -> Result<Option<Url>, MyError> {
+    pub(crate) async fn media_url(&self, id: Uuid) -> Result<Option<Url>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_id_media_url.get(id.as_bytes())? {
                 Ok(url_from_ivec(ivec))
@@ -390,7 +394,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn media_bytes(&self, id: Uuid) -> Result<Option<Bytes>, MyError> {
+    pub(crate) async fn media_bytes(&self, id: Uuid) -> Result<Option<Bytes>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_id_media_bytes.get(id.as_bytes())? {
                 Ok(Some(Bytes::copy_from_slice(&ivec)))
@@ -401,7 +405,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn media_meta(&self, id: Uuid) -> Result<Option<MediaMeta>, MyError> {
+    pub(crate) async fn media_meta(&self, id: Uuid) -> Result<Option<MediaMeta>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_id_media_meta.get(id.as_bytes())? {
                 let meta = serde_json::from_slice(&ivec)?;
@@ -413,16 +417,16 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn blocks(&self) -> Result<Vec<String>, MyError> {
+    pub(crate) async fn blocks(&self) -> Result<Vec<String>, Error> {
         self.unblock(|inner| Ok(inner.blocks().collect())).await
     }
 
-    pub(crate) async fn inboxes(&self) -> Result<Vec<Url>, MyError> {
+    pub(crate) async fn inboxes(&self) -> Result<Vec<Url>, Error> {
         self.unblock(|inner| Ok(inner.connected_actors().map(|actor| actor.inbox).collect()))
             .await
     }
 
-    pub(crate) async fn is_connected(&self, mut id: Url) -> Result<bool, MyError> {
+    pub(crate) async fn is_connected(&self, mut id: Url) -> Result<bool, Error> {
         id.set_path("");
         id.set_query(None);
         id.set_fragment(None);
@@ -444,7 +448,7 @@ impl Db {
     pub(crate) async fn actor_id_from_public_key_id(
         &self,
         public_key_id: Url,
-    ) -> Result<Option<Url>, MyError> {
+    ) -> Result<Option<Url>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner
                 .public_key_id_actor_id
@@ -458,7 +462,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn actor(&self, actor_id: Url) -> Result<Option<Actor>, MyError> {
+    pub(crate) async fn actor(&self, actor_id: Url) -> Result<Option<Actor>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_actor.get(actor_id.as_str().as_bytes())? {
                 let actor = serde_json::from_slice(&ivec)?;
@@ -470,7 +474,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn save_actor(&self, actor: Actor) -> Result<(), MyError> {
+    pub(crate) async fn save_actor(&self, actor: Actor) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&actor)?;
 
@@ -486,8 +490,8 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn remove_connection(&self, actor_id: Url) -> Result<(), MyError> {
-        log::debug!("Removing Connection: {}", actor_id);
+    pub(crate) async fn remove_connection(&self, actor_id: Url) -> Result<(), Error> {
+        tracing::debug!("Removing Connection: {}", actor_id);
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids
@@ -498,8 +502,8 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn add_connection(&self, actor_id: Url) -> Result<(), MyError> {
-        log::debug!("Adding Connection: {}", actor_id);
+    pub(crate) async fn add_connection(&self, actor_id: Url) -> Result<(), Error> {
+        tracing::debug!("Adding Connection: {}", actor_id);
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids
@@ -510,7 +514,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn add_blocks(&self, domains: Vec<String>) -> Result<(), MyError> {
+    pub(crate) async fn add_blocks(&self, domains: Vec<String>) -> Result<(), Error> {
         self.unblock(move |inner| {
             for connected in inner.connected_by_domain(&domains) {
                 inner
@@ -530,7 +534,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn remove_blocks(&self, domains: Vec<String>) -> Result<(), MyError> {
+    pub(crate) async fn remove_blocks(&self, domains: Vec<String>) -> Result<(), Error> {
         self.unblock(move |inner| {
             for domain in &domains {
                 inner.blocked_domains.remove(domain_key(domain))?;
@@ -541,7 +545,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn add_allows(&self, domains: Vec<String>) -> Result<(), MyError> {
+    pub(crate) async fn add_allows(&self, domains: Vec<String>) -> Result<(), Error> {
         self.unblock(move |inner| {
             for domain in &domains {
                 inner
@@ -554,7 +558,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn remove_allows(&self, domains: Vec<String>) -> Result<(), MyError> {
+    pub(crate) async fn remove_allows(&self, domains: Vec<String>) -> Result<(), Error> {
         self.unblock(move |inner| {
             if inner.restricted_mode {
                 for connected in inner.connected_by_domain(&domains) {
@@ -573,7 +577,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn is_allowed(&self, url: Url) -> Result<bool, MyError> {
+    pub(crate) async fn is_allowed(&self, url: Url) -> Result<bool, Error> {
         self.unblock(move |inner| {
             if let Some(domain) = url.domain() {
                 Ok(inner.is_allowed(domain))
@@ -584,7 +588,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn private_key(&self) -> Result<Option<RsaPrivateKey>, MyError> {
+    pub(crate) async fn private_key(&self) -> Result<Option<RsaPrivateKey>, Error> {
         self.unblock(|inner| {
             if let Some(ivec) = inner.settings.get("private-key")? {
                 let key_str = String::from_utf8_lossy(&ivec);
@@ -601,7 +605,7 @@ impl Db {
     pub(crate) async fn update_private_key(
         &self,
         private_key: &RsaPrivateKey,
-    ) -> Result<(), MyError> {
+    ) -> Result<(), Error> {
         let pem_pkcs8 = private_key.to_pkcs8_pem()?;
 
         self.unblock(move |inner| {

@@ -2,7 +2,7 @@ use crate::{
     apub::AcceptedActivities,
     config::{Config, UrlKind},
     db::Actor,
-    error::MyError,
+    error::{Error, ErrorKind},
     jobs::{apub::prepare_activity, Deliver, JobState, QueryInstance, QueryNodeinfo},
 };
 use activitystreams::{
@@ -24,7 +24,8 @@ impl Follow {
         Follow { input, actor }
     }
 
-    async fn perform(self, state: JobState) -> Result<(), anyhow::Error> {
+    #[tracing::instrument(name = "Follow")]
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         let my_id = state.config.generate_url(UrlKind::Actor);
 
         // if following relay directly, not just following 'public', followback
@@ -42,7 +43,7 @@ impl Follow {
         let accept = generate_accept_follow(
             &state.config,
             &self.actor.id,
-            self.input.id_unchecked().ok_or(MyError::MissingId)?,
+            self.input.id_unchecked().ok_or(ErrorKind::MissingId)?,
             &my_id,
         )?;
 
@@ -61,7 +62,7 @@ impl Follow {
 }
 
 // Generate a type that says "I want to follow you"
-fn generate_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsFollow, MyError> {
+fn generate_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsFollow, Error> {
     let follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     prepare_activity(
@@ -77,7 +78,7 @@ fn generate_accept_follow(
     actor_id: &Url,
     input_id: &Url,
     my_id: &Url,
-) -> Result<AsAccept, MyError> {
+) -> Result<AsAccept, Error> {
     let mut follow = AsFollow::new(actor_id.clone(), my_id.clone());
 
     follow.set_id(input_id.clone());
@@ -98,6 +99,6 @@ impl ActixJob for Follow {
     const NAME: &'static str = "relay::jobs::apub::Follow";
 
     fn run(self, state: Self::State) -> Self::Future {
-        Box::pin(self.perform(state))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }
