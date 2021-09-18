@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpServer};
+use opentelemetry_otlp::WithExportConfig;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
@@ -29,6 +30,8 @@ use self::{
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
 
+    let config = Config::build()?;
+
     LogTracer::init()?;
 
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
@@ -42,9 +45,23 @@ async fn main() -> Result<(), anyhow::Error> {
         .with(ErrorLayer::default())
         .with(format_layer);
 
-    tracing::subscriber::set_global_default(subscriber)?;
+    if let Some(url) = config.opentelemetry_url() {
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(
+                opentelemetry_otlp::new_exporter()
+                    .tonic()
+                    .with_endpoint(url.as_str()),
+            )
+            .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
 
-    let config = Config::build()?;
+        let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
+        let subscriber = subscriber.with(otel_layer);
+        tracing::subscriber::set_global_default(subscriber)?;
+    } else {
+        tracing::subscriber::set_global_default(subscriber)?;
+    }
 
     let db = Db::build(&config)?;
 

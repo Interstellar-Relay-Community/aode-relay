@@ -30,6 +30,8 @@ dotenv = "0.15.0"
 futures-util = "0.3.17"
 lru = "0.6.0"
 mime = "0.3.16"
+opentelemetry = { version = "0.16", features = ["rt-tokio-current-thread"] }
+opentelemetry-otlp = "0.9"
 rand = "0.8"
 rsa = "0.5"
 rsa-magic-public-key = "0.4.0"
@@ -43,6 +45,7 @@ tracing = "0.1"
 tracing-error = "0.1"
 tracing-futures = "0.2"
 tracing-log = "0.1"
+tracing-opentelemetry = "0.15"
 tracing-subscriber = { version = "0.2", features = ["ansi", "fmt"] }
 uuid = { version = "0.8", features = ["v4", "serde"] }
 

@@ -23,6 +23,7 @@ pub(crate) struct ParsedConfig {
     publish_blocks: bool,
     sled_path: PathBuf,
     source_repo: Url,
+    opentelemetry_url: Option<Url>,
 }
 
 #[derive(Clone, Debug)]
@@ -37,6 +38,7 @@ pub struct Config {
     base_uri: Url,
     sled_path: PathBuf,
     source_repo: Url,
+    opentelemetry_url: Option<Url>,
 }
 
 pub enum UrlKind {
@@ -66,6 +68,7 @@ impl Config {
             .set_default("publish_blocks", false)?
             .set_default("sled_path", "./sled/db-0-34")?
             .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?
+            .set_default("opentelemetry_url", None as Option<&str>)?
             .merge(Environment::new())?;
 
         let config: ParsedConfig = config.try_into()?;
@@ -84,6 +87,7 @@ impl Config {
             base_uri,
             sled_path: config.sled_path,
             source_repo: config.source_repo,
+            opentelemetry_url: config.opentelemetry_url,
         })
     }
 
@@ -150,6 +154,10 @@ impl Config {
 
     pub(crate) fn source_code(&self) -> &Url {
         &self.source_repo
+    }
+
+    pub(crate) fn opentelemetry_url(&self) -> Option<&Url> {
+        self.opentelemetry_url.as_ref()
     }
 
     pub(crate) fn generate_url(&self, kind: UrlKind) -> Url {
