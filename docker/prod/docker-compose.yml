@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+  relay:
+    image: asonix/relay:v0.3.0
+    ports:
+      - "8079:8079"
+    restart: always
+    environment:
+      - HOSTNAME=relay.my.tld
+      - ADDR=0.0.0.0
+      - PORT=8080
+      - DEBUG=false
+      - RESTRICTED_MODE=false
+      - VALIDATE_SIGNATURES=true
+      - HTTPS=true
+      - DATABASE_URL=postgres://pg_user:pg_pass@pg_host:pg_port/pg_database
+      - PRETTY_LOG=false
+      - PUBLISH_BLOCKS=true

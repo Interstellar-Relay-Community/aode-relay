@@ -11,33 +11,33 @@ function print_help() {
     echo "deploy.sh"
     echo ""
     echo "Usage:"
-    echo "	manifest.sh [tag]"
+    echo "	manifest.sh [repo] [tag]"
     echo ""
     echo "Args:"
-    echo "	repo: The docker repository to push the manifest to"
+    echo "	repo: The docker repository to update"
     echo "	tag: The git tag to be applied to the image manifest"
 }
 
-repo=$1
-tag=$2
+REPO=$1
+TAG=$2
 
-require "$repo" "repo"
-require "$tag" "tag"
+require "$REPO" "repo"
+require "$TAG" "tag"
 
 set -xe
 
-docker manifest create $repo:$tag \
-    -a $repo:$tag-arm64v8 \
-    -a $repo:$tag-arm32v7 \
-    -a $repo:$tag-amd64
+sudo docker manifest create asonix/$REPO:$TAG \
+    -a asonix/$REPO:arm64v8-$TAG \
+    -a asonix/$REPO:arm32v7-$TAG \
+    -a asonix/$REPO:amd64-$TAG
 
-docker manifest annotate $repo:$tag \
-    $repo:$tag-arm64v8 --os linux --arch arm64 --variant v8
+sudo docker manifest annotate asonix/$REPO:$TAG \
+    asonix/$REPO:arm64v8-$TAG --os linux --arch arm64 --variant v8
 
-docker manifest annotate $repo:$tag \
-    $repo:$tag-arm32v7 --os linux --arch arm --variant v7
+sudo docker manifest annotate asonix/$REPO:$TAG \
+    asonix/$REPO:arm32v7-$TAG --os linux --arch arm --variant v7
 
-docker manifest annotate $repo:$tag \
-    $repo:$tag-amd64 --os linux --arch amd64
+sudo docker manifest annotate asonix/$REPO:$TAG \
+    asonix/$REPO:amd64-$TAG --os linux --arch amd64
 
-docker manifest push $repo:$tag --purge
+sudo docker manifest push asonix/$REPO:$TAG --purge
