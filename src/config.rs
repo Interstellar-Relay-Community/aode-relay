@@ -144,12 +144,49 @@ impl Config {
         format!("relay@{}", self.hostname)
     }
 
-    pub(crate) fn software_name(&self) -> String {
-        "AodeRelay".to_owned()
+    pub(crate) fn software_name() -> &'static str {
+        "AodeRelay"
     }
 
-    pub(crate) fn software_version(&self) -> String {
-        "v0.3.0-main".to_owned()
+    pub(crate) fn software_version() -> String {
+        if let Some(git) = Self::git_version() {
+            return format!("v{}-{}", Self::version(), git);
+        }
+
+        format!("v{}", Self::version())
+    }
+
+    fn git_version() -> Option<String> {
+        let branch = Self::git_branch()?;
+        let hash = Self::git_hash()?;
+
+        Some(format!("{}-{}", branch, hash))
+    }
+
+    fn name() -> &'static str {
+        env!("PKG_NAME")
+    }
+
+    fn version() -> &'static str {
+        env!("PKG_VERSION")
+    }
+
+    fn git_branch() -> Option<&'static str> {
+        option_env!("GIT_BRANCH")
+    }
+
+    fn git_hash() -> Option<&'static str> {
+        option_env!("GIT_HASH")
+    }
+
+    pub(crate) fn user_agent(&self) -> String {
+        format!(
+            "{} ({}/{}; +{})",
+            Self::software_name(),
+            Self::name(),
+            Self::software_version(),
+            self.generate_url(UrlKind::Index),
+        )
     }
 
     pub(crate) fn source_code(&self) -> &Url {

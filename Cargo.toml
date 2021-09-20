@@ -73,6 +73,7 @@ branch = "asonix/tracing-error-work-around"
 anyhow = "1.0"
 dotenv = "0.15.0"
 ructe = { version = "0.13.0", features = ["sass", "mime03"] }
+toml = "0.5.8"
 
 [profile.dev.package.rsa]
 opt-level = 3

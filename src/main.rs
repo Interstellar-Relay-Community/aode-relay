@@ -1,3 +1,4 @@
+use activitystreams::url::Url;
 use actix_web::{web, App, HttpServer};
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
@@ -27,12 +28,10 @@ use self::{
     routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
 };
 
-#[actix_rt::main]
-async fn main() -> Result<(), anyhow::Error> {
-    dotenv::dotenv().ok();
-
-    let config = Config::build()?;
-
+fn init_subscriber(
+    software_name: &'static str,
+    opentelemetry_url: Option<&Url>,
+) -> Result<(), anyhow::Error> {
     LogTracer::init()?;
 
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
@@ -46,12 +45,12 @@ async fn main() -> Result<(), anyhow::Error> {
         .with(ErrorLayer::default())
         .with(format_layer);
 
-    if let Some(url) = config.opentelemetry_url() {
+    if let Some(url) = opentelemetry_url {
         let tracer =
             opentelemetry_otlp::new_pipeline()
                 .tracing()
                 .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
-                    Resource::new(vec![KeyValue::new("service.name", config.software_name())]),
+                    Resource::new(vec![KeyValue::new("service.name", software_name)]),
                 ))
                 .with_exporter(
                     opentelemetry_otlp::new_exporter()
@@ -67,6 +66,17 @@ async fn main() -> Result<(), anyhow::Error> {
     } else {
         tracing::subscriber::set_global_default(subscriber)?;
     }
+
+    Ok(())
+}
+
+#[actix_rt::main]
+async fn main() -> Result<(), anyhow::Error> {
+    dotenv::dotenv().ok();
+
+    let config = Config::build()?;
+
+    init_subscriber(Config::software_name(), config.opentelemetry_url())?;
 
     let db = Db::build(&config)?;
 
@@ -133,6 +143,7 @@ async fn main() -> Result<(), anyhow::Error> {
     .bind(bind_address)?
     .run()
     .await?;
+
     Ok(())
 }
 

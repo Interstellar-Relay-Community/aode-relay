@@ -1969,6 +1969,7 @@ dependencies = [
  "sled",
  "structopt",
  "thiserror",
+ "toml",
  "tracing",
  "tracing-actix-web",
  "tracing-error",

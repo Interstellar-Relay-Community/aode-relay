@@ -31,8 +31,8 @@ pub(crate) async fn route(
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {
-            name: config.software_name().to_lowercase(),
-            version: config.software_version(),
+            name: Config::software_name().to_lowercase(),
+            version: Config::software_version(),
         },
         protocols: vec![Protocol::ActivityPub],
         services: Services {

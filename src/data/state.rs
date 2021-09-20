@@ -48,12 +48,7 @@ impl State {
         Requests::new(
             self.config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),
-            format!(
-                "Actix Web 4.0.0-beta.9 ({}/{}; +{})",
-                self.config.software_name(),
-                self.config.software_version(),
-                self.config.generate_url(UrlKind::Index),
-            ),
+            self.config.user_agent(),
             self.breakers.clone(),
         )
     }
