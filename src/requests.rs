@@ -164,12 +164,9 @@ pub(crate) struct Requests {
 impl std::fmt::Debug for Requests {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Requests")
-            .field("client", &"Client")
-            .field("consecutive_errors", &"AtomicUsize")
             .field("error_limit", &self.error_limit)
             .field("key_id", &self.key_id)
             .field("user_agent", &self.user_agent)
-            .field("private_key", &"[redacted]")
             .field("config", &self.config)
             .field("breakers", &self.breakers)
             .finish()
