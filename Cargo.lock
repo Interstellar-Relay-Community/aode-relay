@@ -420,9 +420,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9a10233be65a602ee3f136fa142274efab7e4ad3e85f3feddc33fe3567dbcb4"
+checksum = "827b3bfdd534ab88fdd3fd1598496fe4de09f08246761b5d2b677f6bd9a60b5b"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -1941,7 +1941,7 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "relay"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
