@@ -2,7 +2,7 @@ version: '3.3'
 
 services:
   relay:
-    image: asonix/relay:v0.3.0
+    image: asonix/relay:v0.3.1
     ports:
       - "8079:8079"
     restart: always
