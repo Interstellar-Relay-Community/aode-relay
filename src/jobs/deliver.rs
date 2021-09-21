@@ -3,10 +3,19 @@ use activitystreams::url::Url;
 use background_jobs::{ActixJob, Backoff};
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Deliver {
     to: Url,
     data: serde_json::Value,
+}
+
+impl std::fmt::Debug for Deliver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Deliver")
+            .field("to", &self.to.to_string())
+            .field("data", &self.data)
+            .finish()
+    }
 }
 
 impl Deliver {

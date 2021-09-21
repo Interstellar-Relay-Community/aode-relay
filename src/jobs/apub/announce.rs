@@ -11,10 +11,19 @@ use activitystreams::{activity::Announce as AsAnnounce, url::Url};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Announce {
     object_id: Url,
     actor: Actor,
+}
+
+impl std::fmt::Debug for Announce {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Announce")
+            .field("object_id", &self.object_id.to_string())
+            .field("actor", &self.actor)
+            .finish()
+    }
 }
 
 impl Announce {

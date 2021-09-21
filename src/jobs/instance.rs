@@ -7,9 +7,17 @@ use activitystreams::url::Url;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryInstance {
     actor_id: Url,
+}
+
+impl std::fmt::Debug for QueryInstance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("QueryInstance")
+            .field("actor_id", &self.actor_id.to_string())
+            .finish()
+    }
 }
 
 impl QueryInstance {

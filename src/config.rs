@@ -26,7 +26,7 @@ pub(crate) struct ParsedConfig {
     opentelemetry_url: Option<Url>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Config {
     hostname: String,
     addr: IpAddr,
@@ -52,6 +52,27 @@ pub enum UrlKind {
     Media(Uuid),
     NodeInfo,
     Outbox,
+}
+
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("hostname", &self.hostname)
+            .field("addr", &self.addr)
+            .field("port", &self.port)
+            .field("debug", &self.debug)
+            .field("restricted_mode", &self.restricted_mode)
+            .field("validate_signatures", &self.validate_signatures)
+            .field("publish_blocks", &self.publish_blocks)
+            .field("base_uri", &self.base_uri.to_string())
+            .field("sled_path", &self.sled_path)
+            .field("source_repo", &self.source_repo.to_string())
+            .field(
+                "opentelemetry_url",
+                &self.opentelemetry_url.as_ref().map(|url| url.to_string()),
+            )
+            .finish()
+    }
 }
 
 impl Config {

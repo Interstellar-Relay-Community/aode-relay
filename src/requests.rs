@@ -361,7 +361,10 @@ impl Requests {
         Ok((content_type, bytes))
     }
 
-    #[tracing::instrument("Deliver to Inbox")]
+    #[tracing::instrument(
+        "Deliver to Inbox",
+        fields(self, inbox = inbox.to_string().as_str(), item)
+    )]
     pub(crate) async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), Error>
     where
         T: serde::ser::Serialize + std::fmt::Debug,

@@ -10,12 +10,23 @@ pub struct NodeCache {
     db: Db,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub struct Node {
     pub(crate) base: Url,
     pub(crate) info: Option<Info>,
     pub(crate) instance: Option<Instance>,
     pub(crate) contact: Option<Contact>,
+}
+
+impl std::fmt::Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Node")
+            .field("base", &self.base.to_string())
+            .field("info", &self.info)
+            .field("instance", &self.instance)
+            .field("contact", &self.contact)
+            .finish()
+    }
 }
 
 impl NodeCache {
@@ -49,7 +60,7 @@ impl NodeCache {
         Ok(vec)
     }
 
-    #[tracing::instrument(name = "Is NodeInfo Outdated")]
+    #[tracing::instrument(name = "Is NodeInfo Outdated", fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: Url) -> bool {
         self.db
             .info(actor_id)
@@ -58,7 +69,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Is Contact Outdated")]
+    #[tracing::instrument(name = "Is Contact Outdated", fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_contact_outdated(&self, actor_id: Url) -> bool {
         self.db
             .contact(actor_id)
@@ -67,7 +78,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Is Instance Outdated")]
+    #[tracing::instrument(name = "Is Instance Outdated", fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_instance_outdated(&self, actor_id: Url) -> bool {
         self.db
             .instance(actor_id)
@@ -76,7 +87,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Save node info")]
+    #[tracing::instrument(name = "Save node info", fields(actor_id = actor_id.to_string().as_str(), software, version, reg))]
     pub(crate) async fn set_info(
         &self,
         actor_id: Url,
@@ -97,7 +108,17 @@ impl NodeCache {
             .await
     }
 
-    #[tracing::instrument(name = "Save instance info")]
+    #[tracing::instrument(
+        name = "Save instance info",
+        fields(
+            actor_id = actor_id.to_string().as_str(),
+            title,
+            description,
+            version,
+            reg,
+            requires_approval
+        )
+    )]
     pub(crate) async fn set_instance(
         &self,
         actor_id: Url,
@@ -122,7 +143,16 @@ impl NodeCache {
             .await
     }
 
-    #[tracing::instrument(name = "Save contact info")]
+    #[tracing::instrument(
+        name = "Save contact info",
+        fields(
+            actor_id = actor_id.to_string().as_str(),
+            username,
+            display_name,
+            url = url.to_string().as_str(),
+            avatar = avatar.to_string().as_str()
+        )
+    )]
     pub(crate) async fn set_contact(
         &self,
         actor_id: Url,

@@ -6,10 +6,27 @@ use activitystreams::url::Url;
 use background_jobs::ActixJob;
 use std::future::{ready, Ready};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct DeliverMany {
     to: Vec<Url>,
     data: serde_json::Value,
+}
+
+impl std::fmt::Debug for DeliverMany {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let to = format!(
+            "[{}]",
+            self.to
+                .iter()
+                .map(|u| u.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        f.debug_struct("DeliverMany")
+            .field("to", &to)
+            .field("data", &self.data)
+            .finish()
+    }
 }
 
 impl DeliverMany {

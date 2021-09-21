@@ -19,7 +19,7 @@ impl MediaCache {
         MediaCache { db }
     }
 
-    #[tracing::instrument(name = "Get media uuid")]
+    #[tracing::instrument(name = "Get media uuid", fields(url = url.to_string().as_str()))]
     pub(crate) async fn get_uuid(&self, url: Url) -> Result<Option<Uuid>, Error> {
         self.db.media_id(url).await
     }
@@ -55,7 +55,7 @@ impl MediaCache {
         Ok(None)
     }
 
-    #[tracing::instrument(name = "Store media url")]
+    #[tracing::instrument(name = "Store media url", fields(url = url.to_string().as_str()))]
     pub(crate) async fn store_url(&self, url: Url) -> Result<Uuid, Error> {
         let uuid = Uuid::new_v4();
 

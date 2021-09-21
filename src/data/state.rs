@@ -27,9 +27,6 @@ pub struct State {
 impl std::fmt::Debug for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("State")
-            .field("public_key", &"PublicKey")
-            .field("private_key", &"[redacted]")
-            .field("object_cache", &"Object Cache")
             .field("node_cache", &self.node_cache)
             .field("breakers", &self.breakers)
             .field("db", &self.db)
@@ -51,7 +48,13 @@ impl State {
         )
     }
 
-    #[tracing::instrument(name = "Get inboxes for other domains")]
+    #[tracing::instrument(
+        name = "Get inboxes for other domains",
+        fields(
+            existing_inbox = existing_inbox.to_string().as_str(),
+            domain
+        )
+    )]
     pub(crate) async fn inboxes_without(
         &self,
         existing_inbox: &Url,

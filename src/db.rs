@@ -39,13 +39,25 @@ impl std::fmt::Debug for Inner {
     }
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub struct Actor {
     pub(crate) id: Url,
     pub(crate) public_key: String,
     pub(crate) public_key_id: Url,
     pub(crate) inbox: Url,
     pub(crate) saved_at: SystemTime,
+}
+
+impl std::fmt::Debug for Actor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Actor")
+            .field("id", &self.id.to_string())
+            .field("public_key", &self.public_key)
+            .field("public_key_id", &self.public_key_id.to_string())
+            .field("inbox", &self.inbox.to_string())
+            .field("saved_at", &self.saved_at)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -72,13 +84,25 @@ pub struct Instance {
     pub(crate) updated: SystemTime,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub struct Contact {
     pub(crate) username: String,
     pub(crate) display_name: String,
     pub(crate) url: Url,
     pub(crate) avatar: Url,
     pub(crate) updated: SystemTime,
+}
+
+impl std::fmt::Debug for Contact {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Info")
+            .field("username", &self.username)
+            .field("display_name", &self.display_name)
+            .field("url", &self.url.to_string())
+            .field("avatar", &self.avatar.to_string())
+            .field("updated", &self.updated)
+            .finish()
+    }
 }
 
 impl Inner {

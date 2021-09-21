@@ -1,17 +1,27 @@
-use activitystreams_ext::{Ext1, UnparsedExtension};
 use activitystreams::{
     activity::ActorAndObject,
     actor::{Actor, ApActor},
     unparsed::UnparsedMutExt,
     url::Url,
 };
+use activitystreams_ext::{Ext1, UnparsedExtension};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicKeyInner {
     pub id: Url,
     pub owner: Url,
     pub public_key_pem: String,
+}
+
+impl std::fmt::Debug for PublicKeyInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PublicKeyInner")
+            .field("id", &self.id.to_string())
+            .field("owner", &self.owner.to_string())
+            .field("public_key_pem", &self.public_key_pem)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]

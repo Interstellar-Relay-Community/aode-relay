@@ -7,10 +7,19 @@ use activitystreams::{object::Image, prelude::*, url::Url};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryContact {
     actor_id: Url,
     contact_id: Url,
+}
+
+impl std::fmt::Debug for QueryContact {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("QueryContact")
+            .field("actor_id", &self.actor_id.to_string())
+            .field("contact_id", &self.contact_id.to_string())
+            .finish()
+    }
 }
 
 impl QueryContact {

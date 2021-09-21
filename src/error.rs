@@ -145,7 +145,7 @@ pub(crate) enum ErrorKind {
     Breaker,
 
     #[error("Failed to extract fields from {0}")]
-    Extract(&'static str)
+    Extract(&'static str),
 }
 
 impl ResponseError for Error {
