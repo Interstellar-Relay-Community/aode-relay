@@ -19,6 +19,7 @@ use std::{
     time::SystemTime,
 };
 use tracing::{debug, info, warn};
+use tracing_awc::Propagate;
 
 #[derive(Clone)]
 pub(crate) struct Breakers {
@@ -250,6 +251,7 @@ impl Requests {
                 move |signing_string| signer.sign(signing_string),
             )
             .await?
+            .propagate()
             .send()
             .await;
 
@@ -307,6 +309,7 @@ impl Requests {
                 move |signing_string| signer.sign(signing_string),
             )
             .await?
+            .propagate()
             .send()
             .await;
 
@@ -367,7 +370,7 @@ impl Requests {
         let item_string = serde_json::to_string(item)?;
 
         let client: Client = self.client.borrow().clone();
-        let res = client
+        let (req, body) = client
             .post(inbox.as_str())
             .insert_header(("Accept", "application/activity+json"))
             .insert_header(("Content-Type", "application/activity+json"))
@@ -380,8 +383,9 @@ impl Requests {
                 move |signing_string| signer.sign(signing_string),
             )
             .await?
-            .send()
-            .await;
+            .split();
+
+        let res = req.propagate().send_body(body).await;
 
         if res.is_err() {
             self.count_err();

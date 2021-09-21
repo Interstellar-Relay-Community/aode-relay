@@ -1023,9 +1023,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.5.0-beta.8"
+version = "0.5.0-beta.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41a7b8fe1ff48e38857dfb8915a4ca54c02ca8f74ac646f01bb78d0d62533c5c"
+checksum = "8543f90115f95ed9f2380f818297f3aa47dadbc9ca5b9d232fa81bbb3fa70702"
 dependencies = [
  "actix-web",
  "awc",
@@ -1941,7 +1941,7 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "relay"
-version = "0.3.0"
+version = "0.3.2"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
@@ -1977,6 +1977,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-actix-web",
+ "tracing-awc",
  "tracing-error",
  "tracing-futures",
  "tracing-log",
@@ -2810,6 +2811,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tracing-awc"
+version = "0.1.0-beta.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d97e7ee4c4b5414ec091e5d6be8194f87c680332f549dd2a73e4c506d0a9b84a"
+dependencies = [
+ "actix-http",
+ "awc",
+ "bytes",
+ "futures-core",
+ "serde 1.0.130",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
