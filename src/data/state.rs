@@ -18,7 +18,6 @@ use tracing::info;
 pub struct State {
     pub(crate) public_key: RsaPublicKey,
     private_key: RsaPrivateKey,
-    config: Config,
     object_cache: Arc<RwLock<LruCache<Url, Url>>>,
     node_cache: NodeCache,
     breakers: Breakers,
@@ -30,7 +29,6 @@ impl std::fmt::Debug for State {
         f.debug_struct("State")
             .field("public_key", &"PublicKey")
             .field("private_key", &"[redacted]")
-            .field("config", &self.config)
             .field("object_cache", &"Object Cache")
             .field("node_cache", &self.node_cache)
             .field("breakers", &self.breakers)
@@ -44,11 +42,11 @@ impl State {
         self.node_cache.clone()
     }
 
-    pub(crate) fn requests(&self) -> Requests {
+    pub(crate) fn requests(&self, config: &Config) -> Requests {
         Requests::new(
-            self.config.generate_url(UrlKind::MainKey).to_string(),
+            config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),
-            self.config.user_agent(),
+            config.user_agent(),
             self.breakers.clone(),
         )
     }
@@ -85,7 +83,7 @@ impl State {
     }
 
     #[tracing::instrument(name = "Building state")]
-    pub(crate) async fn build(config: Config, db: Db) -> Result<Self, Error> {
+    pub(crate) async fn build(db: Db) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {
             info!("Using existing key");
             key
@@ -107,7 +105,6 @@ impl State {
         let state = State {
             public_key,
             private_key,
-            config,
             object_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
             node_cache: NodeCache::new(db.clone()),
             breakers: Breakers::default(),

@@ -94,7 +94,7 @@ async fn main() -> Result<(), anyhow::Error> {
     }
 
     let media = MediaCache::new(db.clone());
-    let state = State::build(config.clone(), db.clone()).await?;
+    let state = State::build(db.clone()).await?;
     let actors = ActorCache::new(db.clone());
     let job_server = create_server();
 
@@ -113,7 +113,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .wrap(TracingLogger::default())
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
-            .app_data(web::Data::new(state.requests()))
+            .app_data(web::Data::new(state.requests(&config)))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server.clone()))
@@ -124,7 +124,7 @@ async fn main() -> Result<(), anyhow::Error> {
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
                     .wrap(config.signature_middleware(
-                        state.requests(),
+                        state.requests(&config),
                         actors.clone(),
                         state.clone(),
                     ))

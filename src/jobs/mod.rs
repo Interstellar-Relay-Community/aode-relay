@@ -102,7 +102,7 @@ impl JobState {
         config: Config,
     ) -> Self {
         JobState {
-            requests: state.requests(),
+            requests: state.requests(&config),
             node_cache: state.node_cache(),
             db,
             actors,

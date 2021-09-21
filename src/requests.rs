@@ -214,6 +214,7 @@ impl Requests {
         self.consecutive_errors.swap(0, Ordering::Relaxed);
     }
 
+    #[tracing::instrument(name = "Fetch Json")]
     pub(crate) async fn fetch_json<T>(&self, url: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
@@ -221,6 +222,7 @@ impl Requests {
         self.do_fetch(url, "application/json").await
     }
 
+    #[tracing::instrument(name = "Fetch Activity+Json")]
     pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
@@ -288,6 +290,7 @@ impl Requests {
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
+    #[tracing::instrument(name = "Fetch Bytes")]
     pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), Error> {
         let parsed_url = url.parse::<Url>()?;
 
@@ -358,9 +361,10 @@ impl Requests {
         Ok((content_type, bytes))
     }
 
+    #[tracing::instrument("Deliver to Inbox")]
     pub(crate) async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), Error>
     where
-        T: serde::ser::Serialize,
+        T: serde::ser::Serialize + std::fmt::Debug,
     {
         if !self.breakers.should_try(&inbox).await {
             return Err(ErrorKind::Breaker.into());
