@@ -411,7 +411,8 @@ dependencies = [
 [[package]]
 name = "background-jobs"
 version = "0.10.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#68a80085dedbe01d2952adfef9c810661e4aa513"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0042f85da71ac239f62131239bcfa83686e52a3eba4738056a5c09163dd21d4b"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -420,7 +421,8 @@ dependencies = [
 [[package]]
 name = "background-jobs-actix"
 version = "0.10.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#68a80085dedbe01d2952adfef9c810661e4aa513"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9a10233be65a602ee3f136fa142274efab7e4ad3e85f3feddc33fe3567dbcb4"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -441,7 +443,8 @@ dependencies = [
 [[package]]
 name = "background-jobs-core"
 version = "0.10.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#68a80085dedbe01d2952adfef9c810661e4aa513"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afbf8f0b4cf2ad0e610e05245e93fd3c94aeacbc35264543c4280ecf81bbce63"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -1011,7 +1014,8 @@ dependencies = [
 [[package]]
 name = "http-signature-normalization"
 version = "0.5.4"
-source = "git+https://git.asonix.dog/asonix/http-signature-normalization#11be605f5b7aa3aa1938aaf34a12b0fd905fca50"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07499ccdca5530f8dca2c295aa4554afefa617879d381466016ba12bc60a09e9"
 dependencies = [
  "chrono",
  "thiserror",
@@ -1019,8 +1023,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.5.0-beta.7"
-source = "git+https://git.asonix.dog/asonix/http-signature-normalization#11be605f5b7aa3aa1938aaf34a12b0fd905fca50"
+version = "0.5.0-beta.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41a7b8fe1ff48e38857dfb8915a4ca54c02ca8f74ac646f01bb78d0d62533c5c"
 dependencies = [
  "actix-web",
  "awc",
@@ -2612,9 +2617,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4efe6fc2395938c8155973d7be49fe8d03a843726e285e100a8a383cc0154ce"
+checksum = "c2c2416fdedca8443ae44b4527de1ea633af61d8f7169ffa6e72c5b53d24efcc"
 dependencies = [
  "autocfg 1.0.1",
  "bytes",
@@ -2786,8 +2791,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-actix-web"
-version = "0.4.0-beta.12"
-source = "git+https://github.com/asonix/tracing-actix-web?branch=asonix/tracing-error-work-around#51e7911af7d1dd6a9c8265fa19b94224ddff56e2"
+version = "0.4.0-beta.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64be7b20ed6dfa15ddd89a964f28724360f9769eee60712666f20924d9a82c35"
 dependencies = [
  "actix-web",
  "tracing",
@@ -2871,9 +2877,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.23"
+version = "0.2.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c42e73a9d277d4d2b6a88389a137ccf3c58599660b17e8f5fc39305e490669"
+checksum = "fdd0568dbfe3baf7048b7908d2b32bca0d81cd56bec6d2a8f894b01d74f86be3"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",
