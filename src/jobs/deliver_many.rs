@@ -4,7 +4,7 @@ use crate::{
 };
 use activitystreams::url::Url;
 use background_jobs::ActixJob;
-use std::future::{ready, Ready};
+use futures_util::future::LocalBoxFuture;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct DeliverMany {
@@ -41,11 +41,12 @@ impl DeliverMany {
     }
 
     #[tracing::instrument(name = "Deliver many")]
-    fn perform(self, state: JobState) -> Result<(), Error> {
+    async fn perform(self, state: JobState) -> Result<(), Error> {
         for inbox in self.to {
             state
                 .job_server
-                .queue(Deliver::new(inbox, self.data.clone())?)?;
+                .queue(Deliver::new(inbox, self.data.clone())?)
+                .await?;
         }
 
         Ok(())
@@ -54,11 +55,11 @@ impl DeliverMany {
 
 impl ActixJob for DeliverMany {
     type State = JobState;
-    type Future = Ready<Result<(), anyhow::Error>>;
+    type Future = LocalBoxFuture<'static, Result<(), anyhow::Error>>;
 
     const NAME: &'static str = "relay::jobs::DeliverMany";
 
     fn run(self, state: Self::State) -> Self::Future {
-        ready(self.perform(state).map_err(Into::into))
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }

@@ -18,7 +18,7 @@ impl Reject {
         let my_id = state.config.generate_url(UrlKind::Actor);
         let undo = generate_undo_follow(&state.config, &self.0.id, &my_id)?;
 
-        state.job_server.queue(Deliver::new(self.0.inbox, undo)?)?;
+        state.job_server.queue(Deliver::new(self.0.inbox, undo)?).await?;
 
         Ok(())
     }

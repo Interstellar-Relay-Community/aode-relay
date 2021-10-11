@@ -14,8 +14,8 @@ impl Listeners {
         for actor_id in state.state.db.connected_ids().await? {
             state
                 .job_server
-                .queue(QueryInstance::new(actor_id.clone()))?;
-            state.job_server.queue(QueryNodeinfo::new(actor_id))?;
+                .queue(QueryInstance::new(actor_id.clone())).await?;
+            state.job_server.queue(QueryNodeinfo::new(actor_id)).await?;
         }
 
         Ok(())

@@ -66,7 +66,7 @@ impl QueryInstance {
                 uuid
             };
 
-            state.job_server.queue(CacheMedia::new(uuid))?;
+            state.job_server.queue(CacheMedia::new(uuid)).await?;
 
             state
                 .node_cache

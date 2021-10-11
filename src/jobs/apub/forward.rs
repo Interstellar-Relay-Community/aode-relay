@@ -31,7 +31,7 @@ impl Forward {
 
         state
             .job_server
-            .queue(DeliverMany::new(inboxes, self.input)?)?;
+            .queue(DeliverMany::new(inboxes, self.input)?).await?;
 
         Ok(())
     }

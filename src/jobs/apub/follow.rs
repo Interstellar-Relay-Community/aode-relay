@@ -35,7 +35,7 @@ impl Follow {
             let follow = generate_follow(&state.config, &self.actor.id, &my_id)?;
             state
                 .job_server
-                .queue(Deliver::new(self.actor.inbox.clone(), follow)?)?;
+                .queue(Deliver::new(self.actor.inbox.clone(), follow)?).await?;
         }
 
         state.actors.add_connection(self.actor.clone()).await?;
@@ -49,13 +49,13 @@ impl Follow {
 
         state
             .job_server
-            .queue(Deliver::new(self.actor.inbox, accept)?)?;
+            .queue(Deliver::new(self.actor.inbox, accept)?).await?;
 
         state
             .job_server
-            .queue(QueryInstance::new(self.actor.id.clone()))?;
+            .queue(QueryInstance::new(self.actor.id.clone())).await?;
 
-        state.job_server.queue(QueryNodeinfo::new(self.actor.id))?;
+        state.job_server.queue(QueryNodeinfo::new(self.actor.id)).await?;
 
         Ok(())
     }

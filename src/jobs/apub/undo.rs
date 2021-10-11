@@ -30,7 +30,7 @@ impl Undo {
             let undo = generate_undo_follow(&state.config, &self.actor.id, &my_id)?;
             state
                 .job_server
-                .queue(Deliver::new(self.actor.inbox, undo)?)?;
+                .queue(Deliver::new(self.actor.inbox, undo)?).await?;
         }
 
         Ok(())

@@ -121,12 +121,13 @@ impl JobServer {
         }
     }
 
-    pub(crate) fn queue<J>(&self, job: J) -> Result<(), Error>
+    pub(crate) async fn queue<J>(&self, job: J) -> Result<(), Error>
     where
         J: Job,
     {
         self.remote
             .queue(job)
+            .await
             .map_err(ErrorKind::Queue)
             .map_err(Into::into)
     }

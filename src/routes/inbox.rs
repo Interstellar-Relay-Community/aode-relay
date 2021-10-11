@@ -132,7 +132,7 @@ async fn handle_reject(
         return Err(ErrorKind::WrongActor(id_string(follow.actor()?.as_single_id())?).into());
     }
 
-    jobs.queue(Reject(actor))?;
+    jobs.queue(Reject(actor)).await?;
 
     Ok(())
 }
@@ -150,7 +150,7 @@ async fn handle_undo(
 
     if !undone_object.is_kind(&UndoTypes::Follow) {
         if is_listener {
-            jobs.queue(Forward::new(input, actor))?;
+            jobs.queue(Forward::new(input, actor)).await?;
             return Ok(());
         } else {
             return Err(ErrorKind::NotSubscribed(actor.id.to_string()).into());
@@ -169,7 +169,7 @@ async fn handle_undo(
         return Ok(());
     }
 
-    jobs.queue(Undo::new(input, actor))?;
+    jobs.queue(Undo::new(input, actor)).await?;
     Ok(())
 }
 
@@ -178,7 +178,7 @@ async fn handle_forward(
     input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), Error> {
-    jobs.queue(Forward::new(input, actor))?;
+    jobs.queue(Forward::new(input, actor)).await?;
 
     Ok(())
 }
@@ -195,7 +195,7 @@ async fn handle_announce(
         return Err(ErrorKind::Duplicate.into());
     }
 
-    jobs.queue(Announce::new(object_id.to_owned(), actor))?;
+    jobs.queue(Announce::new(object_id.to_owned(), actor)).await?;
 
     Ok(())
 }
@@ -212,7 +212,7 @@ async fn handle_follow(
         return Err(ErrorKind::WrongActor(id_string(input.object().as_single_id())?).into());
     }
 
-    jobs.queue(Follow::new(input, actor))?;
+    jobs.queue(Follow::new(input, actor)).await?;
 
     Ok(())
 }

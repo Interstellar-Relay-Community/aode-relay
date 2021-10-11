@@ -66,7 +66,7 @@ impl QueryNodeinfo {
             if let Some(contact_id) = accounts.get(0) {
                 state
                     .job_server
-                    .queue(QueryContact::new(self.actor_id, contact_id.clone()))?;
+                    .queue(QueryContact::new(self.actor_id, contact_id.clone())).await?;
             }
         }
 
