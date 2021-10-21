@@ -2655,7 +2655,8 @@ dependencies = [
 [[package]]
 name = "tracing-actix-web"
 version = "0.4.0-beta.15"
-source = "git+https://github.com/asonix/tracing-actix-web?branch=asonix/update-deps#1dbfa67f88e4f1fc8a1b800a8a47c606114b8334"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5d25e8e2381e03c36530607daea5663488a21a1b75db0431cf9b961e9ca8a02"
 dependencies = [
  "actix-web",
  "pin-project",
@@ -2678,7 +2679,8 @@ dependencies = [
 [[package]]
 name = "tracing-awc"
 version = "0.1.0-beta.6"
-source = "git+https://git.asonix.dog/asonix/tracing-awc?branch=main#282e715969b4d29b8490de1f2a6311a5e3764f7a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccf90c391b9e519449554c325aea5ebfce3d0b525f193428250b0cb5389d6e13"
 dependencies = [
  "actix-http",
  "awc",
