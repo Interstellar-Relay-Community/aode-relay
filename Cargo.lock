@@ -408,7 +408,7 @@ dependencies = [
 [[package]]
 name = "background-jobs"
 version = "0.11.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs?branch=main#e6ecf3aa677c677fce54cabfbbb2b7d57a522faa"
+source = "git+https://git.asonix.dog/asonix/background-jobs?branch=main#7e1e89e77701854d3a983f9c82fc255270b6823f"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -417,7 +417,7 @@ dependencies = [
 [[package]]
 name = "background-jobs-actix"
 version = "0.11.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs?branch=main#e6ecf3aa677c677fce54cabfbbb2b7d57a522faa"
+source = "git+https://git.asonix.dog/asonix/background-jobs?branch=main#7e1e89e77701854d3a983f9c82fc255270b6823f"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -438,7 +438,7 @@ dependencies = [
 [[package]]
 name = "background-jobs-core"
 version = "0.10.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs?branch=main#e6ecf3aa677c677fce54cabfbbb2b7d57a522faa"
+source = "git+https://git.asonix.dog/asonix/background-jobs?branch=main#7e1e89e77701854d3a983f9c82fc255270b6823f"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -906,9 +906,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c06815895acec637cd6ed6e9662c935b866d20a106f8361892893a7d9234964"
+checksum = "7fd819562fcebdac5afc5c113c3ec36f902840b70fd4fc458799c8ce4607ae55"
 dependencies = [
  "bytes",
  "fnv",
@@ -977,9 +977,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "399c583b2979440c60be0821a6199eca73bc3c8dcd9d070d75ac726e2c6186e5"
+checksum = "1ff4f84919677303da5f147645dbea6b1881f368d03ac84e1dc09031ebd7b2c6"
 dependencies = [
  "bytes",
  "http",
@@ -989,8 +989,7 @@ dependencies = [
 [[package]]
 name = "http-signature-normalization"
 version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07499ccdca5530f8dca2c295aa4554afefa617879d381466016ba12bc60a09e9"
+source = "git+https://git.asonix.dog/asonix/http-signature-normalization#200c298de07ea95bc9f96d0bdd33bd4fe904d56a"
 dependencies = [
  "chrono",
  "thiserror",
@@ -999,8 +998,7 @@ dependencies = [
 [[package]]
 name = "http-signature-normalization-actix"
 version = "0.5.0-beta.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da4e0c341fc01ddd0e0d1557ec6a196d3de5337da93b62c5b15e88853def05f8"
+source = "git+https://git.asonix.dog/asonix/http-signature-normalization#200c298de07ea95bc9f96d0bdd33bd4fe904d56a"
 dependencies = [
  "actix-http",
  "actix-rt",
@@ -1032,9 +1030,9 @@ checksum = "6456b8a6c8f33fee7d958fcd1b60d55b11940a79e63ae87013e6d22e26034440"
 
 [[package]]
 name = "hyper"
-version = "0.14.13"
+version = "0.14.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15d1cfb9e4f68655fa04c01f59edb405b6074a0f7118ea881e5026e4a1cd8593"
+checksum = "2b91bb1f221b6ea1f1e4371216b70f40748774c2fb5971b450c07773fb92d26b"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1150,9 +1148,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.104"
+version = "0.2.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b2f96d100e1cf1929e7719b7edb3b90ab5298072638fccd77be9ce942ecdfce"
+checksum = "869d572136620d55835903746bcb5cdc54cb2851fd0aeec53220b4bb65ef3013"
 
 [[package]]
 name = "libm"
@@ -1251,9 +1249,9 @@ dependencies = [
 
 [[package]]
 name = "matchers"
-version = "0.0.1"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
  "regex-automata",
 ]
@@ -1669,9 +1667,9 @@ dependencies = [
 
 [[package]]
 name = "ppv-lite86"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3ca011bd0129ff4ae15cd04c4eef202cadf6c51c21e47aba319b4e0501db741"
+checksum = "ed0cfbc8191465bed66e1718596ee0b0b35d5ee1f41c5df2189d0fe8bde535ba"
 
 [[package]]
 name = "precomputed-hash"
@@ -2704,9 +2702,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-error"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
+checksum = "d686ec1c0f384b1277f097b2f279a2ecc11afe8c133c1aabf036a27cb4cd206e"
 dependencies = [
  "tracing",
  "tracing-subscriber",
@@ -2735,9 +2733,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-opentelemetry"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "599f388ecb26b28d9c1b2e4437ae019a7b336018b45ed911458cd9ebf91129f6"
+checksum = "3ffbf13a0f8b054a4e59df3a173b818e9c6177c02789871f2073977fd0062076"
 dependencies = [
  "opentelemetry",
  "tracing",
@@ -2747,35 +2745,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-serde"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb65ea441fbb84f9f6748fd496cf7f63ec9af5bca94dd86456978d055e8eb28b"
-dependencies = [
- "serde 1.0.130",
- "tracing-core",
-]
-
-[[package]]
 name = "tracing-subscriber"
-version = "0.2.25"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
+checksum = "5cf865b5ddc38e503a29c41c4843e616a73028ae18c637bc3eb2afaef4909c84"
 dependencies = [
  "ansi_term 0.12.1",
- "chrono",
  "lazy_static",
  "matchers",
  "regex",
- "serde 1.0.130",
- "serde_json",
  "sharded-slab",
  "smallvec",
  "thread_local",
  "tracing",
  "tracing-core",
  "tracing-log",
- "tracing-serde",
 ]
 
 [[package]]

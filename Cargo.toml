@@ -43,11 +43,11 @@ structopt = "0.3.12"
 thiserror = "1.0"
 tracing = "0.1"
 tracing-awc = { version = "0.1.0-beta.6" }
-tracing-error = "0.1"
+tracing-error = "0.2"
 tracing-futures = "0.2"
 tracing-log = "0.1"
-tracing-opentelemetry = "0.15"
-tracing-subscriber = { version = "0.2", features = ["ansi", "fmt"] }
+tracing-opentelemetry = "0.16"
+tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "fmt"] }
 uuid = { version = "0.8", features = ["v4", "serde"] }
 
 [dependencies.background-jobs]
@@ -64,6 +64,7 @@ features = [
 version = "0.5.0-beta.9"
 default-features = false
 features = ["client", "server", "sha-2"]
+git = "https://git.asonix.dog/asonix/http-signature-normalization"
 
 [dependencies.tracing-actix-web]
 version = "0.4.0-beta.15"
