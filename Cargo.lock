@@ -209,7 +209,7 @@ dependencies = [
  "serde_urlencoded",
  "smallvec",
  "socket2",
- "time 0.3.3",
+ "time 0.3.4",
  "url",
 ]
 
@@ -989,7 +989,8 @@ dependencies = [
 [[package]]
 name = "http-signature-normalization"
 version = "0.5.4"
-source = "git+https://git.asonix.dog/asonix/http-signature-normalization#200c298de07ea95bc9f96d0bdd33bd4fe904d56a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07499ccdca5530f8dca2c295aa4554afefa617879d381466016ba12bc60a09e9"
 dependencies = [
  "chrono",
  "thiserror",
@@ -997,8 +998,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.5.0-beta.11"
-source = "git+https://git.asonix.dog/asonix/http-signature-normalization#200c298de07ea95bc9f96d0bdd33bd4fe904d56a"
+version = "0.5.0-beta.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91a487879a4f765fb8c7d070f75ab0d5f5c744fc52443d8e7df99d32829dfe55"
 dependencies = [
  "actix-http",
  "actix-rt",
@@ -1715,9 +1717,9 @@ checksum = "bc881b2c22681370c6a780e47af9840ef841837bc98118431d4e1868bd0c1086"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.30"
+version = "1.0.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edc3358ebc67bc8b7fa0c007f945b0b18226f78437d61bec735a9eb96b61ee70"
+checksum = "ba508cc11742c0dc5c1659771673afbab7a0efab23aa17e854cbab0837ed0b43"
 dependencies = [
  "unicode-xid",
 ]
@@ -1916,7 +1918,7 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "relay"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
@@ -2349,9 +2351,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.80"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d010a1623fbd906d51d650a9916aaefc05ffa0e4053ff7fe601167f3e715d194"
+checksum = "f2afee18b8beb5a596ecb4a2dce128c719b4ba399d34126b9e4396e3f9860966"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2452,9 +2454,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cde1cf55178e0293453ba2cca0d5f8392a922e52aa958aee9c28ed02becc6d03"
+checksum = "99beeb0daeac2bd1e86ac2c21caddecb244b39a093594da1a661ec2060c7aedd"
 dependencies = [
  "itoa",
  "libc",
@@ -2652,9 +2654,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-actix-web"
-version = "0.4.0-beta.15"
+version = "0.5.0-beta.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5d25e8e2381e03c36530607daea5663488a21a1b75db0431cf9b961e9ca8a02"
+checksum = "42294d195afb0ae79ea237040399179a8b5050b454c210fe4566ed383c6f0c17"
 dependencies = [
  "actix-web",
  "pin-project",
@@ -2676,9 +2678,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-awc"
-version = "0.1.0-beta.6"
+version = "0.1.0-beta.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccf90c391b9e519449554c325aea5ebfce3d0b525f193428250b0cb5389d6e13"
+checksum = "5ad0e6191ec442bb569839502f12a1701cf31c87eb301104a3908bded5b9647e"
 dependencies = [
  "actix-http",
  "awc",
@@ -2746,9 +2748,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cf865b5ddc38e503a29c41c4843e616a73028ae18c637bc3eb2afaef4909c84"
+checksum = "80a4ddde70311d8da398062ecf6fc2c309337de6b0f77d6c27aff8d53f6fca52"
 dependencies = [
  "ansi_term 0.12.1",
  "lazy_static",
