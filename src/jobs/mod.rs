@@ -23,30 +23,19 @@ use crate::{
 use background_jobs::{memory_storage::Storage, Job, QueueHandle, WorkerConfig};
 use std::time::Duration;
 
-pub(crate) fn create_server() -> JobServer {
-    let shared = background_jobs::create_server(Storage::new());
-
-    shared.every(Duration::from_secs(60 * 5), Listeners);
-
-    JobServer::new(shared)
-}
-
 pub(crate) fn create_workers(
     db: Db,
     state: State,
     actors: ActorCache,
-    job_server: JobServer,
     media: MediaCache,
     config: Config,
-) {
-    let remote_handle = job_server.remote.clone();
-
-    WorkerConfig::new(move || {
+) -> JobServer {
+    let queue_handle = WorkerConfig::new(Storage::new(), move |queue_handle| {
         JobState::new(
             db.clone(),
             state.clone(),
             actors.clone(),
-            job_server.clone(),
+            JobServer::new(queue_handle),
             media.clone(),
             config.clone(),
         )
@@ -64,7 +53,11 @@ pub(crate) fn create_workers(
     .register::<apub::Reject>()
     .register::<apub::Undo>()
     .set_worker_count("default", 16)
-    .start(remote_handle);
+    .start();
+
+    queue_handle.every(Duration::from_secs(60 * 5), Listeners);
+
+    JobServer::new(queue_handle)
 }
 
 #[derive(Clone, Debug)]

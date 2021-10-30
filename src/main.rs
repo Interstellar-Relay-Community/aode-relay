@@ -23,7 +23,7 @@ use self::{
     config::Config,
     data::{ActorCache, MediaCache, State},
     db::Db,
-    jobs::{create_server, create_workers},
+    jobs::create_workers,
     middleware::{DebugPayload, RelayResolver},
     routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
 };
@@ -96,13 +96,11 @@ async fn main() -> Result<(), anyhow::Error> {
     let media = MediaCache::new(db.clone());
     let state = State::build(db.clone()).await?;
     let actors = ActorCache::new(db.clone());
-    let job_server = create_server();
 
-    create_workers(
+    let job_server = create_workers(
         db.clone(),
         state.clone(),
         actors.clone(),
-        job_server.clone(),
         media.clone(),
         config.clone(),
     );
