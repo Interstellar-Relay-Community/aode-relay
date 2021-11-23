@@ -18,14 +18,22 @@ impl Resolver for RelayResolver {
     type Error = RelayError;
 
     fn find(
+        scheme: Option<&str>,
         account: &str,
         domain: &str,
         (state, config): Self::State,
     ) -> LocalBoxFuture<'static, Result<Option<Webfinger>, Self::Error>> {
         let domain = domain.to_owned();
         let account = account.to_owned();
+        let scheme = scheme.map(|scheme| scheme.to_owned());
 
         let fut = async move {
+            if let Some(scheme) = scheme {
+                if scheme != "acct:" {
+                    return Ok(None);
+                }
+            }
+
             if domain != config.hostname() {
                 return Ok(None);
             }
