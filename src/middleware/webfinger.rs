@@ -25,7 +25,7 @@ impl Resolver for RelayResolver {
     ) -> LocalBoxFuture<'static, Result<Option<Webfinger>, Self::Error>> {
         let domain = domain.to_owned();
         let account = account.to_owned();
-        let scheme = scheme.map(|s| s.to_owned());
+        let scheme = scheme.map(|scheme| scheme.to_owned());
 
         let fut = async move {
             if let Some(scheme) = scheme {

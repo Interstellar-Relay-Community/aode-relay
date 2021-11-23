@@ -97,7 +97,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let state = State::build(db.clone()).await?;
     let actors = ActorCache::new(db.clone());
 
-    let job_server = create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
+    let (manager, job_server) =
+        create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {
@@ -135,6 +136,8 @@ async fn main() -> Result<(), anyhow::Error> {
     .bind(bind_address)?
     .run()
     .await?;
+
+    drop(manager);
 
     Ok(())
 }
