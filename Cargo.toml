@@ -52,8 +52,6 @@ uuid = { version = "0.8", features = ["v4", "serde"] }
 
 [dependencies.background-jobs]
 version = "0.11.0"
-git = "https://git.asonix.dog/asonix/background-jobs"
-branch = "main"
 default-features = false
 features = [
     "background-jobs-actix",
