@@ -96,6 +96,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let media = MediaCache::new(db.clone());
     let state = State::build(db.clone()).await?;
     let actors = ActorCache::new(db.clone());
+
     let (manager, job_server) = create_workers(
         db.clone(),
         state.clone(),
