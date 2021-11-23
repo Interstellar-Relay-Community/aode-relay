@@ -46,9 +46,9 @@ impl NodeCache {
             .await?
             .into_iter()
             .map(move |actor_id| {
-                let info = infos.get(&actor_id).map(|info| info.clone());
-                let instance = instances.get(&actor_id).map(|instance| instance.clone());
-                let contact = contacts.get(&actor_id).map(|contact| contact.clone());
+                let info = infos.get(&actor_id).cloned();
+                let instance = instances.get(&actor_id).cloned();
+                let contact = contacts.get(&actor_id).cloned();
 
                 Node::new(actor_id)
                     .info(info)

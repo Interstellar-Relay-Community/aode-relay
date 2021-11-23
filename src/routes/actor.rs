@@ -24,8 +24,8 @@ pub(crate) async fn route(
         ApActor::new(config.generate_url(UrlKind::Inbox), Application::new()),
         PublicKey {
             public_key: PublicKeyInner {
-                id: config.generate_url(UrlKind::MainKey).into(),
-                owner: config.generate_url(UrlKind::Actor).into(),
+                id: config.generate_url(UrlKind::MainKey),
+                owner: config.generate_url(UrlKind::Actor),
                 public_key_pem: state.public_key.to_public_key_pem()?,
             },
         },

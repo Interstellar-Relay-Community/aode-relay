@@ -11,10 +11,8 @@
     </div>
     <div class="right">
         <p class="display-name"><a href="@contact.url">@contact.display_name</a></p>
-        @if let Some(domain) = base.domain() {
-            <p class="username">@@@contact.username@@@domain</p>
-        } else {
-            <p class="username">@@@contact.username</p>
-        }
+        <p class="username">
+          @@@contact.username@if let Some(domain) = base.domain() {@@@domain}
+        </p>
     </div>
 </div>

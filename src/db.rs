@@ -107,10 +107,7 @@ impl std::fmt::Debug for Contact {
 
 impl Inner {
     fn connected_by_domain(&self, domains: &[String]) -> impl DoubleEndedIterator<Item = Url> {
-        let reversed: Vec<_> = domains
-            .into_iter()
-            .map(|s| domain_key(s.as_str()))
-            .collect();
+        let reversed: Vec<_> = domains.iter().map(|s| domain_key(s.as_str())).collect();
 
         self.connected_actor_ids
             .iter()
@@ -147,7 +144,7 @@ impl Inner {
             .filter_map(url_from_ivec)
     }
 
-    fn connected_actors<'a>(&'a self) -> impl DoubleEndedIterator<Item = Actor> + 'a {
+    fn connected_actors(&self) -> impl DoubleEndedIterator<Item = Actor> + '_ {
         self.connected_actor_ids
             .iter()
             .values()
@@ -159,7 +156,7 @@ impl Inner {
             })
     }
 
-    fn connected_info<'a>(&'a self) -> impl DoubleEndedIterator<Item = (Url, Info)> + 'a {
+    fn connected_info(&self) -> impl DoubleEndedIterator<Item = (Url, Info)> + '_ {
         self.connected_actor_ids
             .iter()
             .values()
@@ -173,7 +170,7 @@ impl Inner {
             })
     }
 
-    fn connected_instance<'a>(&'a self) -> impl DoubleEndedIterator<Item = (Url, Instance)> + 'a {
+    fn connected_instance(&self) -> impl DoubleEndedIterator<Item = (Url, Instance)> + '_ {
         self.connected_actor_ids
             .iter()
             .values()
@@ -187,7 +184,7 @@ impl Inner {
             })
     }
 
-    fn connected_contact<'a>(&'a self) -> impl DoubleEndedIterator<Item = (Url, Contact)> + 'a {
+    fn connected_contact(&self) -> impl DoubleEndedIterator<Item = (Url, Contact)> + '_ {
         self.connected_actor_ids
             .iter()
             .values()

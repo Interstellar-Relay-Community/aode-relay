@@ -51,18 +51,18 @@ impl QueryInstance {
             .await?;
 
         let description = if instance.description.is_empty() {
-            instance.short_description.unwrap_or(String::new())
+            instance.short_description.unwrap_or_default()
         } else {
             instance.description
         };
 
         if let Some(mut contact) = instance.contact {
             let uuid = if let Some(uuid) = state.media.get_uuid(contact.avatar.clone()).await? {
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).into();
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
                 uuid
             } else {
                 let uuid = state.media.store_url(contact.avatar.clone()).await?;
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid)).into();
+                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
                 uuid
             };
 

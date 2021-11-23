@@ -679,6 +679,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e77a43b28d0668df09411cb0bc9a8c2adc40f9a048afe863e05fd43251e8e39c"
+dependencies = [
+ "cfg-if",
+ "num_cpus",
+]
+
+[[package]]
 name = "der"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1949,13 +1959,13 @@ dependencies = [
  "actix-webfinger",
  "ammonia",
  "anyhow",
- "async-mutex",
  "async-rwlock",
  "awc",
  "background-jobs",
  "base64",
  "chrono",
  "config",
+ "dashmap",
  "dotenv",
  "futures-util",
  "http-signature-normalization-actix",

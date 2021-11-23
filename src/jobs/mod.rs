@@ -15,7 +15,6 @@ pub(crate) use self::{
 use crate::{
     config::Config,
     data::{ActorCache, MediaCache, NodeCache, State},
-    db::Db,
     error::{Error, ErrorKind},
     jobs::process_listeners::Listeners,
     requests::Requests,
@@ -24,7 +23,6 @@ use background_jobs::{memory_storage::Storage, Job, QueueHandle, WorkerConfig};
 use std::time::Duration;
 
 pub(crate) fn create_workers(
-    db: Db,
     state: State,
     actors: ActorCache,
     media: MediaCache,
@@ -32,7 +30,6 @@ pub(crate) fn create_workers(
 ) -> JobServer {
     let queue_handle = WorkerConfig::new(Storage::new(), move |queue_handle| {
         JobState::new(
-            db.clone(),
             state.clone(),
             actors.clone(),
             JobServer::new(queue_handle),
@@ -62,7 +59,6 @@ pub(crate) fn create_workers(
 
 #[derive(Clone, Debug)]
 pub(crate) struct JobState {
-    db: Db,
     requests: Requests,
     state: State,
     actors: ActorCache,
@@ -87,7 +83,6 @@ impl std::fmt::Debug for JobServer {
 
 impl JobState {
     fn new(
-        db: Db,
         state: State,
         actors: ActorCache,
         job_server: JobServer,
@@ -97,7 +92,6 @@ impl JobState {
         JobState {
             requests: state.requests(&config),
             node_cache: state.node_cache(),
-            db,
             actors,
             config,
             media,

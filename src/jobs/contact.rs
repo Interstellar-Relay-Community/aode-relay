@@ -46,7 +46,7 @@ impl QueryContact {
             .await?;
 
         let (username, display_name, url, avatar) =
-            to_contact(contact).ok_or_else(|| ErrorKind::Extract("contact"))?;
+            to_contact(contact).ok_or(ErrorKind::Extract("contact"))?;
 
         state
             .node_cache

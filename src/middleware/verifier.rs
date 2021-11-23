@@ -65,7 +65,7 @@ impl MyVerify {
                 .fetch::<PublicKeyResponse>(public_key_id.as_str())
                 .await?
                 .actor_id()
-                .ok_or_else(|| ErrorKind::MissingId)?
+                .ok_or(ErrorKind::MissingId)?
         };
 
         // Previously we verified the sig from an actor's local cache
@@ -90,14 +90,14 @@ enum PublicKeyResponse {
         #[allow(dead_code)]
         public_key_pem: String,
     },
-    Actor(AcceptedActors),
+    Actor(Box<AcceptedActors>),
 }
 
 impl PublicKeyResponse {
     fn actor_id(&self) -> Option<Url> {
         match self {
             PublicKeyResponse::PublicKey { owner, .. } => Some(owner.clone()),
-            PublicKeyResponse::Actor(actor) => actor.id_unchecked().map(|url| url.clone()),
+            PublicKeyResponse::Actor(actor) => actor.id_unchecked().cloned(),
         }
     }
 }

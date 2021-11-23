@@ -17,10 +17,7 @@ pub enum MaybeCached<T> {
 
 impl<T> MaybeCached<T> {
     pub(crate) fn is_cached(&self) -> bool {
-        match self {
-            MaybeCached::Cached(_) => true,
-            _ => false,
-        }
+        matches!(self, MaybeCached::Cached(_))
     }
 
     pub(crate) fn into_inner(self) -> T {
@@ -74,16 +71,16 @@ impl ActorCache {
 
         let input_domain = id.domain().ok_or(ErrorKind::MissingDomain)?;
         let accepted_actor_id = accepted_actor
-            .id(&input_domain)?
+            .id(input_domain)?
             .ok_or(ErrorKind::MissingId)?;
 
         let inbox = get_inbox(&accepted_actor)?.clone();
 
         let actor = Actor {
-            id: accepted_actor_id.clone().into(),
+            id: accepted_actor_id.clone(),
             public_key: accepted_actor.ext_one.public_key.public_key_pem,
             public_key_id: accepted_actor.ext_one.public_key.id,
-            inbox: inbox.into(),
+            inbox,
             saved_at: SystemTime::now(),
         };
 

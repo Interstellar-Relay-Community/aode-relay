@@ -54,13 +54,13 @@ pub(crate) async fn route(
                 .db
                 .inboxes()
                 .await
-                .unwrap_or(vec![])
+                .unwrap_or_default()
                 .iter()
                 .filter_map(|listener| listener.domain())
                 .map(|s| s.to_owned())
                 .collect(),
             blocks: if config.publish_blocks() {
-                Some(state.db.blocks().await.unwrap_or(vec![]))
+                Some(state.db.blocks().await.unwrap_or_default())
             } else {
                 None
             },

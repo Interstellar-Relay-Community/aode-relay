@@ -17,7 +17,7 @@ pub(crate) struct Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}\n", self.kind)?;
+        writeln!(f, "{}", self.kind)?;
         std::fmt::Display::fmt(&self.context, f)
     }
 }
@@ -171,7 +171,7 @@ impl ResponseError for Error {
                 serde_json::to_string(&serde_json::json!({
                     "error": self.kind.to_string(),
                 }))
-                .unwrap_or("{}".to_string()),
+                .unwrap_or_else(|_| "{}".to_string()),
             )
     }
 }

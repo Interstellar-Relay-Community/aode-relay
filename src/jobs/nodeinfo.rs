@@ -66,7 +66,8 @@ impl QueryNodeinfo {
             if let Some(contact_id) = accounts.get(0) {
                 state
                     .job_server
-                    .queue(QueryContact::new(self.actor_id, contact_id.clone())).await?;
+                    .queue(QueryContact::new(self.actor_id, contact_id.clone()))
+                    .await?;
             }
         }
 
@@ -129,10 +130,7 @@ enum MaybeSupported<T> {
 
 impl<T> MaybeSupported<T> {
     fn is_supported(&self) -> bool {
-        match self {
-            MaybeSupported::Supported(_) => true,
-            _ => false,
-        }
+        matches!(self, MaybeSupported::Supported(_))
     }
 }
 
