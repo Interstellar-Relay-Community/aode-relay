@@ -37,7 +37,7 @@ fn init_subscriber(
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
     let format_layer = tracing_subscriber::fmt::layer()
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_span_events(FmtSpan::CLOSE)
         .pretty();
 
     let subscriber = tracing_subscriber::Registry::default()
