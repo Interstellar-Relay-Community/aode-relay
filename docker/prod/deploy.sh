@@ -81,7 +81,7 @@ if [ "$push" == "true" ]; then
     ./manifest.sh relay $new_tag
     ./manifest.sh relay latest
 
-    # pushd ../../
-    # cargo publish
-    # popd
+    pushd ../../
+    cargo publish
+    popd
 fi

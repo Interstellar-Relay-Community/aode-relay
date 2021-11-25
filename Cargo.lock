@@ -1933,7 +1933,7 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "relay"
-version = "0.3.7"
+version = "0.3.8"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
@@ -2670,7 +2670,8 @@ dependencies = [
 [[package]]
 name = "tracing-actix-web"
 version = "0.5.0-beta.3"
-source = "git+https://github.com/caizixian/tracing-actix-web#aafa35384335592718d8e7cf458a7de231d82843"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "994e4a59135823bdca121a8d086e3fcc71741c8677b47fa95a6afdd15e8f646f"
 dependencies = [
  "actix-web",
  "pin-project",
@@ -2692,8 +2693,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-awc"
-version = "0.1.0-beta.9"
-source = "git+https://git.asonix.dog/asonix/tracing-awc#33aa802572c5b260835ae21f2df7f6528dfd07c5"
+version = "0.1.0-beta.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "049a7039068783ea0315b94cd727e80ddf8b5f302e908876d58d33e318b79e72"
 dependencies = [
  "actix-http",
  "awc",
