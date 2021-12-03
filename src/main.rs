@@ -1,3 +1,6 @@
+// need this for ructe
+#![allow(clippy::needless_borrow)]
+
 use activitystreams::url::Url;
 use actix_web::{web, App, HttpServer};
 use opentelemetry::{sdk::Resource, KeyValue};
