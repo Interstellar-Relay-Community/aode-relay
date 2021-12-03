@@ -1,0 +1,136 @@
+kind: pipeline
+type: docker
+name: clippy
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: clippy
+  image: asonix/rust-builder:amd64-latest
+  pull: always
+  commands:
+  - rustup component add clippy
+  - cargo clippy --no-default-features
+
+---
+
+kind: pipeline
+type: docker
+name: tests
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: tests
+  image: asonix/rust-builder:amd64-latest
+  pull: always
+  commands:
+  - cargo test
+
+---
+
+kind: pipeline
+type: docker
+name: build-amd64
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: build
+  image: asonix/rust-builder:amd64-latest
+  pull: always
+  commands:
+  - cargo check --target=x86_64-unknown-linux-musl
+  - cargo build --target=x86_64-unknown-linux-musl --release
+
+---
+
+kind: pipeline
+type: docker
+name: build-arm64v8
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: build
+  image: asonix/rust-builder:arm64v8-latest
+  pull: always
+  commands:
+  - cargo check --target=aarch64-unknown-linux-musl
+  - cargo build --target=aarch64-unknown-linux-musl --release
+
+---
+
+kind: pipeline
+type: docker
+name: build-arm32v7
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: build
+  image: asonix/rust-builder:arm32v7-latest
+  pull: always
+  commands:
+  - cargo check --target=armv7-unknown-linux-musleabihf
+  - cargo build --target=armv7-unknown-linux-musleabihf --release

@@ -17,7 +17,7 @@ use std::{
     time::SystemTime,
 };
 use tracing::{debug, info, warn};
-use tracing_awc::Propagate;
+use tracing_awc::Tracing;
 
 #[derive(Clone)]
 pub(crate) struct Breakers {
@@ -167,6 +167,7 @@ impl Requests {
         Requests {
             client: Rc::new(RefCell::new(
                 Client::builder()
+                    .wrap(Tracing)
                     .header("User-Agent", user_agent.clone())
                     .finish(),
             )),
@@ -185,6 +186,7 @@ impl Requests {
         if count + 1 >= self.error_limit {
             warn!("{} consecutive errors, rebuilding http client", count);
             *self.client.borrow_mut() = Client::builder()
+                .wrap(Tracing)
                 .header("User-Agent", self.user_agent.clone())
                 .finish();
             self.reset_err();
@@ -234,7 +236,6 @@ impl Requests {
                 move |signing_string| signer.sign(signing_string),
             )
             .await?
-            .propagate()
             .send()
             .await;
 
@@ -293,7 +294,6 @@ impl Requests {
                 move |signing_string| signer.sign(signing_string),
             )
             .await?
-            .propagate()
             .send()
             .await;
 
@@ -373,7 +373,7 @@ impl Requests {
             .await?
             .split();
 
-        let res = req.propagate().send_body(body).await;
+        let res = req.send_body(body).await;
 
         if res.is_err() {
             self.count_err();
