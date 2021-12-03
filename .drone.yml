@@ -22,7 +22,12 @@ steps:
   pull: always
   commands:
   - rustup component add clippy
-  - cargo clippy --no-default-features
+  - cargo clippy
+
+trigger:
+  event:
+  - push
+  - pull_request
 
 ---
 
@@ -51,6 +56,43 @@ steps:
   commands:
   - cargo test
 
+trigger:
+  event:
+  - push
+  - pull_request
+
+---
+
+kind: pipeline
+type: docker
+name: check-amd64
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: build
+  image: asonix/rust-builder:amd64-latest
+  pull: always
+  commands:
+  - cargo check --target=x86_64-unknown-linux-musl
+
+trigger:
+  event:
+  - push
+  - pull_request
+
 ---
 
 kind: pipeline
@@ -76,8 +118,43 @@ steps:
   image: asonix/rust-builder:amd64-latest
   pull: always
   commands:
-  - cargo check --target=x86_64-unknown-linux-musl
   - cargo build --target=x86_64-unknown-linux-musl --release
+
+trigger:
+  event:
+  - tag
+
+---
+
+kind: pipeline
+type: docker
+name: check-arm64v8
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: build
+  image: asonix/rust-builder:arm64v8-latest
+  pull: always
+  commands:
+  - cargo check --target=aarch64-unknown-linux-musl
+
+trigger:
+  event:
+  - push
+  - pull_request
 
 ---
 
@@ -104,8 +181,43 @@ steps:
   image: asonix/rust-builder:arm64v8-latest
   pull: always
   commands:
-  - cargo check --target=aarch64-unknown-linux-musl
   - cargo build --target=aarch64-unknown-linux-musl --release
+
+trigger:
+  event:
+  - tag
+
+---
+
+kind: pipeline
+type: docker
+name: check-arm32v7
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: build
+  image: asonix/rust-builder:arm32v7-latest
+  pull: always
+  commands:
+  - cargo check --target=armv7-unknown-linux-musleabihf
+
+trigger:
+  event:
+  - push
+  - pull_request
 
 ---
 
@@ -132,5 +244,8 @@ steps:
   image: asonix/rust-builder:arm32v7-latest
   pull: always
   commands:
-  - cargo check --target=armv7-unknown-linux-musleabihf
   - cargo build --target=armv7-unknown-linux-musleabihf --release
+
+trigger:
+  event:
+  - tag
