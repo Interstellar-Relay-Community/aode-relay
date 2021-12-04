@@ -82,11 +82,11 @@ steps:
   - git checkout $DRONE_COMMIT
   - chown -R 991:991 .
 
-- name: build
+- name: check
   image: asonix/rust-builder:amd64-latest
   pull: always
   commands:
-  - cargo check --target=x86_64-unknown-linux-musl
+  - cargo check --target=$TARGET
 
 trigger:
   event:
@@ -118,7 +118,32 @@ steps:
   image: asonix/rust-builder:amd64-latest
   pull: always
   commands:
-  - cargo build --target=x86_64-unknown-linux-musl --release
+  - cargo build --target=$TARGET --release
+  - $TOOL-strip target/$TARGET/release/relay
+  - cp target/$TARGET/release/relay .
+  - cp relay relay-linux-amd64
+
+- name: push
+  image: plugins/docker:20
+  settings:
+    username: asonix
+    password:
+      from_secret: dockerhub_token
+    repo: asonix/relay
+    dockerfile: docker/drone/Dockerfile
+    auto_tag: true
+    auto_tag_suffix: linux-amd64
+    build_args:
+    - REPO_ARCH=amd64
+
+- name: publish
+  image: plugins/gitea-release:1
+  settings:
+    api_key:
+      from_secret: gitea_token
+    base_url: https://git.asonix.dog
+    files:
+    - relay-linux-amd64
 
 trigger:
   event:
@@ -145,11 +170,11 @@ steps:
   - git checkout $DRONE_COMMIT
   - chown -R 991:991 .
 
-- name: build
+- name: check
   image: asonix/rust-builder:arm64v8-latest
   pull: always
   commands:
-  - cargo check --target=aarch64-unknown-linux-musl
+  - cargo check --target=$TARGET
 
 trigger:
   event:
@@ -181,7 +206,32 @@ steps:
   image: asonix/rust-builder:arm64v8-latest
   pull: always
   commands:
-  - cargo build --target=aarch64-unknown-linux-musl --release
+  - cargo build --target=$TARGET --release
+  - $TOOL-strip target/$TARGET/release/relay
+  - cp target/$TARGET/release/relay .
+  - cp relay relay-linux-arm64v8
+
+- name: push
+  image: plugins/docker:20
+  settings:
+    username: asonix
+    password:
+      from_secret: dockerhub_token
+    repo: asonix/relay
+    dockerfile: docker/drone/Dockerfile
+    auto_tag: true
+    auto_tag_suffix: linux-arm64v8
+    build_args:
+    - REPO_ARCH=arm64v8
+
+- name: publish
+  image: plugins/gitea-release:1
+  settings:
+    api_key:
+      from_secret: gitea_token
+    base_url: https://git.asonix.dog
+    files:
+    - relay-linux-arm64v8
 
 trigger:
   event:
@@ -208,11 +258,11 @@ steps:
   - git checkout $DRONE_COMMIT
   - chown -R 991:991 .
 
-- name: build
+- name: check
   image: asonix/rust-builder:arm32v7-latest
   pull: always
   commands:
-  - cargo check --target=armv7-unknown-linux-musleabihf
+  - cargo check --target=$TARGET
 
 trigger:
   event:
@@ -244,7 +294,74 @@ steps:
   image: asonix/rust-builder:arm32v7-latest
   pull: always
   commands:
-  - cargo build --target=armv7-unknown-linux-musleabihf --release
+  - cargo build --target=$TARGET --release
+  - $TOOL-strip target/$TARGET/release/relay
+  - cp target/$TARGET/release/relay .
+  - cp relay relay-linux-arm32v7
+
+- name: push
+  image: plugins/docker:20
+  settings:
+    username: asonix
+    password:
+      from_secret: dockerhub_token
+    repo: asonix/relay
+    dockerfile: docker/drone/Dockerfile
+    auto_tag: true
+    auto_tag_suffix: linux-arm32v7
+    build_args:
+    - REPO_ARCH=arm32v7
+
+- name: publish
+  image: plugins/gitea-release:1
+  settings:
+    api_key:
+      from_secret: gitea_token
+    base_url: https://git.asonix.dog
+    files:
+    - relay-linux-arm32v7
+
+trigger:
+  event:
+  - tag
+
+---
+
+kind: pipeline
+type: docker
+name: manifest
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: manifest
+  image: plugins/manifest:1
+  settings:
+    username: asonix
+    password:
+      from_secret: dockerhub_token
+    dump: true
+    auto_tag: true
+    ignore_missing: true
+    spec: docker/drone/manifest.tmpl
+
+
+depends_on:
+- build-amd64
+- build-arm64v8
+- build-arm32v7
 
 trigger:
   event:
