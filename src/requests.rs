@@ -168,7 +168,7 @@ impl Requests {
             client: Rc::new(RefCell::new(
                 Client::builder()
                     .wrap(Tracing)
-                    .header("User-Agent", user_agent.clone())
+                    .add_default_header(("User-Agent", user_agent.clone()))
                     .finish(),
             )),
             consecutive_errors: Rc::new(AtomicUsize::new(0)),
@@ -187,7 +187,7 @@ impl Requests {
             warn!("{} consecutive errors, rebuilding http client", count);
             *self.client.borrow_mut() = Client::builder()
                 .wrap(Tracing)
-                .header("User-Agent", self.user_agent.clone())
+                .add_default_header(("User-Agent", self.user_agent.clone()))
                 .finish();
             self.reset_err();
         }

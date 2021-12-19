@@ -15,7 +15,8 @@ pub(crate) async fn well_known(config: web::Data<Config>) -> impl Responder {
             kind: None,
         }],
     })
-    .with_header(("Content-Type", "application/jrd+json"))
+    .customize()
+    .insert_header(("Content-Type", "application/jrd+json"))
 }
 
 #[derive(serde::Serialize)]

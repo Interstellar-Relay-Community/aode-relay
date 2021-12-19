@@ -1,6 +1,6 @@
 ARG REPO_ARCH
 
-FROM asonix/rust-runner:$REPO_ARCH-latest
+FROM asonix/rust-runner:latest-linux-$REPO_ARCH
 
 COPY relay /usr/local/bin/relay
 

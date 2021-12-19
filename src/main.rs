@@ -3,12 +3,13 @@
 
 use activitystreams::url::Url;
 use actix_web::{web, App, HttpServer};
+use console_subscriber::ConsoleLayer;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
-use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, EnvFilter};
+use tracing_subscriber::{filter::Targets, fmt::format::FmtSpan, layer::SubscriberExt, Layer};
 
 mod apub;
 mod args;
@@ -37,16 +38,24 @@ fn init_subscriber(
 ) -> Result<(), anyhow::Error> {
     LogTracer::init()?;
 
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let targets: Targets = std::env::var("RUST_LOG")
+        .unwrap_or_else(|_| "info".into())
+        .parse()?;
 
     let format_layer = tracing_subscriber::fmt::layer()
-        .with_span_events(FmtSpan::CLOSE)
-        .pretty();
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_filter(targets.clone());
+
+    let console_layer = ConsoleLayer::builder()
+        .with_default_env()
+        .server_addr(([0, 0, 0, 0], 6669))
+        .event_buffer_capacity(1024 * 1024)
+        .spawn();
 
     let subscriber = tracing_subscriber::Registry::default()
-        .with(env_filter)
-        .with(ErrorLayer::default())
-        .with(format_layer);
+        .with(console_layer)
+        .with(format_layer)
+        .with(ErrorLayer::default());
 
     if let Some(url) = opentelemetry_url {
         let tracer =
@@ -62,7 +71,9 @@ fn init_subscriber(
                 )
                 .install_batch(opentelemetry::runtime::Tokio)?;
 
-        let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+        let otel_layer = tracing_opentelemetry::layer()
+            .with_tracer(tracer)
+            .with_filter(targets);
 
         let subscriber = subscriber.with(otel_layer);
         tracing::subscriber::set_global_default(subscriber)?;
