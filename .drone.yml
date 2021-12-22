@@ -18,7 +18,7 @@ steps:
   - chown -R 991:991 .
 
 - name: clippy
-  image: asonix/rust-builder:amd64-latest
+  image: asonix/rust-builder:latest-linux-amd64
   pull: always
   commands:
   - rustup component add clippy
@@ -51,7 +51,7 @@ steps:
   - chown -R 991:991 .
 
 - name: tests
-  image: asonix/rust-builder:amd64-latest
+  image: asonix/rust-builder:latest-linux-amd64
   pull: always
   commands:
   - cargo test
@@ -83,7 +83,7 @@ steps:
   - chown -R 991:991 .
 
 - name: check
-  image: asonix/rust-builder:amd64-latest
+  image: asonix/rust-builder:latest-linux-amd64
   pull: always
   commands:
   - cargo check --target=$TARGET
@@ -115,7 +115,7 @@ steps:
   - chown -R 991:991 .
 
 - name: build
-  image: asonix/rust-builder:amd64-latest
+  image: asonix/rust-builder:latest-linux-amd64
   pull: always
   commands:
   - cargo build --target=$TARGET --release
@@ -171,7 +171,7 @@ steps:
   - chown -R 991:991 .
 
 - name: check
-  image: asonix/rust-builder:arm64v8-latest
+  image: asonix/rust-builder:latest-linux-arm64v8
   pull: always
   commands:
   - cargo check --target=$TARGET
@@ -203,7 +203,7 @@ steps:
   - chown -R 991:991 .
 
 - name: build
-  image: asonix/rust-builder:arm64v8-latest
+  image: asonix/rust-builder:latest-linux-arm64v8
   pull: always
   commands:
   - cargo build --target=$TARGET --release
@@ -259,7 +259,7 @@ steps:
   - chown -R 991:991 .
 
 - name: check
-  image: asonix/rust-builder:arm32v7-latest
+  image: asonix/rust-builder:latest-linux-arm32v7
   pull: always
   commands:
   - cargo check --target=$TARGET
@@ -291,7 +291,7 @@ steps:
   - chown -R 991:991 .
 
 - name: build
-  image: asonix/rust-builder:arm32v7-latest
+  image: asonix/rust-builder:latest-linux-arm32v7
   pull: always
   commands:
   - cargo build --target=$TARGET --release
@@ -389,7 +389,7 @@ trigger:
 #   - chown -R 991:991 .
 # 
 # - name: publish
-#   image: asonix/rust-builder:amd64-latest
+#   image: asonix/rust-builder:latest-linux-amd64
 #   pull: always
 #   environment:
 #     CRATES_IO_TOKEN:
