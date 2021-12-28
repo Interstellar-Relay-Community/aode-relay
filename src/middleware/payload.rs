@@ -55,17 +55,19 @@ where
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         if self.0 && req.method() == Method::POST {
             let pl = req.take_payload();
-            req.set_payload(Payload::Stream(Box::pin(once(
-                pl.try_fold(BytesMut::new(), |mut acc, bytes| async {
-                    acc.extend(bytes);
-                    Ok(acc)
-                })
-                .map_ok(|bytes| {
-                    let bytes = bytes.freeze();
-                    info!("{}", String::from_utf8_lossy(&bytes));
-                    bytes
-                }),
-            ))));
+            req.set_payload(Payload::Stream {
+                payload: Box::pin(once(
+                    pl.try_fold(BytesMut::new(), |mut acc, bytes| async {
+                        acc.extend(bytes);
+                        Ok(acc)
+                    })
+                    .map_ok(|bytes| {
+                        let bytes = bytes.freeze();
+                        info!("{}", String::from_utf8_lossy(&bytes));
+                        bytes
+                    }),
+                )),
+            });
 
             let fut = self.1.call(req);
 
