@@ -1,5 +1,5 @@
 [package]
-name = "relay"
+name = "ap-relay"
 description = "A simple activitypub relay"
 version = "0.3.11"
 authors = ["asonix <asonix@asonix.dog>"]
@@ -9,6 +9,10 @@ repository = "https://git.asonix.dog/asonix/ap-relay"
 keywords = ["activitypub", "relay"]
 edition = "2021"
 build = "src/build.rs"
+
+[[bin]]
+name = "relay"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

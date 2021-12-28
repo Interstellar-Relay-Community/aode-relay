@@ -305,6 +305,54 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84450d0b4a8bd1ba4144ce8ce718fbc5d071358b1e5384bace6536b3d1f2d5b3"
 
 [[package]]
+name = "ap-relay"
+version = "0.3.11"
+dependencies = [
+ "activitystreams",
+ "activitystreams-ext",
+ "actix-rt",
+ "actix-web",
+ "actix-webfinger",
+ "ammonia",
+ "anyhow",
+ "async-rwlock",
+ "awc",
+ "background-jobs",
+ "base64",
+ "chrono",
+ "config",
+ "console-subscriber",
+ "dashmap",
+ "dotenv",
+ "futures-util",
+ "http-signature-normalization-actix",
+ "lru",
+ "mime",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "rand 0.8.4",
+ "rsa",
+ "rsa-magic-public-key",
+ "ructe",
+ "serde 1.0.132",
+ "serde_json",
+ "sha2",
+ "sled",
+ "structopt",
+ "thiserror",
+ "toml",
+ "tracing",
+ "tracing-actix-web",
+ "tracing-awc",
+ "tracing-error",
+ "tracing-futures",
+ "tracing-log",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2110,54 +2158,6 @@ name = "regex-syntax"
 version = "0.6.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
-
-[[package]]
-name = "relay"
-version = "0.3.11"
-dependencies = [
- "activitystreams",
- "activitystreams-ext",
- "actix-rt",
- "actix-web",
- "actix-webfinger",
- "ammonia",
- "anyhow",
- "async-rwlock",
- "awc",
- "background-jobs",
- "base64",
- "chrono",
- "config",
- "console-subscriber",
- "dashmap",
- "dotenv",
- "futures-util",
- "http-signature-normalization-actix",
- "lru",
- "mime",
- "opentelemetry",
- "opentelemetry-otlp",
- "rand 0.8.4",
- "rsa",
- "rsa-magic-public-key",
- "ructe",
- "serde 1.0.132",
- "serde_json",
- "sha2",
- "sled",
- "structopt",
- "thiserror",
- "toml",
- "tracing",
- "tracing-actix-web",
- "tracing-awc",
- "tracing-error",
- "tracing-futures",
- "tracing-log",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "uuid",
-]
 
 [[package]]
 name = "remove_dir_all"
