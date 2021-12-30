@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.11"
+version = "0.3.12"
 authors = ["asonix <asonix@asonix.dog>"]
 license-file = "LICENSE"
 readme = "README.md"
@@ -20,7 +20,7 @@ path = "src/main.rs"
 anyhow = "1.0"
 actix-rt = "2.0.2"
 actix-web = { version = "4.0.0-beta.7", default-features = false }
-actix-webfinger = "0.4.0-beta.3"
+actix-webfinger = "0.4.0-beta.5"
 activitystreams = "0.7.0-alpha.10"
 activitystreams-ext = "0.1.0-alpha.2"
 ammonia = "3.1.0"

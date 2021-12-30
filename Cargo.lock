@@ -185,9 +185,9 @@ dependencies = [
 
 [[package]]
 name = "actix-web"
-version = "4.0.0-beta.16"
+version = "4.0.0-beta.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcc9a3e9642e035fe81cb9f7ef7eb98e7a049452d5d65637aebeab89c1849e4c"
+checksum = "a542a92e385844d988b34f1af289dbb0ca927c23740076a56fdf770b1af69fbc"
 dependencies = [
  "actix-codec",
  "actix-http",
@@ -210,7 +210,6 @@ dependencies = [
  "log",
  "mime",
  "once_cell",
- "paste",
  "pin-project-lite",
  "regex",
  "serde 1.0.132",
@@ -236,9 +235,9 @@ dependencies = [
 
 [[package]]
 name = "actix-webfinger"
-version = "0.4.0-beta.4"
+version = "0.4.0-beta.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e12155bbdd3f50992e053ef1293ac02fdd81580d96518355643be5b495ded659"
+checksum = "abfa8f371f4916b318cf23d1c017b366bb8eb145124b247369a4a99bfbe20904"
 dependencies = [
  "actix-rt",
  "actix-web",
@@ -306,7 +305,7 @@ checksum = "84450d0b4a8bd1ba4144ce8ce718fbc5d071358b1e5384bace6536b3d1f2d5b3"
 
 [[package]]
 name = "ap-relay"
-version = "0.3.11"
+version = "0.3.12"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
@@ -434,9 +433,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "awc"
-version = "3.0.0-beta.15"
+version = "3.0.0-beta.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "039b3a6bbb351f9708df0e5db1e96dd0fce84ef8e410a12a77b886f683589737"
+checksum = "2e79692bb8a7966b27f7e908a3bcb46c4ba4eb41ffb736344481b1ace08865d0"
 dependencies = [
  "actix-codec",
  "actix-http",
@@ -1371,9 +1370,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "469898e909a1774d844793b347135a0cd344ca2f69d082013ecb8061a2229a3a"
+checksum = "274353858935c992b13c0ca408752e2121da852d07dec7ce5f108c77dfa14d1f"
 dependencies = [
  "hashbrown",
 ]
@@ -2877,9 +2876,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-actix-web"
-version = "0.5.0-beta.7"
+version = "0.5.0-beta.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f00575e655451448b6ebde455528917498b3e04bdea7616784d807c49dc0491"
+checksum = "da8e6a7393e9b680de78d876f8c1432aebf56f3e70346a4a821160c04677a272"
 dependencies = [
  "actix-web",
  "pin-project",
@@ -2901,9 +2900,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-awc"
-version = "0.1.0-beta.16"
+version = "0.1.0-beta.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f76ec9366c7f4496348c6ff404db91552cfacd8c8a22c053f490d5882619a13f"
+checksum = "18828d9bdc5dcad7bec06d0e0ce86b2aa50f89541f3a02d3239b1d6760e558a1"
 dependencies = [
  "actix-http",
  "actix-service",
@@ -2969,9 +2968,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5e6136799e1079699e0d9784c883e03af55cf6a1bee48fe1d79ca552c1bc36f"
+checksum = "5d81bfa81424cc98cb034b837c985b7a290f592e5b4322f353f94a0ab0f9f594"
 dependencies = [
  "ansi_term",
  "lazy_static",
@@ -3073,9 +3072,9 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "version_check"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
+checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "want"
@@ -3175,9 +3174,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.22.1"
+version = "0.22.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c475786c6f47219345717a043a37ec04cb4bc185e28853adcc4fa0a947eba630"
+checksum = "552ceb903e957524388c4d3475725ff2c8b7960922063af6ce53c9a43da07449"
 dependencies = [
  "webpki",
 ]
