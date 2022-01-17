@@ -10,7 +10,8 @@ use crate::{
     routes::accepted,
 };
 use activitystreams::{
-    activity, base::AnyBase, prelude::*, primitives::OneOrMany, public, url::Url,
+    activity, base::AnyBase, iri_string::types::IriString, prelude::*, primitives::OneOrMany,
+    public,
 };
 use actix_web::{web, HttpResponse};
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
@@ -79,7 +80,7 @@ pub(crate) async fn route(
 fn valid_without_listener(input: &AcceptedActivities) -> Result<bool, Error> {
     match input.kind() {
         Some(ValidTypes::Follow) => Ok(true),
-        Some(ValidTypes::Undo) => Ok(single_object(input.object())?.is_kind("Follow")),
+        Some(ValidTypes::Undo) => Ok(single_object(input.object_unchecked())?.is_kind("Follow")),
         _ => Ok(false),
     }
 }
@@ -90,7 +91,7 @@ fn kind_str(base: &AnyBase) -> Result<&str, Error> {
         .map_err(Into::into)
 }
 
-fn id_string(id: Option<&Url>) -> Result<String, Error> {
+fn id_string(id: Option<&IriString>) -> Result<String, Error> {
     id.map(|s| s.to_string())
         .ok_or(ErrorKind::MissingId)
         .map_err(Into::into)
@@ -101,11 +102,14 @@ fn single_object(o: &OneOrMany<AnyBase>) -> Result<&AnyBase, Error> {
 }
 
 async fn handle_accept(config: &Config, input: AcceptedActivities) -> Result<(), Error> {
-    let base = single_object(input.object())?.clone();
+    let base = single_object(input.object_unchecked())?.clone();
     let follow = if let Some(follow) = activity::Follow::from_any_base(base)? {
         follow
     } else {
-        return Err(ErrorKind::Kind(kind_str(single_object(input.object())?)?.to_owned()).into());
+        return Err(ErrorKind::Kind(
+            kind_str(single_object(input.object_unchecked())?)?.to_owned(),
+        )
+        .into());
     };
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor)) {
@@ -121,11 +125,14 @@ async fn handle_reject(
     input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), Error> {
-    let base = single_object(input.object())?.clone();
+    let base = single_object(input.object_unchecked())?.clone();
     let follow = if let Some(follow) = activity::Follow::from_any_base(base)? {
         follow
     } else {
-        return Err(ErrorKind::Kind(kind_str(single_object(input.object())?)?.to_owned()).into());
+        return Err(ErrorKind::Kind(
+            kind_str(single_object(input.object_unchecked())?)?.to_owned(),
+        )
+        .into());
     };
 
     if !follow.actor_is(&config.generate_url(UrlKind::Actor)) {
@@ -144,7 +151,7 @@ async fn handle_undo(
     actor: Actor,
     is_listener: bool,
 ) -> Result<(), Error> {
-    let any_base = single_object(input.object())?.clone();
+    let any_base = single_object(input.object_unchecked())?.clone();
     let undone_object =
         AcceptedUndoObjects::from_any_base(any_base)?.ok_or(ErrorKind::ObjectFormat)?;
 
@@ -157,12 +164,13 @@ async fn handle_undo(
         }
     }
 
-    let my_id: Url = config.generate_url(UrlKind::Actor);
+    let my_id: IriString = config.generate_url(UrlKind::Actor);
 
     if !undone_object.object_is(&my_id) && !undone_object.object_is(&public()) {
-        return Err(
-            ErrorKind::WrongActor(id_string(undone_object.object().as_single_id())?).into(),
-        );
+        return Err(ErrorKind::WrongActor(id_string(
+            undone_object.object_unchecked().as_single_id(),
+        )?)
+        .into());
     }
 
     if !is_listener {
@@ -189,13 +197,17 @@ async fn handle_announce(
     input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), Error> {
-    let object_id = input.object().as_single_id().ok_or(ErrorKind::MissingId)?;
+    let object_id = input
+        .object_unchecked()
+        .as_single_id()
+        .ok_or(ErrorKind::MissingId)?;
 
     if state.is_cached(object_id).await {
         return Err(ErrorKind::Duplicate.into());
     }
 
-    jobs.queue(Announce::new(object_id.to_owned(), actor)).await?;
+    jobs.queue(Announce::new(object_id.to_owned(), actor))
+        .await?;
 
     Ok(())
 }
@@ -206,10 +218,12 @@ async fn handle_follow(
     input: AcceptedActivities,
     actor: Actor,
 ) -> Result<(), Error> {
-    let my_id: Url = config.generate_url(UrlKind::Actor);
+    let my_id: IriString = config.generate_url(UrlKind::Actor);
 
     if !input.object_is(&my_id) && !input.object_is(&public()) {
-        return Err(ErrorKind::WrongActor(id_string(input.object().as_single_id())?).into());
+        return Err(
+            ErrorKind::WrongActor(id_string(input.object_unchecked().as_single_id())?).into(),
+        );
     }
 
     jobs.queue(Follow::new(input, actor)).await?;

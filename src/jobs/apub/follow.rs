@@ -8,7 +8,7 @@ use crate::{
 use activitystreams::{
     activity::{Accept as AsAccept, Follow as AsFollow},
     prelude::*,
-    url::Url,
+    iri_string::types::IriString,
 };
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
@@ -62,7 +62,7 @@ impl Follow {
 }
 
 // Generate a type that says "I want to follow you"
-fn generate_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsFollow, Error> {
+fn generate_follow(config: &Config, actor_id: &IriString, my_id: &IriString) -> Result<AsFollow, Error> {
     let follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     prepare_activity(
@@ -75,9 +75,9 @@ fn generate_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsFol
 // Generate a type that says "I accept your follow request"
 fn generate_accept_follow(
     config: &Config,
-    actor_id: &Url,
-    input_id: &Url,
-    my_id: &Url,
+    actor_id: &IriString,
+    input_id: &IriString,
+    my_id: &IriString,
 ) -> Result<AsAccept, Error> {
     let mut follow = AsFollow::new(actor_id.clone(), my_id.clone());
 

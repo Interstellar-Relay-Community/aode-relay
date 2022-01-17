@@ -1,7 +1,7 @@
 @use crate::db::Contact;
-@use activitystreams::url::Url;
+@use activitystreams::iri_string::types::IriString;
 
-@(contact: &Contact, base: &Url)
+@(contact: &Contact, base: &IriString)
 
 <div class="admin">
     <div class="left">
@@ -12,7 +12,7 @@
     <div class="right">
         <p class="display-name"><a href="@contact.url">@contact.display_name</a></p>
         <p class="username">
-          @@@contact.username@if let Some(domain) = base.domain() {@@@domain}
+          @@@contact.username@if let Some(authority) = base.authority_str() {@@@authority}
         </p>
     </div>
 </div>

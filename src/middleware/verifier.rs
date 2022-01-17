@@ -4,7 +4,7 @@ use crate::{
     error::{Error, ErrorKind},
     requests::Requests,
 };
-use activitystreams::{base::BaseExt, uri, url::Url};
+use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use rsa::{hash::Hash, padding::PaddingScheme, pkcs8::FromPublicKey, PublicKey, RsaPublicKey};
@@ -23,7 +23,7 @@ impl MyVerify {
         signature: String,
         signing_string: String,
     ) -> Result<bool, Error> {
-        let public_key_id = uri!(key_id);
+        let public_key_id = iri!(key_id);
 
         let actor_id = if let Some(mut actor_id) = self
             .2
@@ -85,8 +85,8 @@ impl MyVerify {
 enum PublicKeyResponse {
     PublicKey {
         #[allow(dead_code)]
-        id: Url,
-        owner: Url,
+        id: IriString,
+        owner: IriString,
         #[allow(dead_code)]
         public_key_pem: String,
     },
@@ -94,7 +94,7 @@ enum PublicKeyResponse {
 }
 
 impl PublicKeyResponse {
-    fn actor_id(&self) -> Option<Url> {
+    fn actor_id(&self) -> Option<IriString> {
         match self {
             PublicKeyResponse::PublicKey { owner, .. } => Some(owner.clone()),
             PublicKeyResponse::Actor(actor) => actor.id_unchecked().cloned(),

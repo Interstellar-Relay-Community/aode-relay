@@ -4,7 +4,13 @@ use crate::{
     middleware::MyVerify,
     requests::Requests,
 };
-use activitystreams::{uri, url::Url};
+use activitystreams::{
+    iri,
+    iri_string::{
+        resolve::FixedBaseResolver,
+        types::{IriAbsoluteString, IriFragmentStr, IriRelativeStr, IriString},
+    },
+};
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
 use sha2::{Digest, Sha256};
@@ -22,8 +28,8 @@ pub(crate) struct ParsedConfig {
     https: bool,
     publish_blocks: bool,
     sled_path: PathBuf,
-    source_repo: Url,
-    opentelemetry_url: Option<Url>,
+    source_repo: IriString,
+    opentelemetry_url: Option<IriString>,
 }
 
 #[derive(Clone)]
@@ -35,12 +41,13 @@ pub struct Config {
     restricted_mode: bool,
     validate_signatures: bool,
     publish_blocks: bool,
-    base_uri: Url,
+    base_uri: IriAbsoluteString,
     sled_path: PathBuf,
-    source_repo: Url,
-    opentelemetry_url: Option<Url>,
+    source_repo: IriString,
+    opentelemetry_url: Option<IriString>,
 }
 
+#[derive(Debug)]
 pub enum UrlKind {
     Activity,
     Actor,
@@ -95,7 +102,7 @@ impl Config {
         let config: ParsedConfig = config.try_into()?;
 
         let scheme = if config.https { "https" } else { "http" };
-        let base_uri = uri!(format!("{}://{}", scheme, config.hostname));
+        let base_uri = iri!(format!("{}://{}", scheme, config.hostname)).into_absolute();
 
         Ok(Config {
             hostname: config.hostname,
@@ -210,33 +217,50 @@ impl Config {
         )
     }
 
-    pub(crate) fn source_code(&self) -> &Url {
+    pub(crate) fn source_code(&self) -> &IriString {
         &self.source_repo
     }
 
-    pub(crate) fn opentelemetry_url(&self) -> Option<&Url> {
+    pub(crate) fn opentelemetry_url(&self) -> Option<&IriString> {
         self.opentelemetry_url.as_ref()
     }
 
-    pub(crate) fn generate_url(&self, kind: UrlKind) -> Url {
-        let mut url = self.base_uri.clone();
+    pub(crate) fn generate_url(&self, kind: UrlKind) -> IriString {
+        self.do_generate_url(kind).expect("Generated valid IRI")
+    }
 
-        match kind {
-            UrlKind::Activity => url.set_path(&format!("activity/{}", Uuid::new_v4())),
-            UrlKind::Actor => url.set_path("actor"),
-            UrlKind::Followers => url.set_path("followers"),
-            UrlKind::Following => url.set_path("following"),
-            UrlKind::Inbox => url.set_path("inbox"),
-            UrlKind::Index => (),
+    #[tracing::instrument(fields(base_uri = tracing::field::debug(&self.base_uri), kind = tracing::field::debug(&kind)))]
+    fn do_generate_url(&self, kind: UrlKind) -> Result<IriString, Error> {
+        let iri = match kind {
+            UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref())?,
+            UrlKind::Actor => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new("actor")?.as_ref())?,
+            UrlKind::Followers => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new("followers")?.as_ref())?,
+            UrlKind::Following => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new("following")?.as_ref())?,
+            UrlKind::Inbox => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new("inbox")?.as_ref())?,
+            UrlKind::Index => self.base_uri.clone().into(),
             UrlKind::MainKey => {
-                url.set_path("actor");
-                url.set_fragment(Some("main-key"));
+                let actor = IriRelativeStr::new("actor")?;
+                let fragment = IriFragmentStr::new("main-key")?;
+
+                let mut resolved =
+                    FixedBaseResolver::new(self.base_uri.as_ref()).resolve(actor.as_ref())?;
+
+                resolved.set_fragment(Some(fragment));
+                resolved
             }
-            UrlKind::Media(uuid) => url.set_path(&format!("media/{}", uuid)),
-            UrlKind::NodeInfo => url.set_path("nodeinfo/2.0.json"),
-            UrlKind::Outbox => url.set_path("outbox"),
+            UrlKind::Media(uuid) => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new(&format!("media/{}", uuid))?.as_ref())?,
+            UrlKind::NodeInfo => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())?,
+            UrlKind::Outbox => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new("outbox")?.as_ref())?,
         };
 
-        url
+        Ok(iri)
     }
 }

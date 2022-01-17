@@ -4,17 +4,16 @@ version = 3
 
 [[package]]
 name = "activitystreams"
-version = "0.7.0-alpha.14"
+version = "0.7.0-alpha.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bcc3fbb392890a1942b1e5cca76cba93c8ed24b5ff50004cc3289afaab3f92c"
+checksum = "31bca51dcfddda6551570371a1c065528050eea2151a29897ac2dad67b5624cb"
 dependencies = [
  "activitystreams-kinds",
- "chrono",
+ "iri-string",
  "mime",
  "serde 1.0.133",
  "serde_json",
- "thiserror",
- "url",
+ "time 0.3.5",
 ]
 
 [[package]]
@@ -30,12 +29,12 @@ dependencies = [
 
 [[package]]
 name = "activitystreams-kinds"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0784e99afd032199d3ed70cefb8eb3a8d1aef15f7f2c4e68d033c4e12bb6079e"
+checksum = "4a762e3441050b51cd0695c1413735cd04195950f50dba8f5da5d7201628fcfc"
 dependencies = [
+ "iri-string",
  "serde 1.0.133",
- "url",
 ]
 
 [[package]]
@@ -318,7 +317,6 @@ dependencies = [
  "awc",
  "background-jobs",
  "base64",
- "chrono",
  "config",
  "console-subscriber",
  "dashmap",
@@ -339,6 +337,7 @@ dependencies = [
  "sled",
  "structopt",
  "thiserror",
+ "time 0.3.5",
  "toml",
  "tracing",
  "tracing-actix-web",
@@ -1254,6 +1253,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "iri-string"
+version = "0.5.0-beta.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08b57553d1be311c9e979117451952d55f1b33366abe5a07f07899dc2f11a4d9"
+dependencies = [
+ "serde 1.0.133",
 ]
 
 [[package]]
@@ -3045,7 +3053,6 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
- "serde 1.0.133",
 ]
 
 [[package]]

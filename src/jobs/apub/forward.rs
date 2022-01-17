@@ -23,7 +23,7 @@ impl Forward {
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let object_id = self
             .input
-            .object()
+            .object_unchecked()
             .as_single_id()
             .ok_or(ErrorKind::MissingId)?;
 
@@ -31,7 +31,8 @@ impl Forward {
 
         state
             .job_server
-            .queue(DeliverMany::new(inboxes, self.input)?).await?;
+            .queue(DeliverMany::new(inboxes, self.input)?)
+            .await?;
 
         Ok(())
     }

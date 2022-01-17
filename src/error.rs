@@ -1,4 +1,4 @@
-use activitystreams::{error::DomainError, url::ParseError};
+use activitystreams::checked::CheckError;
 use actix_web::{
     error::{BlockingError, ResponseError},
     http::StatusCode,
@@ -56,8 +56,11 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't parse key, {0}")]
     Pkcs8(#[from] rsa::pkcs8::Error),
 
-    #[error("Couldn't parse URI, {0}")]
-    Uri(#[from] ParseError),
+    #[error("Couldn't parse IRI, {0}")]
+    ParseIri(#[from] activitystreams::iri_string::validate::Error),
+
+    #[error("Couldn't resolve IRI, {0}")]
+    ResolveIri(#[from] activitystreams::iri_string::resolve::Error),
 
     #[error("Couldn't perform IO, {0}")]
     Io(#[from] io::Error),
@@ -102,7 +105,7 @@ pub(crate) enum ErrorKind {
     CpuCount(#[from] std::num::TryFromIntError),
 
     #[error("{0}")]
-    HostMismatch(#[from] DomainError),
+    HostMismatch(#[from] CheckError),
 
     #[error("Invalid or missing content type")]
     ContentType,
@@ -137,7 +140,7 @@ pub(crate) enum ErrorKind {
     #[error("Input is missing a 'id' field")]
     MissingId,
 
-    #[error("Url is missing a domain")]
+    #[error("IriString is missing a domain")]
     MissingDomain,
 
     #[error("URI is missing domain field")]

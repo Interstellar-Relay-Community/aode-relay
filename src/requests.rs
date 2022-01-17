@@ -1,8 +1,7 @@
 use crate::error::{Error, ErrorKind};
-use activitystreams::url::Url;
+use activitystreams::iri_string::types::IriString;
 use actix_web::{http::header::Date, web::Bytes};
 use awc::Client;
-use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
 use rsa::{hash::Hash, padding::PaddingScheme, RsaPrivateKey};
@@ -16,6 +15,7 @@ use std::{
     },
     time::SystemTime,
 };
+use time::OffsetDateTime;
 use tracing::{debug, info, warn};
 use tracing_awc::Tracing;
 
@@ -31,9 +31,9 @@ impl std::fmt::Debug for Breakers {
 }
 
 impl Breakers {
-    fn should_try(&self, url: &Url) -> bool {
-        if let Some(domain) = url.domain() {
-            if let Some(breaker) = self.inner.get(domain) {
+    fn should_try(&self, url: &IriString) -> bool {
+        if let Some(authority) = url.authority_str() {
+            if let Some(breaker) = self.inner.get(authority) {
                 breaker.should_try()
             } else {
                 true
@@ -43,10 +43,10 @@ impl Breakers {
         }
     }
 
-    fn fail(&self, url: &Url) {
-        if let Some(domain) = url.domain() {
+    fn fail(&self, url: &IriString) {
+        if let Some(authority) = url.authority_str() {
             let should_write = {
-                if let Some(mut breaker) = self.inner.get_mut(domain) {
+                if let Some(mut breaker) = self.inner.get_mut(authority) {
                     breaker.fail();
                     false
                 } else {
@@ -55,16 +55,16 @@ impl Breakers {
             };
 
             if should_write {
-                let mut breaker = self.inner.entry(domain.to_owned()).or_default();
+                let mut breaker = self.inner.entry(authority.to_owned()).or_default();
                 breaker.fail();
             }
         }
     }
 
-    fn succeed(&self, url: &Url) {
-        if let Some(domain) = url.domain() {
+    fn succeed(&self, url: &IriString) {
+        if let Some(authority) = url.authority_str() {
             let should_write = {
-                if let Some(mut breaker) = self.inner.get_mut(domain) {
+                if let Some(mut breaker) = self.inner.get_mut(authority) {
                     breaker.succeed();
                     false
                 } else {
@@ -73,7 +73,7 @@ impl Breakers {
             };
 
             if should_write {
-                let mut breaker = self.inner.entry(domain.to_owned()).or_default();
+                let mut breaker = self.inner.entry(authority.to_owned()).or_default();
                 breaker.succeed();
             }
         }
@@ -91,8 +91,8 @@ impl Default for Breakers {
 #[derive(Debug)]
 struct Breaker {
     failures: usize,
-    last_attempt: DateTime<Utc>,
-    last_success: DateTime<Utc>,
+    last_attempt: OffsetDateTime,
+    last_success: OffsetDateTime,
 }
 
 impl Breaker {
@@ -100,30 +100,30 @@ impl Breaker {
         10
     }
 
-    fn failure_wait() -> chrono::Duration {
-        chrono::Duration::days(1)
+    fn failure_wait() -> time::Duration {
+        time::Duration::days(1)
     }
 
     fn should_try(&self) -> bool {
         self.failures < Self::failure_threshold()
-            || self.last_attempt + Self::failure_wait() < Utc::now()
+            || self.last_attempt + Self::failure_wait() < OffsetDateTime::now_utc()
     }
 
     fn fail(&mut self) {
         self.failures += 1;
-        self.last_attempt = Utc::now();
+        self.last_attempt = OffsetDateTime::now_utc();
     }
 
     fn succeed(&mut self) {
         self.failures = 0;
-        self.last_attempt = Utc::now();
-        self.last_success = Utc::now();
+        self.last_attempt = OffsetDateTime::now_utc();
+        self.last_success = OffsetDateTime::now_utc();
     }
 }
 
 impl Default for Breaker {
     fn default() -> Self {
-        let now = Utc::now();
+        let now = OffsetDateTime::now_utc();
 
         Breaker {
             failures: 0,
@@ -217,7 +217,7 @@ impl Requests {
     where
         T: serde::de::DeserializeOwned,
     {
-        let parsed_url = url.parse::<Url>()?;
+        let parsed_url = url.parse::<IriString>()?;
 
         if !self.breakers.should_try(&parsed_url) {
             return Err(ErrorKind::Breaker.into());
@@ -274,7 +274,7 @@ impl Requests {
 
     #[tracing::instrument(name = "Fetch Bytes")]
     pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), Error> {
-        let parsed_url = url.parse::<Url>()?;
+        let parsed_url = url.parse::<IriString>()?;
 
         if !self.breakers.should_try(&parsed_url) {
             return Err(ErrorKind::Breaker.into());
@@ -346,7 +346,7 @@ impl Requests {
         "Deliver to Inbox",
         fields(self, inbox = inbox.to_string().as_str(), item)
     )]
-    pub(crate) async fn deliver<T>(&self, inbox: Url, item: &T) -> Result<(), Error>
+    pub(crate) async fn deliver<T>(&self, inbox: IriString, item: &T) -> Result<(), Error>
     where
         T: serde::ser::Serialize + std::fmt::Debug,
     {

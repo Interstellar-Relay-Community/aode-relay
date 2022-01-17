@@ -7,9 +7,9 @@ use crate::{
 use activitystreams::{
     activity::{Follow as AsFollow, Undo as AsUndo},
     context,
+    iri_string::types::IriString,
     prelude::*,
     security,
-    url::Url,
 };
 use std::convert::TryInto;
 
@@ -23,16 +23,23 @@ pub(crate) use self::{
     announce::Announce, follow::Follow, forward::Forward, reject::Reject, undo::Undo,
 };
 
-async fn get_inboxes(state: &State, actor: &Actor, object_id: &Url) -> Result<Vec<Url>, Error> {
-    let domain = object_id.host().ok_or(ErrorKind::Domain)?.to_string();
+async fn get_inboxes(
+    state: &State,
+    actor: &Actor,
+    object_id: &IriString,
+) -> Result<Vec<IriString>, Error> {
+    let authority = object_id
+        .authority_str()
+        .ok_or(ErrorKind::Domain)?
+        .to_string();
 
-    state.inboxes_without(&actor.inbox, &domain).await
+    state.inboxes_without(&actor.inbox, &authority).await
 }
 
 fn prepare_activity<T, U, V, Kind>(
     mut t: T,
-    id: impl TryInto<Url, Error = U>,
-    to: impl TryInto<Url, Error = V>,
+    id: impl TryInto<IriString, Error = U>,
+    to: impl TryInto<IriString, Error = V>,
 ) -> Result<T, Error>
 where
     T: ObjectExt<Kind> + BaseExt<Kind>,
@@ -45,7 +52,11 @@ where
 }
 
 // Generate a type that says "I want to stop following you"
-fn generate_undo_follow(config: &Config, actor_id: &Url, my_id: &Url) -> Result<AsUndo, Error> {
+fn generate_undo_follow(
+    config: &Config,
+    actor_id: &IriString,
+    my_id: &IriString,
+) -> Result<AsUndo, Error> {
     let mut follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     follow.set_id(config.generate_url(UrlKind::Activity));

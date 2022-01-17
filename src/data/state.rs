@@ -5,7 +5,7 @@ use crate::{
     error::Error,
     requests::{Breakers, Requests},
 };
-use activitystreams::url::Url;
+use activitystreams::iri_string::types::IriString;
 use actix_web::web;
 use async_rwlock::RwLock;
 use lru::LruCache;
@@ -18,7 +18,7 @@ use tracing::info;
 pub struct State {
     pub(crate) public_key: RsaPublicKey,
     private_key: RsaPrivateKey,
-    object_cache: Arc<RwLock<LruCache<Url, Url>>>,
+    object_cache: Arc<RwLock<LruCache<IriString, IriString>>>,
     node_cache: NodeCache,
     breakers: Breakers,
     pub(crate) db: Db,
@@ -52,22 +52,22 @@ impl State {
         name = "Get inboxes for other domains",
         fields(
             existing_inbox = existing_inbox.to_string().as_str(),
-            domain
+            authority
         )
     )]
     pub(crate) async fn inboxes_without(
         &self,
-        existing_inbox: &Url,
-        domain: &str,
-    ) -> Result<Vec<Url>, Error> {
+        existing_inbox: &IriString,
+        authority: &str,
+    ) -> Result<Vec<IriString>, Error> {
         Ok(self
             .db
             .inboxes()
             .await?
             .iter()
             .filter_map(|inbox| {
-                if let Some(dom) = inbox.domain() {
-                    if inbox != existing_inbox && dom != domain {
+                if let Some(authority_str) = inbox.authority_str() {
+                    if inbox != existing_inbox && authority_str != authority {
                         return Some(inbox.clone());
                     }
                 }
@@ -77,11 +77,11 @@ impl State {
             .collect())
     }
 
-    pub(crate) async fn is_cached(&self, object_id: &Url) -> bool {
+    pub(crate) async fn is_cached(&self, object_id: &IriString) -> bool {
         self.object_cache.read().await.contains(object_id)
     }
 
-    pub(crate) async fn cache(&self, object_id: Url, actor_id: Url) {
+    pub(crate) async fn cache(&self, object_id: IriString, actor_id: IriString) {
         self.object_cache.write().await.put(object_id, actor_id);
     }
 

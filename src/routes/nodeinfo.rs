@@ -57,7 +57,7 @@ pub(crate) async fn route(
                 .await
                 .unwrap_or_default()
                 .iter()
-                .filter_map(|listener| listener.domain())
+                .filter_map(|listener| listener.authority_str())
                 .map(|s| s.to_owned())
                 .collect(),
             blocks: if config.publish_blocks() {

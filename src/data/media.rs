@@ -2,7 +2,7 @@ use crate::{
     db::{Db, MediaMeta},
     error::Error,
 };
-use activitystreams::url::Url;
+use activitystreams::iri_string::types::IriString;
 use actix_web::web::Bytes;
 use std::time::{Duration, SystemTime};
 use uuid::Uuid;
@@ -20,12 +20,12 @@ impl MediaCache {
     }
 
     #[tracing::instrument(name = "Get media uuid", fields(url = url.to_string().as_str()))]
-    pub(crate) async fn get_uuid(&self, url: Url) -> Result<Option<Uuid>, Error> {
+    pub(crate) async fn get_uuid(&self, url: IriString) -> Result<Option<Uuid>, Error> {
         self.db.media_id(url).await
     }
 
     #[tracing::instrument(name = "Get media url")]
-    pub(crate) async fn get_url(&self, uuid: Uuid) -> Result<Option<Url>, Error> {
+    pub(crate) async fn get_url(&self, uuid: Uuid) -> Result<Option<IriString>, Error> {
         self.db.media_url(uuid).await
     }
 
@@ -56,7 +56,7 @@ impl MediaCache {
     }
 
     #[tracing::instrument(name = "Store media url", fields(url = url.to_string().as_str()))]
-    pub(crate) async fn store_url(&self, url: Url) -> Result<Uuid, Error> {
+    pub(crate) async fn store_url(&self, url: IriString) -> Result<Uuid, Error> {
         let uuid = Uuid::new_v4();
 
         self.db.save_url(url, uuid).await?;

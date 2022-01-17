@@ -1,11 +1,11 @@
 @use crate::db::Info;
-@use activitystreams::url::Url;
+@use activitystreams::iri_string::types::IriString;
 
-@(info: &Info, base: &Url)
+@(info: &Info, base: &IriString)
 
 <article class="info">
-    @if let Some(domain) = base.domain() {
-        <h4 class="padded"><a href="@base">@domain</a></h4>
+    @if let Some(authority) = base.authority_str() {
+        <h4 class="padded"><a href="@base">@authority</a></h4>
     }
     <p class="padded">
         Running @info.software, version @info.version.

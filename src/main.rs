@@ -1,7 +1,7 @@
 // need this for ructe
 #![allow(clippy::needless_borrow)]
 
-use activitystreams::url::Url;
+use activitystreams::iri_string::types::IriString;
 use actix_web::{web, App, HttpServer};
 use console_subscriber::ConsoleLayer;
 use opentelemetry::{sdk::Resource, KeyValue};
@@ -34,7 +34,7 @@ use self::{
 
 fn init_subscriber(
     software_name: &'static str,
-    opentelemetry_url: Option<&Url>,
+    opentelemetry_url: Option<&IriString>,
 ) -> Result<(), anyhow::Error> {
     LogTracer::init()?;
 

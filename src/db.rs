@@ -1,5 +1,8 @@
-use crate::{config::Config, error::Error};
-use activitystreams::url::Url;
+use crate::{
+    config::Config,
+    error::{Error, ErrorKind},
+};
+use activitystreams::iri_string::types::IriString;
 use actix_web::web::Bytes;
 use rsa::{
     pkcs8::{FromPrivateKey, ToPrivateKey},
@@ -41,10 +44,10 @@ impl std::fmt::Debug for Inner {
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub struct Actor {
-    pub(crate) id: Url,
+    pub(crate) id: IriString,
     pub(crate) public_key: String,
-    pub(crate) public_key_id: Url,
-    pub(crate) inbox: Url,
+    pub(crate) public_key_id: IriString,
+    pub(crate) inbox: IriString,
     pub(crate) saved_at: SystemTime,
 }
 
@@ -88,8 +91,8 @@ pub struct Instance {
 pub struct Contact {
     pub(crate) username: String,
     pub(crate) display_name: String,
-    pub(crate) url: Url,
-    pub(crate) avatar: Url,
+    pub(crate) url: IriString,
+    pub(crate) avatar: IriString,
     pub(crate) updated: SystemTime,
 }
 
@@ -106,7 +109,10 @@ impl std::fmt::Debug for Contact {
 }
 
 impl Inner {
-    fn connected_by_domain(&self, domains: &[String]) -> impl DoubleEndedIterator<Item = Url> {
+    fn connected_by_domain(
+        &self,
+        domains: &[String],
+    ) -> impl DoubleEndedIterator<Item = IriString> {
         let reversed: Vec<_> = domains.iter().map(|s| domain_key(s.as_str())).collect();
 
         self.connected_actor_ids
@@ -115,7 +121,7 @@ impl Inner {
             .filter_map(|res| res.ok())
             .filter_map(url_from_ivec)
             .filter_map(move |url| {
-                let connected_domain = url.domain()?;
+                let connected_domain = url.authority_str()?;
                 let connected_rdnn = domain_key(connected_domain);
 
                 for rdnn in &reversed {
@@ -136,7 +142,7 @@ impl Inner {
             .map(|s| String::from_utf8_lossy(&s).to_string())
     }
 
-    fn connected(&self) -> impl DoubleEndedIterator<Item = Url> {
+    fn connected(&self) -> impl DoubleEndedIterator<Item = IriString> {
         self.connected_actor_ids
             .iter()
             .values()
@@ -156,7 +162,7 @@ impl Inner {
             })
     }
 
-    fn connected_info(&self) -> impl DoubleEndedIterator<Item = (Url, Info)> + '_ {
+    fn connected_info(&self) -> impl DoubleEndedIterator<Item = (IriString, Info)> + '_ {
         self.connected_actor_ids
             .iter()
             .values()
@@ -170,7 +176,7 @@ impl Inner {
             })
     }
 
-    fn connected_instance(&self) -> impl DoubleEndedIterator<Item = (Url, Instance)> + '_ {
+    fn connected_instance(&self) -> impl DoubleEndedIterator<Item = (IriString, Instance)> + '_ {
         self.connected_actor_ids
             .iter()
             .values()
@@ -184,7 +190,7 @@ impl Inner {
             })
     }
 
-    fn connected_contact(&self) -> impl DoubleEndedIterator<Item = (Url, Contact)> + '_ {
+    fn connected_contact(&self) -> impl DoubleEndedIterator<Item = (IriString, Contact)> + '_ {
         self.connected_actor_ids
             .iter()
             .values()
@@ -198,9 +204,9 @@ impl Inner {
             })
     }
 
-    fn is_allowed(&self, domain: &str) -> bool {
-        let prefix = domain_prefix(domain);
-        let reverse_domain = domain_key(domain);
+    fn is_allowed(&self, authority: &str) -> bool {
+        let prefix = domain_prefix(authority);
+        let reverse_domain = domain_key(authority);
 
         if self.restricted_mode {
             self.allowed_domains
@@ -263,11 +269,11 @@ impl Db {
         Ok(t)
     }
 
-    pub(crate) async fn connected_ids(&self) -> Result<Vec<Url>, Error> {
+    pub(crate) async fn connected_ids(&self) -> Result<Vec<IriString>, Error> {
         self.unblock(|inner| Ok(inner.connected().collect())).await
     }
 
-    pub(crate) async fn save_info(&self, actor_id: Url, info: Info) -> Result<(), Error> {
+    pub(crate) async fn save_info(&self, actor_id: IriString, info: Info) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&info)?;
 
@@ -280,7 +286,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn info(&self, actor_id: Url) -> Result<Option<Info>, Error> {
+    pub(crate) async fn info(&self, actor_id: IriString) -> Result<Option<Info>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_info.get(actor_id.as_str().as_bytes())? {
                 let info = serde_json::from_slice(&ivec)?;
@@ -292,14 +298,14 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn connected_info(&self) -> Result<HashMap<Url, Info>, Error> {
+    pub(crate) async fn connected_info(&self) -> Result<HashMap<IriString, Info>, Error> {
         self.unblock(|inner| Ok(inner.connected_info().collect()))
             .await
     }
 
     pub(crate) async fn save_instance(
         &self,
-        actor_id: Url,
+        actor_id: IriString,
         instance: Instance,
     ) -> Result<(), Error> {
         self.unblock(move |inner| {
@@ -314,7 +320,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn instance(&self, actor_id: Url) -> Result<Option<Instance>, Error> {
+    pub(crate) async fn instance(&self, actor_id: IriString) -> Result<Option<Instance>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_instance.get(actor_id.as_str().as_bytes())? {
                 let instance = serde_json::from_slice(&ivec)?;
@@ -326,12 +332,16 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn connected_instance(&self) -> Result<HashMap<Url, Instance>, Error> {
+    pub(crate) async fn connected_instance(&self) -> Result<HashMap<IriString, Instance>, Error> {
         self.unblock(|inner| Ok(inner.connected_instance().collect()))
             .await
     }
 
-    pub(crate) async fn save_contact(&self, actor_id: Url, contact: Contact) -> Result<(), Error> {
+    pub(crate) async fn save_contact(
+        &self,
+        actor_id: IriString,
+        contact: Contact,
+    ) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&contact)?;
 
@@ -344,7 +354,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn contact(&self, actor_id: Url) -> Result<Option<Contact>, Error> {
+    pub(crate) async fn contact(&self, actor_id: IriString) -> Result<Option<Contact>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_contact.get(actor_id.as_str().as_bytes())? {
                 let contact = serde_json::from_slice(&ivec)?;
@@ -356,12 +366,12 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn connected_contact(&self) -> Result<HashMap<Url, Contact>, Error> {
+    pub(crate) async fn connected_contact(&self) -> Result<HashMap<IriString, Contact>, Error> {
         self.unblock(|inner| Ok(inner.connected_contact().collect()))
             .await
     }
 
-    pub(crate) async fn save_url(&self, url: Url, id: Uuid) -> Result<(), Error> {
+    pub(crate) async fn save_url(&self, url: IriString, id: Uuid) -> Result<(), Error> {
         self.unblock(move |inner| {
             inner
                 .media_id_media_url
@@ -393,7 +403,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn media_id(&self, url: Url) -> Result<Option<Uuid>, Error> {
+    pub(crate) async fn media_id(&self, url: IriString) -> Result<Option<Uuid>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_url_media_id.get(url.as_str().as_bytes())? {
                 Ok(uuid_from_ivec(ivec))
@@ -404,7 +414,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn media_url(&self, id: Uuid) -> Result<Option<Url>, Error> {
+    pub(crate) async fn media_url(&self, id: Uuid) -> Result<Option<IriString>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_id_media_url.get(id.as_bytes())? {
                 Ok(url_from_ivec(ivec))
@@ -442,24 +452,22 @@ impl Db {
         self.unblock(|inner| Ok(inner.blocks().collect())).await
     }
 
-    pub(crate) async fn inboxes(&self) -> Result<Vec<Url>, Error> {
+    pub(crate) async fn inboxes(&self) -> Result<Vec<IriString>, Error> {
         self.unblock(|inner| Ok(inner.connected_actors().map(|actor| actor.inbox).collect()))
             .await
     }
 
-    pub(crate) async fn is_connected(&self, mut id: Url) -> Result<bool, Error> {
-        id.set_path("");
-        id.set_query(None);
-        id.set_fragment(None);
+    pub(crate) async fn is_connected(&self, base_id: IriString) -> Result<bool, Error> {
+        let scheme = base_id.scheme_str();
+        let authority = base_id.authority_str().ok_or(ErrorKind::MissingDomain)?;
+        let prefix = format!("{}://{}", scheme, authority);
 
         self.unblock(move |inner| {
             let connected = inner
                 .connected_actor_ids
-                .scan_prefix(id.as_str().as_bytes())
+                .scan_prefix(prefix.as_bytes())
                 .values()
-                .filter_map(|res| res.ok())
-                .next()
-                .is_some();
+                .any(|res| res.is_ok());
 
             Ok(connected)
         })
@@ -468,8 +476,8 @@ impl Db {
 
     pub(crate) async fn actor_id_from_public_key_id(
         &self,
-        public_key_id: Url,
-    ) -> Result<Option<Url>, Error> {
+        public_key_id: IriString,
+    ) -> Result<Option<IriString>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner
                 .public_key_id_actor_id
@@ -483,7 +491,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn actor(&self, actor_id: Url) -> Result<Option<Actor>, Error> {
+    pub(crate) async fn actor(&self, actor_id: IriString) -> Result<Option<Actor>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.actor_id_actor.get(actor_id.as_str().as_bytes())? {
                 let actor = serde_json::from_slice(&ivec)?;
@@ -511,7 +519,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn remove_connection(&self, actor_id: Url) -> Result<(), Error> {
+    pub(crate) async fn remove_connection(&self, actor_id: IriString) -> Result<(), Error> {
         tracing::debug!("Removing Connection: {}", actor_id);
         self.unblock(move |inner| {
             inner
@@ -523,7 +531,7 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn add_connection(&self, actor_id: Url) -> Result<(), Error> {
+    pub(crate) async fn add_connection(&self, actor_id: IriString) -> Result<(), Error> {
         tracing::debug!("Adding Connection: {}", actor_id);
         self.unblock(move |inner| {
             inner
@@ -543,11 +551,11 @@ impl Db {
                     .remove(connected.as_str().as_bytes())?;
             }
 
-            for domain in &domains {
+            for authority in &domains {
                 inner
                     .blocked_domains
-                    .insert(domain_key(domain), domain.as_bytes())?;
-                inner.allowed_domains.remove(domain_key(domain))?;
+                    .insert(domain_key(authority), authority.as_bytes())?;
+                inner.allowed_domains.remove(domain_key(authority))?;
             }
 
             Ok(())
@@ -557,8 +565,8 @@ impl Db {
 
     pub(crate) async fn remove_blocks(&self, domains: Vec<String>) -> Result<(), Error> {
         self.unblock(move |inner| {
-            for domain in &domains {
-                inner.blocked_domains.remove(domain_key(domain))?;
+            for authority in &domains {
+                inner.blocked_domains.remove(domain_key(authority))?;
             }
 
             Ok(())
@@ -568,10 +576,10 @@ impl Db {
 
     pub(crate) async fn add_allows(&self, domains: Vec<String>) -> Result<(), Error> {
         self.unblock(move |inner| {
-            for domain in &domains {
+            for authority in &domains {
                 inner
                     .allowed_domains
-                    .insert(domain_key(domain), domain.as_bytes())?;
+                    .insert(domain_key(authority), authority.as_bytes())?;
             }
 
             Ok(())
@@ -589,8 +597,8 @@ impl Db {
                 }
             }
 
-            for domain in &domains {
-                inner.allowed_domains.remove(domain_key(domain))?;
+            for authority in &domains {
+                inner.allowed_domains.remove(domain_key(authority))?;
             }
 
             Ok(())
@@ -598,10 +606,10 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn is_allowed(&self, url: Url) -> Result<bool, Error> {
+    pub(crate) async fn is_allowed(&self, url: IriString) -> Result<bool, Error> {
         self.unblock(move |inner| {
-            if let Some(domain) = url.domain() {
-                Ok(inner.is_allowed(domain))
+            if let Some(authority) = url.authority_str() {
+                Ok(inner.is_allowed(authority))
             } else {
                 Ok(false)
             }
@@ -639,12 +647,12 @@ impl Db {
     }
 }
 
-fn domain_key(domain: &str) -> String {
-    domain.split('.').rev().collect::<Vec<_>>().join(".") + "."
+fn domain_key(authority: &str) -> String {
+    authority.split('.').rev().collect::<Vec<_>>().join(".") + "."
 }
 
-fn domain_prefix(domain: &str) -> String {
-    domain
+fn domain_prefix(authority: &str) -> String {
+    authority
         .split('.')
         .rev()
         .take(2)
@@ -653,8 +661,8 @@ fn domain_prefix(domain: &str) -> String {
         + "."
 }
 
-fn url_from_ivec(ivec: sled::IVec) -> Option<Url> {
-    String::from_utf8_lossy(&ivec).parse::<Url>().ok()
+fn url_from_ivec(ivec: sled::IVec) -> Option<IriString> {
+    String::from_utf8_lossy(&ivec).parse::<IriString>().ok()
 }
 
 fn uuid_from_ivec(ivec: sled::IVec) -> Option<Uuid> {
@@ -664,14 +672,14 @@ fn uuid_from_ivec(ivec: sled::IVec) -> Option<Uuid> {
 #[cfg(test)]
 mod tests {
     use super::Db;
-    use activitystreams::url::Url;
+    use activitystreams::iri_string::types::IriString;
     use std::future::Future;
 
     #[test]
     fn connect_and_verify() {
         run(|db| async move {
-            let example_actor: Url = "http://example.com/actor".parse().unwrap();
-            let example_sub_actor: Url = "http://example.com/users/fake".parse().unwrap();
+            let example_actor: IriString = "http://example.com/actor".parse().unwrap();
+            let example_sub_actor: IriString = "http://example.com/users/fake".parse().unwrap();
             db.add_connection(example_actor.clone()).await.unwrap();
             assert!(db.is_connected(example_sub_actor).await.unwrap());
         })
@@ -680,8 +688,8 @@ mod tests {
     #[test]
     fn disconnect_and_verify() {
         run(|db| async move {
-            let example_actor: Url = "http://example.com/actor".parse().unwrap();
-            let example_sub_actor: Url = "http://example.com/users/fake".parse().unwrap();
+            let example_actor: IriString = "http://example.com/actor".parse().unwrap();
+            let example_sub_actor: IriString = "http://example.com/users/fake".parse().unwrap();
             db.add_connection(example_actor.clone()).await.unwrap();
             assert!(db.is_connected(example_sub_actor.clone()).await.unwrap());
 
@@ -693,7 +701,7 @@ mod tests {
     #[test]
     fn connected_actor_in_connected_list() {
         run(|db| async move {
-            let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            let example_actor: IriString = "http://example.com/actor".parse().unwrap();
             db.add_connection(example_actor.clone()).await.unwrap();
 
             assert!(db.connected_ids().await.unwrap().contains(&example_actor));
@@ -703,7 +711,7 @@ mod tests {
     #[test]
     fn disconnected_actor_not_in_connected_list() {
         run(|db| async move {
-            let example_actor: Url = "http://example.com/actor".parse().unwrap();
+            let example_actor: IriString = "http://example.com/actor".parse().unwrap();
             db.add_connection(example_actor.clone()).await.unwrap();
             db.remove_connection(example_actor.clone()).await.unwrap();
 

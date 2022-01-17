@@ -1,11 +1,11 @@
 use crate::{error::Error, jobs::JobState};
-use activitystreams::url::Url;
+use activitystreams::iri_string::types::IriString;
 use background_jobs::{ActixJob, Backoff};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Deliver {
-    to: Url,
+    to: IriString,
     data: serde_json::Value,
 }
 
@@ -19,7 +19,7 @@ impl std::fmt::Debug for Deliver {
 }
 
 impl Deliver {
-    pub(crate) fn new<T>(to: Url, data: T) -> Result<Self, Error>
+    pub(crate) fn new<T>(to: IriString, data: T) -> Result<Self, Error>
     where
         T: serde::ser::Serialize,
     {

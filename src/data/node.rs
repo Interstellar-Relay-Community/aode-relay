@@ -1,8 +1,8 @@
 use crate::{
     db::{Contact, Db, Info, Instance},
-    error::Error,
+    error::{Error, ErrorKind},
 };
-use activitystreams::url::Url;
+use activitystreams::{iri, iri_string::types::IriString};
 use std::time::{Duration, SystemTime};
 
 #[derive(Clone, Debug)]
@@ -12,7 +12,7 @@ pub struct NodeCache {
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub struct Node {
-    pub(crate) base: Url,
+    pub(crate) base: IriString,
     pub(crate) info: Option<Info>,
     pub(crate) instance: Option<Instance>,
     pub(crate) contact: Option<Contact>,
@@ -50,18 +50,15 @@ impl NodeCache {
                 let instance = instances.get(&actor_id).cloned();
                 let contact = contacts.get(&actor_id).cloned();
 
-                Node::new(actor_id)
-                    .info(info)
-                    .instance(instance)
-                    .contact(contact)
+                Node::new(actor_id).map(|node| node.info(info).instance(instance).contact(contact))
             })
-            .collect();
+            .collect::<Result<Vec<Node>, Error>>()?;
 
         Ok(vec)
     }
 
     #[tracing::instrument(name = "Is NodeInfo Outdated", fields(actor_id = actor_id.to_string().as_str()))]
-    pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: Url) -> bool {
+    pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .info(actor_id)
             .await
@@ -70,7 +67,7 @@ impl NodeCache {
     }
 
     #[tracing::instrument(name = "Is Contact Outdated", fields(actor_id = actor_id.to_string().as_str()))]
-    pub(crate) async fn is_contact_outdated(&self, actor_id: Url) -> bool {
+    pub(crate) async fn is_contact_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .contact(actor_id)
             .await
@@ -79,7 +76,7 @@ impl NodeCache {
     }
 
     #[tracing::instrument(name = "Is Instance Outdated", fields(actor_id = actor_id.to_string().as_str()))]
-    pub(crate) async fn is_instance_outdated(&self, actor_id: Url) -> bool {
+    pub(crate) async fn is_instance_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .instance(actor_id)
             .await
@@ -90,7 +87,7 @@ impl NodeCache {
     #[tracing::instrument(name = "Save node info", fields(actor_id = actor_id.to_string().as_str(), software, version, reg))]
     pub(crate) async fn set_info(
         &self,
-        actor_id: Url,
+        actor_id: IriString,
         software: String,
         version: String,
         reg: bool,
@@ -121,7 +118,7 @@ impl NodeCache {
     )]
     pub(crate) async fn set_instance(
         &self,
-        actor_id: Url,
+        actor_id: IriString,
         title: String,
         description: String,
         version: String,
@@ -155,11 +152,11 @@ impl NodeCache {
     )]
     pub(crate) async fn set_contact(
         &self,
-        actor_id: Url,
+        actor_id: IriString,
         username: String,
         display_name: String,
-        url: Url,
-        avatar: Url,
+        url: IriString,
+        avatar: IriString,
     ) -> Result<(), Error> {
         self.db
             .save_contact(
@@ -177,17 +174,18 @@ impl NodeCache {
 }
 
 impl Node {
-    fn new(mut url: Url) -> Self {
-        url.set_fragment(None);
-        url.set_query(None);
-        url.set_path("");
+    fn new(url: IriString) -> Result<Self, Error> {
+        let authority = url.authority_str().ok_or(ErrorKind::MissingDomain)?;
+        let scheme = url.scheme_str();
 
-        Node {
-            base: url,
+        let base = iri!(format!("{}://{}", scheme, authority));
+
+        Ok(Node {
+            base,
             info: None,
             instance: None,
             contact: None,
-        }
+        })
     }
 
     fn info(mut self, info: Option<Info>) -> Self {

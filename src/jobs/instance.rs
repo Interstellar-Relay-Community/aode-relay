@@ -1,15 +1,15 @@
 use crate::{
     config::UrlKind,
-    error::Error,
+    error::{Error, ErrorKind},
     jobs::{cache_media::CacheMedia, JobState},
 };
-use activitystreams::url::Url;
+use activitystreams::{iri, iri_string::types::IriString};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryInstance {
-    actor_id: Url,
+    actor_id: IriString,
 }
 
 impl std::fmt::Debug for QueryInstance {
@@ -21,7 +21,7 @@ impl std::fmt::Debug for QueryInstance {
 }
 
 impl QueryInstance {
-    pub(crate) fn new(actor_id: Url) -> Self {
+    pub(crate) fn new(actor_id: IriString) -> Self {
         QueryInstance { actor_id }
     }
 
@@ -40,10 +40,12 @@ impl QueryInstance {
             return Ok(());
         }
 
-        let mut instance_uri = self.actor_id.clone();
-        instance_uri.set_fragment(None);
-        instance_uri.set_query(None);
-        instance_uri.set_path("api/v1/instance");
+        let authority = self
+            .actor_id
+            .authority_str()
+            .ok_or(ErrorKind::MissingDomain)?;
+        let scheme = self.actor_id.scheme_str();
+        let instance_uri = iri!(format!("{}://{}/api/v1/instance", scheme, authority));
 
         let instance = state
             .requests
@@ -132,6 +134,6 @@ struct Instance {
 struct Contact {
     username: String,
     display_name: String,
-    url: Url,
-    avatar: Url,
+    url: IriString,
+    avatar: IriString,
 }

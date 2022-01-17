@@ -3,14 +3,14 @@ use crate::{
     error::{Error, ErrorKind},
     jobs::JobState,
 };
-use activitystreams::{object::Image, prelude::*, url::Url};
+use activitystreams::{object::Image, prelude::*, iri_string::types::IriString};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryContact {
-    actor_id: Url,
-    contact_id: Url,
+    actor_id: IriString,
+    contact_id: IriString,
 }
 
 impl std::fmt::Debug for QueryContact {
@@ -23,7 +23,7 @@ impl std::fmt::Debug for QueryContact {
 }
 
 impl QueryContact {
-    pub(crate) fn new(actor_id: Url, contact_id: Url) -> Self {
+    pub(crate) fn new(actor_id: IriString, contact_id: IriString) -> Self {
         QueryContact {
             actor_id,
             contact_id,
@@ -57,7 +57,7 @@ impl QueryContact {
     }
 }
 
-fn to_contact(contact: AcceptedActors) -> Option<(String, String, Url, Url)> {
+fn to_contact(contact: AcceptedActors) -> Option<(String, String, IriString, IriString)> {
     let username = contact.preferred_username()?.to_owned();
     let display_name = contact.name()?.as_one()?.as_xsd_string()?.to_owned();
 

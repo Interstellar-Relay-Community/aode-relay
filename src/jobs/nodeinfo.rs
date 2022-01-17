@@ -1,14 +1,14 @@
 use crate::{
-    error::Error,
+    error::{Error, ErrorKind},
     jobs::{JobState, QueryContact},
 };
-use activitystreams::url::Url;
+use activitystreams::{iri, iri_string::types::IriString};
 use background_jobs::ActixJob;
 use std::{fmt::Debug, future::Future, pin::Pin};
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryNodeinfo {
-    actor_id: Url,
+    actor_id: IriString,
 }
 
 impl Debug for QueryNodeinfo {
@@ -20,7 +20,7 @@ impl Debug for QueryNodeinfo {
 }
 
 impl QueryNodeinfo {
-    pub(crate) fn new(actor_id: Url) -> Self {
+    pub(crate) fn new(actor_id: IriString) -> Self {
         QueryNodeinfo { actor_id }
     }
 
@@ -34,10 +34,12 @@ impl QueryNodeinfo {
             return Ok(());
         }
 
-        let mut well_known_uri = self.actor_id.clone();
-        well_known_uri.set_fragment(None);
-        well_known_uri.set_query(None);
-        well_known_uri.set_path(".well-known/nodeinfo");
+        let authority = self
+            .actor_id
+            .authority_str()
+            .ok_or(ErrorKind::MissingDomain)?;
+        let scheme = self.actor_id.scheme_str();
+        let well_known_uri = iri!(format!("{}://{}/.well-known/nodeinfo", scheme, authority));
 
         let well_known = state
             .requests
@@ -100,7 +102,7 @@ struct Nodeinfo {
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Metadata {
-    staff_accounts: Option<Vec<Url>>,
+    staff_accounts: Option<Vec<IriString>>,
 }
 
 #[derive(serde::Deserialize)]
@@ -202,7 +204,7 @@ impl<'de> serde::de::Deserialize<'de> for SupportedNodeinfo {
 #[cfg(test)]
 mod tests {
     use super::{Nodeinfo, WellKnown};
-    use activitystreams::url::Url;
+    use activitystreams::iri_string::types::IriString;
 
     const BANANA_DOG: &'static str = r#"{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.0","href":"https://banana.dog/nodeinfo/2.0"},{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.1","href":"https://banana.dog/nodeinfo/2.1"}]}"#;
     const ASONIX_DOG: &'static str = r#"{"links":[{"rel":"http://nodeinfo.diaspora.software/ns/schema/2.0","href":"https://asonix.dog/nodeinfo/2.0"}]}"#;
@@ -224,7 +226,7 @@ mod tests {
         assert_eq!(
             accounts[0],
             "https://soc.hyena.network/users/HyNET"
-                .parse::<Url>()
+                .parse::<IriString>()
                 .unwrap()
         );
     }

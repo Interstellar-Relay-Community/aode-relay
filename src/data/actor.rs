@@ -4,7 +4,7 @@ use crate::{
     error::{Error, ErrorKind},
     requests::Requests,
 };
-use activitystreams::{prelude::*, url::Url};
+use activitystreams::{iri_string::types::IriString, prelude::*};
 use std::time::{Duration, SystemTime};
 
 const REFETCH_DURATION: Duration = Duration::from_secs(60 * 30);
@@ -40,7 +40,7 @@ impl ActorCache {
     #[tracing::instrument(name = "Get Actor", fields(id = id.to_string().as_str(), requests))]
     pub(crate) async fn get(
         &self,
-        id: &Url,
+        id: &IriString,
         requests: &Requests,
     ) -> Result<MaybeCached<Actor>, Error> {
         if let Some(actor) = self.db.actor(id.clone()).await? {
@@ -66,12 +66,16 @@ impl ActorCache {
     }
 
     #[tracing::instrument(name = "Fetch remote actor", fields(id = id.to_string().as_str(), requests))]
-    pub(crate) async fn get_no_cache(&self, id: &Url, requests: &Requests) -> Result<Actor, Error> {
+    pub(crate) async fn get_no_cache(
+        &self,
+        id: &IriString,
+        requests: &Requests,
+    ) -> Result<Actor, Error> {
         let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
 
-        let input_domain = id.domain().ok_or(ErrorKind::MissingDomain)?;
+        let input_authority = id.authority_components().ok_or(ErrorKind::MissingDomain)?;
         let accepted_actor_id = accepted_actor
-            .id(input_domain)?
+            .id(input_authority.host(), input_authority.port())?
             .ok_or(ErrorKind::MissingId)?;
 
         let inbox = get_inbox(&accepted_actor)?.clone();
@@ -90,7 +94,7 @@ impl ActorCache {
     }
 }
 
-fn get_inbox(actor: &AcceptedActors) -> Result<&Url, Error> {
+fn get_inbox(actor: &AcceptedActors) -> Result<&IriString, Error> {
     Ok(actor
         .endpoints()?
         .and_then(|e| e.shared_inbox)

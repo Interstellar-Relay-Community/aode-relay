@@ -2,13 +2,13 @@ use crate::{
     error::Error,
     jobs::{Deliver, JobState},
 };
-use activitystreams::url::Url;
+use activitystreams::iri_string::types::IriString;
 use background_jobs::ActixJob;
 use futures_util::future::LocalBoxFuture;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct DeliverMany {
-    to: Vec<Url>,
+    to: Vec<IriString>,
     data: serde_json::Value,
 }
 
@@ -30,7 +30,7 @@ impl std::fmt::Debug for DeliverMany {
 }
 
 impl DeliverMany {
-    pub(crate) fn new<T>(to: Vec<Url>, data: T) -> Result<Self, Error>
+    pub(crate) fn new<T>(to: Vec<IriString>, data: T) -> Result<Self, Error>
     where
         T: serde::ser::Serialize,
     {

@@ -1,7 +1,7 @@
 @use crate::{db::{Contact, Instance}, templates::admin};
-@use activitystreams::url::Url;
+@use activitystreams::iri_string::types::IriString;
 
-@(instance: &Instance, software: Option<&str>, contact: Option<&Contact>, base: &Url)
+@(instance: &Instance, software: Option<&str>, contact: Option<&Contact>, base: &IriString)
 
 <article class="instance">
     <h4 class="padded"><a href="@base">@instance.title</a></h4>

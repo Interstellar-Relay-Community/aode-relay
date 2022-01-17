@@ -7,13 +7,13 @@ use crate::{
         DeliverMany, JobState,
     },
 };
-use activitystreams::{activity::Announce as AsAnnounce, url::Url};
+use activitystreams::{activity::Announce as AsAnnounce, iri_string::types::IriString};
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Announce {
-    object_id: Url,
+    object_id: IriString,
     actor: Actor,
 }
 
@@ -27,7 +27,7 @@ impl std::fmt::Debug for Announce {
 }
 
 impl Announce {
-    pub fn new(object_id: Url, actor: Actor) -> Self {
+    pub fn new(object_id: IriString, actor: Actor) -> Self {
         Announce { object_id, actor }
     }
 
@@ -49,8 +49,8 @@ impl Announce {
 // Generate a type that says "Look at this object"
 fn generate_announce(
     config: &Config,
-    activity_id: &Url,
-    object_id: &Url,
+    activity_id: &IriString,
+    object_id: &IriString,
 ) -> Result<AsAnnounce, Error> {
     let announce = AsAnnounce::new(config.generate_url(UrlKind::Actor), object_id.clone());
 
