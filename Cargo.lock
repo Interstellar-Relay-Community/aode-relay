@@ -114,9 +114,9 @@ dependencies = [
 
 [[package]]
 name = "actix-rt"
-version = "2.5.1"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82cf33e04d9911b39bfb7be3c01309568b4315895d3358372dce64ed2c2bf32d"
+checksum = "cdf3f2183be1241ed4dd22611850b85d38de0b08a09f1f7bcccbd0809084b359"
 dependencies = [
  "actix-macros",
  "futures-core",
@@ -308,6 +308,8 @@ version = "0.3.13"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
+ "actix-http",
+ "actix-router",
  "actix-rt",
  "actix-web",
  "actix-webfinger",
@@ -466,9 +468,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77f4508c6c5b5cfc6c18d43d0ba6ecda339710206854da9e1c9ac9dfb7e3eb6f"
+checksum = "5c301b3ccb60fa2aadb4da111e27b257ddc4f0509848c43c85764dc14f7a49a3"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -476,16 +478,15 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dabf6a2204fe034db7910a38f8e2d183fe24eb92abd4c0aaca59f8cacf4e48b"
+checksum = "65a0dcbc94e0644fcfbaddc19705fae2d6947426682aeab7582d772f4d80b8df"
 dependencies = [
  "actix-rt",
  "anyhow",
  "async-mutex",
  "async-trait",
  "background-jobs-core",
- "chrono",
  "num_cpus",
  "serde 1.0.133",
  "serde_json",
@@ -498,18 +499,18 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-core"
-version = "0.11.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "174d36b170699ecc13b7513bda9eff6f12cc889eae5d16b792daa3f7b21be452"
+checksum = "82fe510c99cea8b98c438e81f43c666e9b4cd3630a42a1684ed1d01db4271cfb"
 dependencies = [
  "actix-rt",
  "anyhow",
  "async-mutex",
  "async-trait",
- "chrono",
  "serde 1.0.133",
  "serde_json",
  "thiserror",
+ "time 0.3.5",
  "tracing",
  "tracing-futures",
  "uuid",
@@ -598,20 +599,6 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "chrono"
-version = "0.4.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
-dependencies = [
- "libc",
- "num-integer",
- "num-traits 0.2.14",
- "serde 1.0.133",
- "time 0.1.44",
- "winapi",
-]
 
 [[package]]
 name = "clap"
@@ -1141,26 +1128,25 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization"
-version = "0.5.4"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07499ccdca5530f8dca2c295aa4554afefa617879d381466016ba12bc60a09e9"
+checksum = "f8f45adbef81d7ea3bd7e9bcc6734b7245dad05a14abdcc7ddc0988791d63515"
 dependencies = [
- "chrono",
- "thiserror",
+ "httpdate",
 ]
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.5.0-beta.14"
+version = "0.6.0-beta.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5aa97e6c2ee1450ccb3a6d8edbb91fb8423ea6d5650bc234245b5ff7a599084"
+checksum = "e81edfe601a241929ed99c99c32c355287213399c730955dfb4977ccabf443c5"
 dependencies = [
  "actix-http",
+ "actix-router",
  "actix-rt",
  "actix-web",
  "awc",
  "base64",
- "chrono",
  "futures-util",
  "http-signature-normalization",
  "sha2",
@@ -2647,6 +2633,7 @@ checksum = "41effe7cfa8af36f439fac33861b66b049edc6f9a32331e2312660529c1c24ad"
 dependencies = [
  "itoa 0.4.8",
  "libc",
+ "serde 1.0.133",
 ]
 
 [[package]]
