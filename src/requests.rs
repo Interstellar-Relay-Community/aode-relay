@@ -13,11 +13,15 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    time::SystemTime,
+    time::{Duration, SystemTime},
 };
-use time::OffsetDateTime;
 use tracing::{debug, info, warn};
 use tracing_awc::Tracing;
+
+const ONE_SECOND: u64 = 1;
+const ONE_MINUTE: u64 = 60 * ONE_SECOND;
+const ONE_HOUR: u64 = 60 * ONE_MINUTE;
+const ONE_DAY: u64 = 24 * ONE_HOUR;
 
 #[derive(Clone)]
 pub(crate) struct Breakers {
@@ -91,8 +95,8 @@ impl Default for Breakers {
 #[derive(Debug)]
 struct Breaker {
     failures: usize,
-    last_attempt: OffsetDateTime,
-    last_success: OffsetDateTime,
+    last_attempt: SystemTime,
+    last_success: SystemTime,
 }
 
 impl Breaker {
@@ -100,30 +104,30 @@ impl Breaker {
         10
     }
 
-    fn failure_wait() -> time::Duration {
-        time::Duration::days(1)
+    fn failure_wait() -> Duration {
+        Duration::from_secs(ONE_DAY)
     }
 
     fn should_try(&self) -> bool {
         self.failures < Self::failure_threshold()
-            || self.last_attempt + Self::failure_wait() < OffsetDateTime::now_utc()
+            || self.last_attempt + Self::failure_wait() < SystemTime::now()
     }
 
     fn fail(&mut self) {
         self.failures += 1;
-        self.last_attempt = OffsetDateTime::now_utc();
+        self.last_attempt = SystemTime::now();
     }
 
     fn succeed(&mut self) {
         self.failures = 0;
-        self.last_attempt = OffsetDateTime::now_utc();
-        self.last_success = OffsetDateTime::now_utc();
+        self.last_attempt = SystemTime::now();
+        self.last_success = SystemTime::now();
     }
 }
 
 impl Default for Breaker {
     fn default() -> Self {
-        let now = OffsetDateTime::now_utc();
+        let now = SystemTime::now();
 
         Breaker {
             failures: 0,

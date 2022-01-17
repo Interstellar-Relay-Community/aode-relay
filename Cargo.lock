@@ -339,7 +339,6 @@ dependencies = [
  "sled",
  "structopt",
  "thiserror",
- "time 0.3.5",
  "toml",
  "tracing",
  "tracing-actix-web",
