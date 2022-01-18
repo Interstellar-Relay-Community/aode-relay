@@ -18,10 +18,8 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
-actix-http = "=3.0.0-beta.18"
-actix-router = "=0.5.0-beta.4"
 actix-rt = "2.6.0"
-actix-web = { version = "=4.0.0-beta.19", default-features = false }
+actix-web = { version = "4.0.0-beta.19", default-features = false }
 actix-webfinger = "0.4.0-beta.5"
 activitystreams = "0.7.0-alpha.16"
 activitystreams-ext = "0.1.0-alpha.2"
@@ -48,7 +46,7 @@ sled = "0.34.6"
 structopt = "0.3.12"
 thiserror = "1.0"
 tracing = "0.1"
-tracing-awc = { version = "0.1.0-beta.10" }
+tracing-awc = "0.1.0-beta.19"
 tracing-error = "0.2"
 tracing-futures = "0.2"
 tracing-log = "0.1"
@@ -70,7 +68,7 @@ default-features = false
 features = ["client", "server", "sha-2"]
 
 [dependencies.tracing-actix-web]
-version = "0.5.0-beta.3"
+version = "0.5.0-beta.10"
 
 [build-dependencies]
 anyhow = "1.0"
