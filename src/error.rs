@@ -59,8 +59,8 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't parse IRI, {0}")]
     ParseIri(#[from] activitystreams::iri_string::validate::Error),
 
-    #[error("Couldn't resolve IRI, {0}")]
-    ResolveIri(#[from] activitystreams::iri_string::resolve::Error),
+    #[error("Couldn't normalize IRI, {0}")]
+    NormalizeIri(#[from] activitystreams::iri_string::normalize::Error),
 
     #[error("Couldn't perform IO, {0}")]
     Io(#[from] io::Error),
