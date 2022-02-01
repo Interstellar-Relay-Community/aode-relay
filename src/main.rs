@@ -3,6 +3,7 @@
 
 use activitystreams::iri_string::types::IriString;
 use actix_web::{web, App, HttpServer};
+#[cfg(feature = "console")]
 use console_subscriber::ConsoleLayer;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
@@ -46,6 +47,7 @@ fn init_subscriber(
         .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_filter(targets.clone());
 
+    #[cfg(feature = "console")]
     let console_layer = ConsoleLayer::builder()
         .with_default_env()
         .server_addr(([0, 0, 0, 0], 6669))
@@ -53,9 +55,11 @@ fn init_subscriber(
         .spawn();
 
     let subscriber = tracing_subscriber::Registry::default()
-        .with(console_layer)
         .with(format_layer)
         .with(ErrorLayer::default());
+
+    #[cfg(feature = "console")]
+    let subscriber = subscriber.with(console_layer);
 
     if let Some(url) = opentelemetry_url {
         let tracer =

@@ -60,7 +60,10 @@ pub(crate) enum ErrorKind {
     ParseIri(#[from] activitystreams::iri_string::validate::Error),
 
     #[error("Couldn't normalize IRI, {0}")]
-    NormalizeIri(#[from] activitystreams::iri_string::normalize::Error),
+    NormalizeIri(
+        #[from]
+        activitystreams::iri_string::task::Error<activitystreams::iri_string::normalize::Error>,
+    ),
 
     #[error("Couldn't perform IO, {0}")]
     Io(#[from] io::Error),
