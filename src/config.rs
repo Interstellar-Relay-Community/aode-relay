@@ -84,11 +84,10 @@ impl std::fmt::Debug for Config {
 
 impl Config {
     pub(crate) fn build() -> Result<Self, Error> {
-        let mut config = config::Config::new();
-        config
+        let config = config::Config::builder()
             .set_default("hostname", "localhost:8080")?
             .set_default("addr", "127.0.0.1")?
-            .set_default("port", 8080)?
+            .set_default::<_, u64>("port", 8080)?
             .set_default("debug", true)?
             .set_default("restricted_mode", false)?
             .set_default("validate_signatures", false)?
@@ -97,9 +96,10 @@ impl Config {
             .set_default("sled_path", "./sled/db-0-34")?
             .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?
             .set_default("opentelemetry_url", None as Option<&str>)?
-            .merge(Environment::new())?;
+            .add_source(Environment::default())
+            .build()?;
 
-        let config: ParsedConfig = config.try_into()?;
+        let config: ParsedConfig = config.try_deserialize()?;
 
         let scheme = if config.https { "https" } else { "http" };
         let base_uri = iri!(format!("{}://{}", scheme, config.hostname)).into_absolute();

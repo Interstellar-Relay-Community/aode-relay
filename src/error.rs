@@ -1,4 +1,5 @@
 use activitystreams::checked::CheckError;
+use actix_rt::task::JoinError;
 use actix_web::{
     error::{BlockingError, ResponseError},
     http::StatusCode,
@@ -189,6 +190,12 @@ impl ResponseError for Error {
 
 impl From<BlockingError> for ErrorKind {
     fn from(_: BlockingError) -> Self {
+        ErrorKind::Canceled
+    }
+}
+
+impl From<JoinError> for ErrorKind {
+    fn from(_: JoinError) -> Self {
         ErrorKind::Canceled
     }
 }
