@@ -220,9 +220,9 @@ dependencies = [
 
 [[package]]
 name = "actix-webfinger"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39e0482fd77efcb3c130597f324e964b8f388c109d7714b10b4d21476d2bc448"
+checksum = "71e64f0f9b28305d38058daaff76a608684a43cbf67e9a9289bdd124a2a45b5e"
 dependencies = [
  "actix-rt",
  "actix-web",
@@ -1181,9 +1181,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9885b9377e3a86d3197c73f87576a158f493df4db65c2178800e3b42be48701a"
+checksum = "86dfd54a1764ad79376b8dbf29e5bf918a463eb5ec66c90cd0388508289af6f0"
 dependencies = [
  "actix-http",
  "actix-rt",
@@ -2884,9 +2884,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-awc"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdf3ba9e7ac4f2da0b32242809929a7da3d8848fb938647735f521994c5d5083"
+checksum = "b524ca012b208a8b5014b68da09573d6d43de93bb850c9303550ac2f5d896631"
 dependencies = [
  "actix-http",
  "actix-service",
