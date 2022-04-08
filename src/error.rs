@@ -57,6 +57,9 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't parse key, {0}")]
     Pkcs8(#[from] rsa::pkcs8::Error),
 
+    #[error("Couldn't encode public key, {0}")]
+    Spki(#[from] rsa::pkcs8::spki::Error),
+
     #[error("Couldn't parse IRI, {0}")]
     ParseIri(#[from] activitystreams::iri_string::validate::Error),
 

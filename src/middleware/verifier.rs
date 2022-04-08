@@ -7,7 +7,7 @@ use crate::{
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
-use rsa::{hash::Hash, padding::PaddingScheme, pkcs8::FromPublicKey, PublicKey, RsaPublicKey};
+use rsa::{hash::Hash, padding::PaddingScheme, pkcs8::DecodePublicKey, PublicKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
 use std::{future::Future, pin::Pin};
 

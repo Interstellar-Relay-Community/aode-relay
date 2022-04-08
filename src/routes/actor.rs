@@ -13,7 +13,7 @@ use activitystreams::{
 };
 use activitystreams_ext::Ext1;
 use actix_web::{web, Responder};
-use rsa::pkcs8::ToPublicKey;
+use rsa::pkcs8::EncodePublicKey;
 
 #[tracing::instrument(name = "Actor")]
 pub(crate) async fn route(
@@ -26,7 +26,9 @@ pub(crate) async fn route(
             public_key: PublicKeyInner {
                 id: config.generate_url(UrlKind::MainKey),
                 owner: config.generate_url(UrlKind::Actor),
-                public_key_pem: state.public_key.to_public_key_pem()?,
+                public_key_pem: state
+                    .public_key
+                    .to_public_key_pem(rsa::pkcs8::LineEnding::default())?,
             },
         },
     );

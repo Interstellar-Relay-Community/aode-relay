@@ -5,7 +5,7 @@ use crate::{
 use activitystreams::iri_string::types::IriString;
 use actix_web::web::Bytes;
 use rsa::{
-    pkcs8::{FromPrivateKey, ToPrivateKey},
+    pkcs8::{DecodePrivateKey, EncodePrivateKey},
     RsaPrivateKey,
 };
 use sled::Tree;
@@ -635,7 +635,7 @@ impl Db {
         &self,
         private_key: &RsaPrivateKey,
     ) -> Result<(), Error> {
-        let pem_pkcs8 = private_key.to_pkcs8_pem()?;
+        let pem_pkcs8 = private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::default())?;
 
         self.unblock(move |inner| {
             inner
