@@ -56,9 +56,9 @@ dependencies = [
 
 [[package]]
 name = "actix-http"
-version = "3.2.0"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfeeac0149fc76f58894a08f221282975f4c6659d2cb31ffd22a3be7a83c5771"
+checksum = "6f9ffb6db08c1c3a1f4aef540f1a63193adc73c4fbd40b75a95fc8c5258f6e51"
 dependencies = [
  "actix-codec",
  "actix-rt",
@@ -330,7 +330,7 @@ dependencies = [
  "tracing-log",
  "tracing-opentelemetry",
  "tracing-subscriber",
- "uuid 1.1.2",
+ "uuid",
 ]
 
 [[package]]
@@ -480,9 +480,8 @@ dependencies = [
 
 [[package]]
 name = "background-jobs"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c301b3ccb60fa2aadb4da111e27b257ddc4f0509848c43c85764dc14f7a49a3"
+version = "0.13.0"
+source = "git+https://git.asonix.dog/asonix/background-jobs#250d2f0a33369a657563f58b5e8218338a267ec4"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -490,9 +489,8 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65a0dcbc94e0644fcfbaddc19705fae2d6947426682aeab7582d772f4d80b8df"
+version = "0.13.0"
+source = "git+https://git.asonix.dog/asonix/background-jobs#250d2f0a33369a657563f58b5e8218338a267ec4"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -506,26 +504,25 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-futures",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
 name = "background-jobs-core"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82fe510c99cea8b98c438e81f43c666e9b4cd3630a42a1684ed1d01db4271cfb"
+version = "0.13.0"
+source = "git+https://git.asonix.dog/asonix/background-jobs#250d2f0a33369a657563f58b5e8218338a267ec4"
 dependencies = [
  "actix-rt",
  "anyhow",
- "async-mutex",
  "async-trait",
+ "event-listener",
  "serde",
  "serde_json",
  "thiserror",
  "time",
  "tracing",
  "tracing-futures",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -2857,7 +2854,7 @@ dependencies = [
  "pin-project",
  "tracing",
  "tracing-futures",
- "uuid 1.1.2",
+ "uuid",
 ]
 
 [[package]]
@@ -3033,16 +3030,6 @@ name = "utf-8"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
-
-[[package]]
-name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom",
- "serde",
-]
 
 [[package]]
 name = "uuid"

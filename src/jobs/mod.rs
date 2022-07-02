@@ -19,7 +19,10 @@ use crate::{
     jobs::process_listeners::Listeners,
     requests::Requests,
 };
-use background_jobs::{memory_storage::Storage, Job, Manager, QueueHandle, WorkerConfig};
+use background_jobs::{
+    memory_storage::{ActixTimer, Storage},
+    Job, Manager, QueueHandle, WorkerConfig,
+};
 use std::time::Duration;
 
 pub(crate) fn create_workers(
@@ -28,7 +31,7 @@ pub(crate) fn create_workers(
     media: MediaCache,
     config: Config,
 ) -> (Manager, JobServer) {
-    let shared = WorkerConfig::new_managed(Storage::new(), move |queue_handle| {
+    let shared = WorkerConfig::new_managed(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
             state.clone(),
             actors.clone(),

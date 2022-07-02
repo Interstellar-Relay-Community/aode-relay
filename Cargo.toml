@@ -63,9 +63,10 @@ tracing-subscriber = { version = "0.3", features = [
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [dependencies.background-jobs]
-version = "0.12.0"
+version = "0.13.0"
 default-features = false
 features = ["background-jobs-actix", "error-logging"]
+git = "https://git.asonix.dog/asonix/background-jobs"
 
 [dependencies.http-signature-normalization-actix]
 version = "0.6.0"
