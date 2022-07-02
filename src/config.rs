@@ -233,32 +233,32 @@ impl Config {
     fn do_generate_url(&self, kind: UrlKind) -> Result<IriString, Error> {
         let iri = match kind {
             UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref())?,
+                .try_resolve(IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref())?,
             UrlKind::Actor => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("actor")?.as_ref())?,
+                .try_resolve(IriRelativeStr::new("actor")?.as_ref())?,
             UrlKind::Followers => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("followers")?.as_ref())?,
+                .try_resolve(IriRelativeStr::new("followers")?.as_ref())?,
             UrlKind::Following => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("following")?.as_ref())?,
+                .try_resolve(IriRelativeStr::new("following")?.as_ref())?,
             UrlKind::Inbox => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("inbox")?.as_ref())?,
+                .try_resolve(IriRelativeStr::new("inbox")?.as_ref())?,
             UrlKind::Index => self.base_uri.clone().into(),
             UrlKind::MainKey => {
                 let actor = IriRelativeStr::new("actor")?;
                 let fragment = IriFragmentStr::new("main-key")?;
 
                 let mut resolved =
-                    FixedBaseResolver::new(self.base_uri.as_ref()).resolve(actor.as_ref())?;
+                    FixedBaseResolver::new(self.base_uri.as_ref()).try_resolve(actor.as_ref())?;
 
                 resolved.set_fragment(Some(fragment));
                 resolved
             }
             UrlKind::Media(uuid) => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new(&format!("media/{}", uuid))?.as_ref())?,
+                .try_resolve(IriRelativeStr::new(&format!("media/{}", uuid))?.as_ref())?,
             UrlKind::NodeInfo => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())?,
+                .try_resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())?,
             UrlKind::Outbox => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("outbox")?.as_ref())?,
+                .try_resolve(IriRelativeStr::new("outbox")?.as_ref())?,
         };
 
         Ok(iri)
