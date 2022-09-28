@@ -381,41 +381,41 @@ trigger:
   event:
   - tag
 
-# ---
+---
 
-# kind: pipeline
-# type: docker
-# name: publish-crate
-# 
-# platform:
-#   arch: amd64
-# 
-# clone:
-#   disable: true
-# 
-# steps:
-# - name: clone
-#   image: alpine/git:latest
-#   user: root
-#   commands:
-#   - git clone $DRONE_GIT_HTTP_URL .
-#   - git checkout $DRONE_COMMIT
-#   - chown -R 991:991 .
-# 
-# - name: publish
-#   image: asonix/rust-builder:latest-linux-amd64
-#   pull: always
-#   environment:
-#     CRATES_IO_TOKEN:
-#       from_secret: crates_io_token
-#   commands:
-#   - cargo publish --token $CRATES_IO_TOKEN
-# 
-# depends_on:
-# - build-amd64
-# - build-arm64v8
-# - build-arm32v7
-# 
-# trigger:
-#   event:
-#   - tag
+kind: pipeline
+type: docker
+name: publish-crate
+
+platform:
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: clone
+  image: alpine/git:latest
+  user: root
+  commands:
+  - git clone $DRONE_GIT_HTTP_URL .
+  - git checkout $DRONE_COMMIT
+  - chown -R 991:991 .
+
+- name: publish
+  image: asonix/rust-builder:latest-linux-amd64
+  pull: always
+  environment:
+    CRATES_IO_TOKEN:
+      from_secret: crates_io_token
+  commands:
+  - cargo publish --token $CRATES_IO_TOKEN
+
+depends_on:
+- build-amd64
+- build-arm64v8
+- build-arm32v7
+
+trigger:
+  event:
+  - tag

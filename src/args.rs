@@ -1,21 +1,21 @@
-use structopt::StructOpt;
+use clap::Parser;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(name = "relay", about = "An activitypub relay")]
 pub(crate) struct Args {
-    #[structopt(short, help = "A list of domains that should be blocked")]
+    #[arg(short, help = "A list of domains that should be blocked")]
     blocks: Vec<String>,
 
-    #[structopt(short, help = "A list of domains that should be allowed")]
+    #[arg(short, help = "A list of domains that should be allowed")]
     allowed: Vec<String>,
 
-    #[structopt(short, long, help = "Undo allowing or blocking domains")]
+    #[arg(short, long, help = "Undo allowing or blocking domains")]
     undo: bool,
 }
 
 impl Args {
     pub(crate) fn new() -> Self {
-        Self::from_args()
+        Self::parse()
     }
 
     pub(crate) fn blocks(&self) -> &[String] {

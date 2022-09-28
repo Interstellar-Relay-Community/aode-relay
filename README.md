@@ -9,21 +9,15 @@ $ ./relay
 
 To learn about any other tasks, the `--help` flag can be passed
 ```bash
-$ ./relay --help
-relay 0.2.0
 An activitypub relay
 
-USAGE:
-    relay [FLAGS] [OPTIONS]
+Usage: relay [OPTIONS]
 
-FLAGS:
-    -h, --help       Prints help information
-    -u, --undo       Undo allowing or blocking domains
-    -V, --version    Prints version information
-
-OPTIONS:
-    -a <allowed>...        A list of domains that should be allowed
-    -b <blocks>...         A list of domains that should be blocked
+Options:
+  -b <BLOCKS>       A list of domains that should be blocked
+  -a <ALLOWED>      A list of domains that should be allowed
+  -u, --undo        Undo allowing or blocking domains
+  -h, --help        Print help information
 ```
 
 To add domains to the blocklist, use the `-b` flag and pass a list of domains

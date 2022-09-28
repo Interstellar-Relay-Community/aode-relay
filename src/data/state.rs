@@ -108,7 +108,9 @@ impl State {
         let state = State {
             public_key,
             private_key,
-            object_cache: Arc::new(RwLock::new(LruCache::new(1024 * 8))),
+            object_cache: Arc::new(RwLock::new(LruCache::new(
+                (1024 * 8).try_into().expect("nonzero"),
+            ))),
             node_cache: NodeCache::new(db.clone()),
             breakers: Breakers::default(),
             db,
