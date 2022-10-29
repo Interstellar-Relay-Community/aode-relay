@@ -1,6 +1,35 @@
 # AodeRelay
 _A simple and efficient activitypub relay_
 
+### Installation
+#### Docker
+If running docker, you can start the relay with the following command:
+```
+$ sudo docker run --rm -it \
+    -v "./:/mnt/" \
+    -e ADDR=0.0.0.0 \
+    -e SLED_PATH=/mnt/sled/db-0.34 \
+    -p 8080:8080 \
+    asonix/relay:0.3.23
+```
+This will launch the relay with the database stored in "./sled/db-0.34" and listening on port 8080
+#### Cargo
+With cargo installed, the relay can be installed to your cargo bin directory with the following command
+```
+$ cargo install ap-lreay
+```
+Then it can be run with this:
+```
+$ ADDR=0.0.0.0 relay
+```
+This will launch the relay with the database stored in "./sled/db-0.34" and listening on port 8080
+#### Source
+The relay can be launched directly from this git repository with the following commands:
+```
+$ git clone https://git.asonix.dog/asonix/relay
+$ ADDR=0.0.0.0 cargo run --release
+```
+
 ### Usage
 To simply run the server, the command is as follows
 ```bash
@@ -34,13 +63,59 @@ $ ./relay -a asonix.dog blimps.xyz
 $ ./relay -ua asonix.dog blimps.xyz
 ```
 
-Allowed domains are only checked against incoming activities if `RESTRICTED_MODE` is enabled.
-Blocks can be published in the nodeinfo metadata by setting `PUBLISH_BLOCKS` to true
+### Configuration
+By default, all these values are set to development values. These are read from the environment, or
+from the `.env` file in the working directory.
+```env
+HOSTNAME=localhost:8080
+ADDR=127.0.0.1
+PORT=8080
+DEBUG=true
+RESTRICTED_MODE=false
+VALIDATE_SIGNATURES=false
+HTTPS=false
+PRETTY_LOG=true
+PUBLISH_BLOCKS=false
+SLED_PATH=./sled/db-0.34
+```
+To run this server in production, you'll likely want to set most of them
+```env
+HOSTNAME=relay.my.tld
+ADDR=0.0.0.0
+PORT=8080
+DEBUG=false
+RESTRICTED_MODE=false
+VALIDATE_SIGNATURES=true
+HTTPS=true
+PRETTY_LOG=false
+PUBLISH_BLOCKS=true
+SLED_PATH=./sled/db-0.34
+OPENTELEMETRY_URL=localhost:4317
+```
 
-For advanced setups, it may be useful to run the relay API and the background tasks in separate
-processes, possibly on separate hosts. The `-j` and `-n` flags have been provided for this purpose.
-By passing `-n`, a relay can be spawned that handles no deliveries. By passing `-j`, a relay will
-not be spawned, but any deliveries existing in the database will be processed.
+#### Descriptions
+##### `HOSTNAME`
+The domain or IP address the relay is hosted on. If you launch the relay on `example.com`, that would be your HOSTNAME. The default is `localhost:8080`
+##### `ADDR`
+The address the server binds to. By default, this is `127.0.0.1`, so for production cases it should be set to `0.0.0.0` or another public address.
+##### `PORT`
+The port the server binds to, this is `8080` by default but can be changed if needed.
+##### `DEBUG`
+Whether to print incoming activities to the console when requests hit the /inbox route. This defaults to `true`, but should be set to `false` in production cases. Since every activity sent to the relay is public anyway, this doesn't represent a security risk.
+##### `RESTRICTED_MODE`
+This setting enables an 'allowlist' setup where only servers that have been explicitly enabled through the `relay -a` command can join the relay. This is `false` by default. If `RESTRICTED_MODE` is not enabled, then manually allowing domains with `relay -a` has no effect.
+##### `VALIDATE_SIGNATURES`
+This setting enforces checking HTTP signatures on incoming activities. It defaults to `false` but should be set to `true` in production scenarios
+##### `HTTPS`
+Whether the current server is running on an HTTPS port or not. This is used for generating URLs to the current running relay. By default it is set to `false`, but should be `true` in production scenarios.
+##### `PUBLISH_BLOCKS`
+Whether or not to publish a list of blocked domains in the `nodeinfo` metadata for the server. It defaults to `false`.
+##### `SLED_PATH`
+Where to store the on-disk database of connected servers. This defaults to `./sled/db-0.34`.
+##### `SOURCE_REPO`
+The URL to the source code for the relay. This defaults to `https://git.asonix.dog/asonix/relay`, but should be changed if you're running a fork hosted elsewhere.
+##### `OPENTELEMETRY_URL`
+A URL for exporting opentelemetry spans. This is mostly useful for debugging. There is no default, since most people probably don't run an opentelemetry collector.
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.
@@ -71,46 +146,14 @@ example, if the server is `https://relay.my.tld`, the correct URL would be
 - Webfinger
 - NodeInfo
 
-### Configuration
-By default, all these values are set to development values. These are read from the environment, or
-from the `.env` file in the working directory.
-```env
-HOSTNAME=localhost:8080
-ADDR=127.0.0.1
-PORT=8080
-DEBUG=true
-RESTRICTED_MODE=false
-VALIDATE_SIGNATURES=false
-HTTPS=false
-DATABASE_URL=
-PRETTY_LOG=true
-PUBLISH_BLOCKS=false
-```
-To run this server in production, you'll likely want to set most of them
-```env
-HOSTNAME=relay.my.tld
-ADDR=0.0.0.0
-PORT=8080
-DEBUG=false
-RESTRICTED_MODE=false
-VALIDATE_SIGNATURES=true
-HTTPS=true
-DATABASE_URL=postgres://pg_user:pg_pass@pg_host:pg_port/pg_database
-PRETTY_LOG=false
-PUBLISH_BLOCKS=true
-```
-
 ### Contributing
-Unless otherwise stated, all contributions to this project will be licensed under the CSL with
-the exceptions listed in the License section of this file.
+Feel free to open issues for anything you find an issue with. Please note that any contributed code will be licensed under the AGPLv3.
 
 ### License
-This work is licensed under the Cooperative Software License. This is not a Free Software
-License, but may be considered a "source-available License." For most hobbyists, self-employed
-developers, worker-owned companies, and cooperatives, this software can be used in most
-projects so long as this software is distributed under the terms of the CSL. For more
-information, see the provided LICENSE file. If none exists, the license can be found online
-[here](https://lynnesbian.space/csl/). If you are a free software project and wish to use this
-software under the terms of the GNU Affero General Public License, please contact me at
-[asonix@asonix.dog](mailto:asonix@asonix.dog) and we can sort that out. If you wish to use this
-project under any other license, especially in proprietary software, the answer is likely no.
+Copyright © 2022 Riley Trautman
+
+AodeRelay is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+AodeRelay is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. This file is part of AodeRelay.
+
+You should have received a copy of the GNU General Public License along with AodeRelay. If not, see [http://www.gnu.org/licenses/](http://www.gnu.org/licenses/).

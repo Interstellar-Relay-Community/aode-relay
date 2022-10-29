@@ -1,9 +1,9 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.22"
+version = "0.3.23"
 authors = ["asonix <asonix@asonix.dog>"]
-license-file = "LICENSE"
+license = "AGPL-3.0"
 readme = "README.md"
 repository = "https://git.asonix.dog/asonix/ap-relay"
 keywords = ["activitypub", "relay"]
