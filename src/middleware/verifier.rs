@@ -7,8 +7,9 @@ use crate::{
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use actix_web::web;
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
-use rsa::{hash::Hash, padding::PaddingScheme, pkcs8::DecodePublicKey, PublicKey, RsaPublicKey};
+use rsa::{pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
+use signature::{DigestVerifier, Signature};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug)]
@@ -111,15 +112,11 @@ async fn do_verify(
 
     web::block(move || {
         let decoded = base64::decode(signature)?;
-        let hashed = Sha256::digest(signing_string.as_bytes());
+        let signature = Signature::from_bytes(&decoded)?;
+        let hashed = Sha256::new_with_prefix(signing_string.as_bytes());
 
-        public_key.verify(
-            PaddingScheme::PKCS1v15Sign {
-                hash: Some(Hash::SHA2_256),
-            },
-            &hashed,
-            &decoded,
-        )?;
+        let verifying_key = VerifyingKey::new_with_prefix(public_key);
+        verifying_key.verify_digest(hashed, &signature)?;
 
         Ok(()) as Result<(), Error>
     })

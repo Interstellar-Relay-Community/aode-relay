@@ -84,6 +84,9 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't build signing string, {0}")]
     PrepareSign(#[from] PrepareSignError),
 
+    #[error("Couldn't sign digest")]
+    Signature(#[from] signature::Error),
+
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
 

@@ -4,8 +4,10 @@ use actix_web::{http::header::Date, web::Bytes};
 use awc::Client;
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
-use rsa::{hash::Hash, padding::PaddingScheme, RsaPrivateKey};
+use rand::thread_rng;
+use rsa::{pkcs1v15::SigningKey, RsaPrivateKey};
 use sha2::{Digest, Sha256};
+use signature::RandomizedSigner;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -420,12 +422,8 @@ struct Signer {
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
         let hashed = Sha256::digest(signing_string.as_bytes());
-        let bytes = self.private_key.sign(
-            PaddingScheme::PKCS1v15Sign {
-                hash: Some(Hash::SHA2_256),
-            },
-            &hashed,
-        )?;
-        Ok(base64::encode(bytes))
+        let signing_key = SigningKey::<Sha256>::new_with_prefix(self.private_key.clone());
+        let signature = signing_key.try_sign_with_rng(thread_rng(), &hashed)?;
+        Ok(base64::encode(signature.as_ref()))
     }
 }
