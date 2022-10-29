@@ -421,9 +421,8 @@ struct Signer {
 
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
-        let hashed = Sha256::digest(signing_string.as_bytes());
         let signing_key = SigningKey::<Sha256>::new_with_prefix(self.private_key.clone());
-        let signature = signing_key.try_sign_with_rng(thread_rng(), &hashed)?;
+        let signature = signing_key.try_sign_with_rng(thread_rng(), signing_string.as_bytes())?;
         Ok(base64::encode(signature.as_ref()))
     }
 }
