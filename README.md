@@ -16,7 +16,7 @@ This will launch the relay with the database stored in "./sled/db-0.34" and list
 #### Cargo
 With cargo installed, the relay can be installed to your cargo bin directory with the following command
 ```
-$ cargo install ap-lreay
+$ cargo install ap-relay
 ```
 Then it can be run with this:
 ```
