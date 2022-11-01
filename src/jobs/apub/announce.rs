@@ -31,7 +31,7 @@ impl Announce {
         Announce { object_id, actor }
     }
 
-    #[tracing::instrument(name = "Announce")]
+    #[tracing::instrument(name = "Announce", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let activity_id = state.config.generate_url(UrlKind::Activity);
 
@@ -39,7 +39,8 @@ impl Announce {
         let inboxes = get_inboxes(&state.state, &self.actor, &self.object_id).await?;
         state
             .job_server
-            .queue(DeliverMany::new(inboxes, announce)?).await?;
+            .queue(DeliverMany::new(inboxes, announce)?)
+            .await?;
 
         state.state.cache(self.object_id, activity_id).await;
         Ok(())

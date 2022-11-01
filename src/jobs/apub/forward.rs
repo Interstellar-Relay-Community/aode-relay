@@ -19,7 +19,7 @@ impl Forward {
         Forward { input, actor }
     }
 
-    #[tracing::instrument(name = "Forward")]
+    #[tracing::instrument(name = "Forward", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let object_id = self
             .input

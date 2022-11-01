@@ -11,14 +11,17 @@ use std::{future::Future, pin::Pin};
 pub(crate) struct Reject(pub(crate) Actor);
 
 impl Reject {
-    #[tracing::instrument(name = "Reject")]
+    #[tracing::instrument(name = "Reject", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         state.actors.remove_connection(&self.0).await?;
 
         let my_id = state.config.generate_url(UrlKind::Actor);
         let undo = generate_undo_follow(&state.config, &self.0.id, &my_id)?;
 
-        state.job_server.queue(Deliver::new(self.0.inbox, undo)?).await?;
+        state
+            .job_server
+            .queue(Deliver::new(self.0.inbox, undo)?)
+            .await?;
 
         Ok(())
     }

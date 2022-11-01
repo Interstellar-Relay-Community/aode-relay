@@ -7,8 +7,8 @@ use crate::{
 };
 use activitystreams::{
     activity::{Accept as AsAccept, Follow as AsFollow},
-    prelude::*,
     iri_string::types::IriString,
+    prelude::*,
 };
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
@@ -24,7 +24,7 @@ impl Follow {
         Follow { input, actor }
     }
 
-    #[tracing::instrument(name = "Follow")]
+    #[tracing::instrument(name = "Follow", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let my_id = state.config.generate_url(UrlKind::Actor);
 
@@ -35,7 +35,8 @@ impl Follow {
             let follow = generate_follow(&state.config, &self.actor.id, &my_id)?;
             state
                 .job_server
-                .queue(Deliver::new(self.actor.inbox.clone(), follow)?).await?;
+                .queue(Deliver::new(self.actor.inbox.clone(), follow)?)
+                .await?;
         }
 
         state.actors.add_connection(self.actor.clone()).await?;
@@ -49,20 +50,29 @@ impl Follow {
 
         state
             .job_server
-            .queue(Deliver::new(self.actor.inbox, accept)?).await?;
+            .queue(Deliver::new(self.actor.inbox, accept)?)
+            .await?;
 
         state
             .job_server
-            .queue(QueryInstance::new(self.actor.id.clone())).await?;
+            .queue(QueryInstance::new(self.actor.id.clone()))
+            .await?;
 
-        state.job_server.queue(QueryNodeinfo::new(self.actor.id)).await?;
+        state
+            .job_server
+            .queue(QueryNodeinfo::new(self.actor.id))
+            .await?;
 
         Ok(())
     }
 }
 
 // Generate a type that says "I want to follow you"
-fn generate_follow(config: &Config, actor_id: &IriString, my_id: &IriString) -> Result<AsFollow, Error> {
+fn generate_follow(
+    config: &Config,
+    actor_id: &IriString,
+    my_id: &IriString,
+) -> Result<AsFollow, Error> {
     let follow = AsFollow::new(my_id.clone(), actor_id.clone());
 
     prepare_activity(

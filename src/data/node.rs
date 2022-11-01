@@ -34,7 +34,7 @@ impl NodeCache {
         NodeCache { db }
     }
 
-    #[tracing::instrument(name = "Get nodes")]
+    #[tracing::instrument(name = "Get nodes", skip(self))]
     pub(crate) async fn nodes(&self) -> Result<Vec<Node>, Error> {
         let infos = self.db.connected_info().await?;
         let instances = self.db.connected_instance().await?;
@@ -57,7 +57,7 @@ impl NodeCache {
         Ok(vec)
     }
 
-    #[tracing::instrument(name = "Is NodeInfo Outdated", fields(actor_id = actor_id.to_string().as_str()))]
+    #[tracing::instrument(name = "Is NodeInfo Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .info(actor_id)
@@ -66,7 +66,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Is Contact Outdated", fields(actor_id = actor_id.to_string().as_str()))]
+    #[tracing::instrument(name = "Is Contact Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_contact_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .contact(actor_id)
@@ -75,7 +75,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Is Instance Outdated", fields(actor_id = actor_id.to_string().as_str()))]
+    #[tracing::instrument(name = "Is Instance Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_instance_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .instance(actor_id)
@@ -84,7 +84,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Save node info", fields(actor_id = actor_id.to_string().as_str(), software, version, reg))]
+    #[tracing::instrument(name = "Save node info", skip_all, fields(actor_id = actor_id.to_string().as_str(), software, version, reg))]
     pub(crate) async fn set_info(
         &self,
         actor_id: IriString,
@@ -107,6 +107,7 @@ impl NodeCache {
 
     #[tracing::instrument(
         name = "Save instance info",
+        skip_all,
         fields(
             actor_id = actor_id.to_string().as_str(),
             title,
@@ -142,6 +143,7 @@ impl NodeCache {
 
     #[tracing::instrument(
         name = "Save contact info",
+        skip_all,
         fields(
             actor_id = actor_id.to_string().as_str(),
             username,

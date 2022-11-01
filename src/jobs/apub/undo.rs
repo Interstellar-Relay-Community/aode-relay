@@ -19,7 +19,7 @@ impl Undo {
         Undo { input, actor }
     }
 
-    #[tracing::instrument(name = "Undo")]
+    #[tracing::instrument(name = "Undo", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let was_following = state.state.db.is_connected(self.actor.id.clone()).await?;
 
@@ -30,7 +30,8 @@ impl Undo {
             let undo = generate_undo_follow(&state.config, &self.actor.id, &my_id)?;
             state
                 .job_server
-                .queue(Deliver::new(self.actor.inbox, undo)?).await?;
+                .queue(Deliver::new(self.actor.inbox, undo)?)
+                .await?;
         }
 
         Ok(())

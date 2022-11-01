@@ -9,12 +9,13 @@ use std::{future::Future, pin::Pin};
 pub(crate) struct Listeners;
 
 impl Listeners {
-    #[tracing::instrument(name = "Spawn query instances")]
+    #[tracing::instrument(name = "Spawn query instances", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         for actor_id in state.state.db.connected_ids().await? {
             state
                 .job_server
-                .queue(QueryInstance::new(actor_id.clone())).await?;
+                .queue(QueryInstance::new(actor_id.clone()))
+                .await?;
             state.job_server.queue(QueryNodeinfo::new(actor_id)).await?;
         }
 

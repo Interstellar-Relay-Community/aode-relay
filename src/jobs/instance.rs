@@ -25,7 +25,7 @@ impl QueryInstance {
         QueryInstance { actor_id }
     }
 
-    #[tracing::instrument(name = "Query instance")]
+    #[tracing::instrument(name = "Query instance", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let contact_outdated = state
             .node_cache

@@ -15,7 +15,7 @@ use activitystreams_ext::Ext1;
 use actix_web::{web, Responder};
 use rsa::pkcs8::EncodePublicKey;
 
-#[tracing::instrument(name = "Actor")]
+#[tracing::instrument(name = "Actor", skip(config, state))]
 pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,

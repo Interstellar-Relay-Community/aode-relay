@@ -13,7 +13,7 @@ impl CacheMedia {
         CacheMedia { uuid }
     }
 
-    #[tracing::instrument(name = "Cache media")]
+    #[tracing::instrument(name = "Cache media", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         if !state.media.is_outdated(self.uuid).await? {
             return Ok(());

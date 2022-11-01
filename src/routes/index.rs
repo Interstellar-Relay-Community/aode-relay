@@ -8,7 +8,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use std::io::BufWriter;
 use tracing::error;
 
-#[tracing::instrument(name = "Index")]
+#[tracing::instrument(name = "Index", skip(config, state))]
 pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,

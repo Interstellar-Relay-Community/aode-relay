@@ -50,6 +50,7 @@ impl State {
 
     #[tracing::instrument(
         name = "Get inboxes for other domains",
+        skip_all,
         fields(
             existing_inbox = existing_inbox.to_string().as_str(),
             authority
@@ -85,7 +86,7 @@ impl State {
         self.object_cache.write().await.put(object_id, actor_id);
     }
 
-    #[tracing::instrument(name = "Building state")]
+    #[tracing::instrument(name = "Building state", skip_all)]
     pub(crate) async fn build(db: Db) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {
             info!("Using existing key");

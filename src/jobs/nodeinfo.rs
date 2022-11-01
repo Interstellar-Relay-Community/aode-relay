@@ -24,7 +24,7 @@ impl QueryNodeinfo {
         QueryNodeinfo { actor_id }
     }
 
-    #[tracing::instrument(name = "Query node info")]
+    #[tracing::instrument(name = "Query node info", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         if !state
             .node_cache

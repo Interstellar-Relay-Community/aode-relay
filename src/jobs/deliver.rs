@@ -29,7 +29,7 @@ impl Deliver {
         })
     }
 
-    #[tracing::instrument(name = "Deliver")]
+    #[tracing::instrument(name = "Deliver", skip(state))]
     async fn permform(self, state: JobState) -> Result<(), Error> {
         state.requests.deliver(self.to, &self.data).await?;
         Ok(())

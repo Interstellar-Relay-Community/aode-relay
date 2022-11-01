@@ -40,7 +40,7 @@ impl DeliverMany {
         })
     }
 
-    #[tracing::instrument(name = "Deliver many")]
+    #[tracing::instrument(name = "Deliver many", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         for inbox in self.to {
             state

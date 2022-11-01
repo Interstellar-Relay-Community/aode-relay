@@ -203,7 +203,7 @@ impl Requests {
         self.consecutive_errors.swap(0, Ordering::Relaxed);
     }
 
-    #[tracing::instrument(name = "Fetch Json")]
+    #[tracing::instrument(name = "Fetch Json", skip(self))]
     pub(crate) async fn fetch_json<T>(&self, url: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
@@ -211,7 +211,7 @@ impl Requests {
         self.do_fetch(url, "application/json").await
     }
 
-    #[tracing::instrument(name = "Fetch Activity+Json")]
+    #[tracing::instrument(name = "Fetch Activity+Json", skip(self))]
     pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
@@ -278,7 +278,7 @@ impl Requests {
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
-    #[tracing::instrument(name = "Fetch Bytes")]
+    #[tracing::instrument(name = "Fetch Bytes", skip(self))]
     pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), Error> {
         let parsed_url = url.parse::<IriString>()?;
 
@@ -350,7 +350,8 @@ impl Requests {
 
     #[tracing::instrument(
         "Deliver to Inbox",
-        fields(self, inbox = inbox.to_string().as_str(), item)
+        skip_all,
+        fields(inbox = inbox.to_string().as_str(), item)
     )]
     pub(crate) async fn deliver<T>(&self, inbox: IriString, item: &T) -> Result<(), Error>
     where

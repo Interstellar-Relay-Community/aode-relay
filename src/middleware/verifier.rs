@@ -16,7 +16,7 @@ use std::{future::Future, pin::Pin};
 pub(crate) struct MyVerify(pub Requests, pub ActorCache, pub State);
 
 impl MyVerify {
-    #[tracing::instrument("Verify signature")]
+    #[tracing::instrument("Verify signature", skip(self))]
     async fn verify(
         &self,
         algorithm: Option<Algorithm>,

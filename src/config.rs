@@ -229,11 +229,12 @@ impl Config {
         self.do_generate_url(kind).expect("Generated valid IRI")
     }
 
-    #[tracing::instrument(fields(base_uri = tracing::field::debug(&self.base_uri), kind = tracing::field::debug(&kind)))]
+    #[tracing::instrument(level = "debug", skip_all, fields(base_uri = tracing::field::debug(&self.base_uri), kind = tracing::field::debug(&kind)))]
     fn do_generate_url(&self, kind: UrlKind) -> Result<IriString, Error> {
         let iri = match kind {
-            UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref())?,
+            UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref()).try_resolve(
+                IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref(),
+            )?,
             UrlKind::Actor => FixedBaseResolver::new(self.base_uri.as_ref())
                 .try_resolve(IriRelativeStr::new("actor")?.as_ref())?,
             UrlKind::Followers => FixedBaseResolver::new(self.base_uri.as_ref())
