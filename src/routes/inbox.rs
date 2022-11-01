@@ -17,7 +17,7 @@ use actix_web::{web, HttpResponse};
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 use tracing::error;
 
-#[tracing::instrument(name = "Inbox", skip(config, state))]
+#[tracing::instrument(name = "Inbox", skip(actors, client, jobs, config, state))]
 pub(crate) async fn route(
     state: web::Data<State>,
     actors: web::Data<ActorCache>,

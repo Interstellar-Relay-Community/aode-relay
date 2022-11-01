@@ -5,7 +5,7 @@ use actix_web::{
 };
 use uuid::Uuid;
 
-#[tracing::instrument(name = "Media")]
+#[tracing::instrument(name = "Media", skip(media, requests))]
 pub(crate) async fn route(
     media: web::Data<MediaCache>,
     requests: web::Data<Requests>,
