@@ -29,6 +29,21 @@ pub(crate) async fn route(
     config: web::Data<Config>,
     state: web::Data<State>,
 ) -> web::Json<NodeInfo> {
+    let (inboxes, blocks) = tokio::join!(state.db.inboxes(), async {
+        if config.publish_blocks() {
+            Some(state.db.blocks().await.unwrap_or_default())
+        } else {
+            None
+        }
+    });
+
+    let peers = inboxes
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|listener| listener.authority_str())
+        .map(|s| s.to_owned())
+        .collect();
+
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {
@@ -50,22 +65,7 @@ pub(crate) async fn route(
             local_posts: 0,
             local_comments: 0,
         },
-        metadata: Metadata {
-            peers: state
-                .db
-                .inboxes()
-                .await
-                .unwrap_or_default()
-                .iter()
-                .filter_map(|listener| listener.authority_str())
-                .map(|s| s.to_owned())
-                .collect(),
-            blocks: if config.publish_blocks() {
-                Some(state.db.blocks().await.unwrap_or_default())
-            } else {
-                None
-            },
-        },
+        metadata: Metadata { peers, blocks },
     })
 }
 

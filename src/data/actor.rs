@@ -56,8 +56,12 @@ impl ActorCache {
 
     #[tracing::instrument(name = "Add Connection", skip(self))]
     pub(crate) async fn add_connection(&self, actor: Actor) -> Result<(), Error> {
-        self.db.add_connection(actor.id.clone()).await?;
-        self.db.save_actor(actor).await
+        let add_connection = self.db.add_connection(actor.id.clone());
+        let save_actor = self.db.save_actor(actor);
+
+        tokio::try_join!(add_connection, save_actor)?;
+
+        Ok(())
     }
 
     #[tracing::instrument(name = "Remove Connection", skip(self))]

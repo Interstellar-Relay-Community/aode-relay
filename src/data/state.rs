@@ -7,12 +7,11 @@ use crate::{
 };
 use activitystreams::iri_string::types::IriString;
 use actix_web::web;
-use async_rwlock::RwLock;
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::Arc;
-use tracing::info;
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct State {
@@ -89,10 +88,10 @@ impl State {
     #[tracing::instrument(name = "Building state", skip_all)]
     pub(crate) async fn build(db: Db) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {
-            info!("Using existing key");
+            tracing::info!("Using existing key");
             key
         } else {
-            info!("Generating new keys");
+            tracing::info!("Generating new keys");
             let key = web::block(move || {
                 let mut rng = thread_rng();
                 RsaPrivateKey::new(&mut rng, 4096)

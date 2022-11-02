@@ -6,7 +6,6 @@ use crate::{
 use actix_web::{web, HttpResponse};
 use rand::{seq::SliceRandom, thread_rng};
 use std::io::BufWriter;
-use tracing::error;
 
 #[tracing::instrument(name = "Index", skip(config, state))]
 pub(crate) async fn route(
@@ -19,7 +18,7 @@ pub(crate) async fn route(
 
     crate::templates::index(&mut buf, &nodes, &config)?;
     let buf = buf.into_inner().map_err(|e| {
-        error!("Error rendering template, {}", e.error());
+        tracing::error!("Error rendering template, {}", e.error());
         ErrorKind::FlushBuffer
     })?;
 

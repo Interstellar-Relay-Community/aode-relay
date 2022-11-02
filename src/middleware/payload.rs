@@ -12,7 +12,6 @@ use std::{
     future::{ready, Ready},
     task::{Context, Poll},
 };
-use tracing::info;
 
 #[derive(Clone, Debug)]
 pub(crate) struct DebugPayload(pub bool);
@@ -63,7 +62,7 @@ where
                     })
                     .map_ok(|bytes| {
                         let bytes = bytes.freeze();
-                        info!("{}", String::from_utf8_lossy(&bytes));
+                        tracing::info!("{}", String::from_utf8_lossy(&bytes));
                         bytes
                     }),
                 )),

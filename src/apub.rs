@@ -1,8 +1,8 @@
 use activitystreams::{
     activity::ActorAndObject,
     actor::{Actor, ApActor},
-    unparsed::UnparsedMutExt,
     iri_string::types::IriString,
+    unparsed::UnparsedMutExt,
 };
 use activitystreams_ext::{Ext1, UnparsedExtension};
 
