@@ -1,13 +1,22 @@
 use crate::db::Db;
 use std::sync::Arc;
-use teloxide::{prelude::*, utils::command::BotCommands};
+use teloxide::{
+    dispatching::{Dispatcher, UpdateFilterExt},
+    requests::{Requester, ResponseResult},
+    types::{Message, Update},
+    utils::command::BotCommands,
+    Bot,
+};
 
-#[derive(BotCommands, Clone)]
+#[derive(BotCommands, Clone, Debug)]
 #[command(
     rename_rule = "lowercase",
     description = "These commands are for administering AodeRelay"
 )]
 enum Command {
+    #[command(description = "Display this text.")]
+    Start,
+
     #[command(description = "Display this text.")]
     Help,
 
@@ -29,19 +38,29 @@ pub(crate) fn start(admin_handle: String, db: Db, token: &str) {
     let admin_handle = Arc::new(admin_handle);
 
     actix_rt::spawn(async move {
-        teloxide::repl(bot, move |bot: Bot, msg: Message, cmd: Command| {
-            let admin_handle = admin_handle.clone();
-            let db = db.clone();
+        let command_handler = teloxide::filter_command::<Command, _>().endpoint(
+            move |bot: Bot, msg: Message, cmd: Command| {
+                let admin_handle = admin_handle.clone();
+                let db = db.clone();
 
-            async move {
-                if !is_admin(&admin_handle, &msg) {
-                    return Ok(());
+                async move {
+                    if !is_admin(&admin_handle, &msg) {
+                        bot.send_message(msg.chat.id, "You are not authorized")
+                            .await?;
+                        return Ok(());
+                    }
+
+                    answer(bot, msg, cmd, db).await
                 }
+            },
+        );
 
-                answer(bot, msg, cmd, db).await
-            }
-        })
-        .await;
+        let message_handler = Update::filter_message().branch(command_handler);
+
+        Dispatcher::builder(bot, message_handler)
+            .build()
+            .dispatch()
+            .await;
     });
 }
 
@@ -53,9 +72,10 @@ fn is_admin(admin_handle: &str, message: &Message) -> bool {
         .unwrap_or(false)
 }
 
+#[tracing::instrument(skip(bot, msg, db))]
 async fn answer(bot: Bot, msg: Message, cmd: Command, db: Db) -> ResponseResult<()> {
     match cmd {
-        Command::Help => {
+        Command::Help | Command::Start => {
             bot.send_message(msg.chat.id, Command::descriptions().to_string())
                 .await?;
         }
@@ -79,7 +99,7 @@ async fn answer(bot: Bot, msg: Message, cmd: Command, db: Db) -> ResponseResult<
         }
         Command::Disallow { domain } => {
             if db.remove_allows(vec![domain.clone()]).await.is_ok() {
-                bot.send_message(msg.chat.id, format!("{} has been disallwoed", domain))
+                bot.send_message(msg.chat.id, format!("{} has been disallowed", domain))
                     .await?;
             }
         }
