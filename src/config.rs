@@ -30,6 +30,8 @@ pub(crate) struct ParsedConfig {
     sled_path: PathBuf,
     source_repo: IriString,
     opentelemetry_url: Option<IriString>,
+    telegram_token: Option<String>,
+    telegram_admin_handle: Option<String>,
 }
 
 #[derive(Clone)]
@@ -45,6 +47,8 @@ pub struct Config {
     sled_path: PathBuf,
     source_repo: IriString,
     opentelemetry_url: Option<IriString>,
+    telegram_token: Option<String>,
+    telegram_admin_handle: Option<String>,
 }
 
 #[derive(Debug)]
@@ -78,6 +82,8 @@ impl std::fmt::Debug for Config {
                 "opentelemetry_url",
                 &self.opentelemetry_url.as_ref().map(|url| url.to_string()),
             )
+            .field("telegram_token", &"[redacted]")
+            .field("telegram_admin_handle", &self.telegram_admin_handle)
             .finish()
     }
 }
@@ -96,6 +102,8 @@ impl Config {
             .set_default("sled_path", "./sled/db-0-34")?
             .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?
             .set_default("opentelemetry_url", None as Option<&str>)?
+            .set_default("telegram_token", None as Option<&str>)?
+            .set_default("telegram_admin_handle", None as Option<&str>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -116,6 +124,8 @@ impl Config {
             sled_path: config.sled_path,
             source_repo: config.source_repo,
             opentelemetry_url: config.opentelemetry_url,
+            telegram_token: config.telegram_token,
+            telegram_admin_handle: config.telegram_admin_handle,
         })
     }
 
@@ -223,6 +233,13 @@ impl Config {
 
     pub(crate) fn opentelemetry_url(&self) -> Option<&IriString> {
         self.opentelemetry_url.as_ref()
+    }
+
+    pub(crate) fn telegram_info(&self) -> Option<(&str, &str)> {
+        self.telegram_token.as_deref().and_then(|token| {
+            let handle = self.telegram_admin_handle.as_deref()?;
+            Some((token, handle))
+        })
     }
 
     pub(crate) fn generate_url(&self, kind: UrlKind) -> IriString {

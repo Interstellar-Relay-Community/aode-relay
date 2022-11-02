@@ -91,6 +91,8 @@ PRETTY_LOG=false
 PUBLISH_BLOCKS=true
 SLED_PATH=./sled/db-0.34
 OPENTELEMETRY_URL=localhost:4317
+TELEGRAM_TOKEN=secret
+TELEGRAM_ADMIN_HANDLE=your_handle
 ```
 
 #### Descriptions
@@ -116,6 +118,10 @@ Where to store the on-disk database of connected servers. This defaults to `./sl
 The URL to the source code for the relay. This defaults to `https://git.asonix.dog/asonix/relay`, but should be changed if you're running a fork hosted elsewhere.
 ##### `OPENTELEMETRY_URL`
 A URL for exporting opentelemetry spans. This is mostly useful for debugging. There is no default, since most people probably don't run an opentelemetry collector.
+##### `TELEGRAM_TOKEN`
+A Telegram Bot Token for running the relay administration bot. There is no default.
+##### `TELEGRAM_ADMIN_HANDLE`
+The handle of the telegram user allowed to administer the relay. There is no default.
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.

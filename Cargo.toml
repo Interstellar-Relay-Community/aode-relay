@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.28"
+version = "0.3.29"
 authors = ["asonix <asonix@asonix.dog>"]
 license = "AGPL-3.0"
 readme = "README.md"
@@ -48,6 +48,11 @@ serde_json = "1.0"
 sha2 = { version = "0.10", features = ["oid"] }
 signature = "1.6.4"
 sled = "0.34.7"
+teloxide = { version = "0.11.1", default-features = false, features = [
+  "ctrlc_handler",
+  "macros",
+  "rustls",
+] }
 thiserror = "1.0"
 tracing = "0.1"
 tracing-awc = "0.1.6"

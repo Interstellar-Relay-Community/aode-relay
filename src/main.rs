@@ -22,6 +22,7 @@ mod jobs;
 mod middleware;
 mod requests;
 mod routes;
+mod telegram;
 
 use self::{
     args::Args,
@@ -117,6 +118,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let (manager, job_server) =
         create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
+
+    if let Some((token, admin_handle)) = config.telegram_info() {
+        telegram::start(admin_handle.to_owned(), db.clone(), token);
+    }
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {
