@@ -1,5 +1,4 @@
 use crate::db::Db;
-use activitystreams::iri_string::types::IriString;
 use std::sync::Arc;
 use teloxide::{prelude::*, utils::command::BotCommands};
 
@@ -13,16 +12,16 @@ enum Command {
     Help,
 
     #[command(description = "Block a domain from the relay.")]
-    Block { domain: IriString },
+    Block { domain: String },
 
     #[command(description = "Unblock a domain from the relay.")]
-    Unblock { domain: IriString },
+    Unblock { domain: String },
 
     #[command(description = "Allow a domain to connect to the relay (for RESTRICTED_MODE)")]
-    Allow { domain: IriString },
+    Allow { domain: String },
 
     #[command(description = "Disallow a domain to connect to the relay (for RESTRICTED_MODE)")]
-    Disallow { domain: IriString },
+    Disallow { domain: String },
 }
 
 pub(crate) fn start(admin_handle: String, db: Db, token: &str) {
@@ -61,25 +60,25 @@ async fn answer(bot: Bot, msg: Message, cmd: Command, db: Db) -> ResponseResult<
                 .await?;
         }
         Command::Block { domain } => {
-            if db.add_blocks(vec![domain.to_string()]).await.is_ok() {
+            if db.add_blocks(vec![domain.clone()]).await.is_ok() {
                 bot.send_message(msg.chat.id, format!("{} has been blocked", domain))
                     .await?;
             }
         }
         Command::Unblock { domain } => {
-            if db.remove_blocks(vec![domain.to_string()]).await.is_ok() {
+            if db.remove_blocks(vec![domain.clone()]).await.is_ok() {
                 bot.send_message(msg.chat.id, format!("{} has been unblocked", domain))
                     .await?;
             }
         }
         Command::Allow { domain } => {
-            if db.add_allows(vec![domain.to_string()]).await.is_ok() {
+            if db.add_allows(vec![domain.clone()]).await.is_ok() {
                 bot.send_message(msg.chat.id, format!("{} has been allowed", domain))
                     .await?;
             }
         }
         Command::Disallow { domain } => {
-            if db.remove_allows(vec![domain.to_string()]).await.is_ok() {
+            if db.remove_allows(vec![domain.clone()]).await.is_ok() {
                 bot.send_message(msg.chat.id, format!("{} has been disallwoed", domain))
                     .await?;
             }
