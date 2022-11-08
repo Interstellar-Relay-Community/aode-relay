@@ -52,21 +52,16 @@ impl QueryInstance {
             .fetch_json::<Instance>(instance_uri.as_str())
             .await?;
 
-        let description = if instance.description.is_empty() {
-            instance.short_description.unwrap_or_default()
-        } else {
-            instance.description
-        };
+        let description = instance.short_description.unwrap_or(instance.description);
 
-        if let Some(mut contact) = instance.contact {
+        if let Some(contact) = instance.contact {
             let uuid = if let Some(uuid) = state.media.get_uuid(contact.avatar.clone()).await? {
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
                 uuid
             } else {
-                let uuid = state.media.store_url(contact.avatar.clone()).await?;
-                contact.avatar = state.config.generate_url(UrlKind::Media(uuid));
-                uuid
+                state.media.store_url(contact.avatar).await?
             };
+
+            let avatar = state.config.generate_url(UrlKind::Media(uuid));
 
             state.job_server.queue(CacheMedia::new(uuid)).await?;
 
@@ -77,7 +72,7 @@ impl QueryInstance {
                     contact.username,
                     contact.display_name,
                     contact.url,
-                    contact.avatar,
+                    avatar,
                 )
                 .await?;
         }
@@ -87,7 +82,7 @@ impl QueryInstance {
         state
             .node_cache
             .set_instance(
-                self.actor_id.clone(),
+                self.actor_id,
                 instance.title,
                 description,
                 instance.version,

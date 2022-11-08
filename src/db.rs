@@ -142,6 +142,14 @@ impl Inner {
             .map(|s| String::from_utf8_lossy(&s).to_string())
     }
 
+    fn allowed(&self) -> impl DoubleEndedIterator<Item = String> {
+        self.allowed_domains
+            .iter()
+            .values()
+            .filter_map(|res| res.ok())
+            .map(|s| String::from_utf8_lossy(&s).to_string())
+    }
+
     fn connected(&self) -> impl DoubleEndedIterator<Item = IriString> {
         self.connected_actor_ids
             .iter()
@@ -271,6 +279,10 @@ impl Db {
 
     pub(crate) async fn connected_ids(&self) -> Result<Vec<IriString>, Error> {
         self.unblock(|inner| Ok(inner.connected().collect())).await
+    }
+
+    pub(crate) async fn allowed_domains(&self) -> Result<Vec<String>, Error> {
+        self.unblock(|inner| Ok(inner.allowed().collect())).await
     }
 
     pub(crate) async fn save_info(&self, actor_id: IriString, info: Info) -> Result<(), Error> {
