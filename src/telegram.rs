@@ -31,6 +31,15 @@ enum Command {
 
     #[command(description = "Disallow a domain to connect to the relay (for RESTRICTED_MODE)")]
     Disallow { domain: String },
+
+    #[command(description = "List blocked domains")]
+    ListBlocks,
+
+    #[command(description = "List allowed domains")]
+    ListAllowed,
+
+    #[command(description = "List connected domains")]
+    ListConnected,
 }
 
 pub(crate) fn start(admin_handle: String, db: Db, token: &str) {
@@ -79,29 +88,40 @@ async fn answer(bot: Bot, msg: Message, cmd: Command, db: Db) -> ResponseResult<
             bot.send_message(msg.chat.id, Command::descriptions().to_string())
                 .await?;
         }
-        Command::Block { domain } => {
-            if db.add_blocks(vec![domain.clone()]).await.is_ok() {
-                bot.send_message(msg.chat.id, format!("{} has been blocked", domain))
-                    .await?;
+        Command::Block { domain } if db.add_blocks(vec![domain.clone()]).await.is_ok() => {
+            bot.send_message(msg.chat.id, format!("{} has been blocked", domain))
+                .await?;
+        }
+        Command::Unblock { domain } if db.remove_blocks(vec![domain.clone()]).await.is_ok() => {
+            bot.send_message(msg.chat.id, format!("{} has been unblocked", domain))
+                .await?;
+        }
+        Command::Allow { domain } if db.add_allows(vec![domain.clone()]).await.is_ok() => {
+            bot.send_message(msg.chat.id, format!("{} has been allowed", domain))
+                .await?;
+        }
+        Command::Disallow { domain } if db.remove_allows(vec![domain.clone()]).await.is_ok() => {
+            bot.send_message(msg.chat.id, format!("{} has been disallowed", domain))
+                .await?;
+        }
+        Command::ListAllowed => {
+            if let Ok(allowed) = db.allowed_domains().await {
+                bot.send_message(msg.chat.id, allowed.join("\n")).await?;
             }
         }
-        Command::Unblock { domain } => {
-            if db.remove_blocks(vec![domain.clone()]).await.is_ok() {
-                bot.send_message(msg.chat.id, format!("{} has been unblocked", domain))
-                    .await?;
+        Command::ListBlocks => {
+            if let Ok(blocks) = db.blocks().await {
+                bot.send_message(msg.chat.id, blocks.join("\n")).await?;
             }
         }
-        Command::Allow { domain } => {
-            if db.add_allows(vec![domain.clone()]).await.is_ok() {
-                bot.send_message(msg.chat.id, format!("{} has been allowed", domain))
-                    .await?;
+        Command::ListConnected => {
+            if let Ok(connected) = db.connected_ids().await {
+                bot.send_message(msg.chat.id, connected.join("\n")).await?;
             }
         }
-        Command::Disallow { domain } => {
-            if db.remove_allows(vec![domain.clone()]).await.is_ok() {
-                bot.send_message(msg.chat.id, format!("{} has been disallowed", domain))
-                    .await?;
-            }
+        _ => {
+            bot.send_message(msg.chat.id, "Internal server error")
+                .await?;
         }
     }
 

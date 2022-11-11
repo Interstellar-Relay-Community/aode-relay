@@ -142,7 +142,7 @@ impl Inner {
             .map(|s| String::from_utf8_lossy(&s).to_string())
     }
 
-    fn allows(&self) -> impl DoubleEndedIterator<Item = String> {
+    fn allowed(&self) -> impl DoubleEndedIterator<Item = String> {
         self.allowed_domains
             .iter()
             .values()
@@ -279,6 +279,10 @@ impl Db {
 
     pub(crate) async fn connected_ids(&self) -> Result<Vec<IriString>, Error> {
         self.unblock(|inner| Ok(inner.connected().collect())).await
+    }
+
+    pub(crate) async fn allowed_domains(&self) -> Result<Vec<String>, Error> {
+        self.unblock(|inner| Ok(inner.allowed().collect())).await
     }
 
     pub(crate) async fn save_info(&self, actor_id: IriString, info: Info) -> Result<(), Error> {
@@ -461,7 +465,7 @@ impl Db {
     }
 
     pub(crate) async fn allows(&self) -> Result<Vec<String>, Error> {
-        self.unblock(|inner| Ok(inner.allows().collect())).await
+        self.unblock(|inner| Ok(inner.allowed().collect())).await
     }
 
     pub(crate) async fn inboxes(&self) -> Result<Vec<IriString>, Error> {
