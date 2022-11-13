@@ -8,10 +8,19 @@ use activitystreams::prelude::*;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Forward {
     input: AcceptedActivities,
     actor: Actor,
+}
+
+impl std::fmt::Debug for Forward {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Forward")
+            .field("input", &self.input.id_unchecked())
+            .field("actor", &self.actor.id)
+            .finish()
+    }
 }
 
 impl Forward {

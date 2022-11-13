@@ -13,7 +13,8 @@ impl std::fmt::Debug for Deliver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Deliver")
             .field("to", &self.to.to_string())
-            .field("data", &self.data)
+            .field("activity", &self.data["type"])
+            .field("object", &self.data["object"]["type"])
             .finish()
     }
 }

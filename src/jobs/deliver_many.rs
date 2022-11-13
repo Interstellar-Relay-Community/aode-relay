@@ -24,7 +24,8 @@ impl std::fmt::Debug for DeliverMany {
         );
         f.debug_struct("DeliverMany")
             .field("to", &to)
-            .field("data", &self.data)
+            .field("activity", &self.data["type"])
+            .field("object", &self.data["object"]["type"])
             .finish()
     }
 }

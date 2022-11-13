@@ -354,7 +354,7 @@ impl Requests {
     #[tracing::instrument(
         "Deliver to Inbox",
         skip_all,
-        fields(inbox = inbox.to_string().as_str(), item)
+        fields(inbox = inbox.to_string().as_str())
     )]
     pub(crate) async fn deliver<T>(&self, inbox: IriString, item: &T) -> Result<(), Error>
     where

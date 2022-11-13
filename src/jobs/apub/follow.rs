@@ -13,10 +13,19 @@ use activitystreams::{
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Follow {
     input: AcceptedActivities,
     actor: Actor,
+}
+
+impl std::fmt::Debug for Follow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Follow")
+            .field("input", &self.input.id_unchecked())
+            .field("actor", &self.actor.id)
+            .finish()
+    }
 }
 
 impl Follow {

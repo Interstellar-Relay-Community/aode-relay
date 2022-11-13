@@ -5,13 +5,23 @@ use crate::{
     error::Error,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
+use activitystreams::prelude::BaseExt;
 use background_jobs::ActixJob;
 use std::{future::Future, pin::Pin};
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Undo {
     input: AcceptedActivities,
     actor: Actor,
+}
+
+impl std::fmt::Debug for Undo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Undo")
+            .field("input", &self.input.id_unchecked())
+            .field("actor", &self.actor.id)
+            .finish()
+    }
 }
 
 impl Undo {

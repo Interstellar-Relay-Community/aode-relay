@@ -21,7 +21,7 @@ impl std::fmt::Debug for Announce {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Announce")
             .field("object_id", &self.object_id.to_string())
-            .field("actor", &self.actor)
+            .field("actor_id", &self.actor.id)
             .finish()
     }
 }
