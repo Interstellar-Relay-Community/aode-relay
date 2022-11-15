@@ -25,6 +25,20 @@ use background_jobs::{
 };
 use std::time::Duration;
 
+fn debug_object(activity: &serde_json::Value) -> &serde_json::Value {
+    let mut object = &activity["object"]["type"];
+
+    if object.is_null() {
+        object = &activity["object"]["id"];
+    }
+
+    if object.is_null() {
+        object = &activity["object"];
+    }
+
+    object
+}
+
 pub(crate) fn create_workers(
     state: State,
     actors: ActorCache,

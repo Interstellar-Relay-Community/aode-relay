@@ -1,6 +1,6 @@
 use crate::{
     error::Error,
-    jobs::{Deliver, JobState},
+    jobs::{debug_object, Deliver, JobState},
 };
 use activitystreams::iri_string::types::IriString;
 use background_jobs::ActixJob;
@@ -16,7 +16,7 @@ impl std::fmt::Debug for DeliverMany {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DeliverMany")
             .field("activity", &self.data["type"])
-            .field("object", &self.data["object"]["type"])
+            .field("object", debug_object(&self.data))
             .finish()
     }
 }

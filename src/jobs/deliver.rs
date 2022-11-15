@@ -1,4 +1,7 @@
-use crate::{error::Error, jobs::JobState};
+use crate::{
+    error::Error,
+    jobs::{debug_object, JobState},
+};
 use activitystreams::iri_string::types::IriString;
 use background_jobs::{ActixJob, Backoff};
 use std::{future::Future, pin::Pin};
@@ -14,7 +17,7 @@ impl std::fmt::Debug for Deliver {
         f.debug_struct("Deliver")
             .field("to", &self.to.to_string())
             .field("activity", &self.data["type"])
-            .field("object", &self.data["object"]["type"])
+            .field("object", debug_object(&self.data))
             .finish()
     }
 }
