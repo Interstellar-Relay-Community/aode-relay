@@ -14,16 +14,7 @@ pub(crate) struct DeliverMany {
 
 impl std::fmt::Debug for DeliverMany {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let to = format!(
-            "[{}]",
-            self.to
-                .iter()
-                .map(|u| u.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
         f.debug_struct("DeliverMany")
-            .field("to", &to)
             .field("activity", &self.data["type"])
             .field("object", &self.data["object"]["type"])
             .finish()
