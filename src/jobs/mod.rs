@@ -138,3 +138,59 @@ impl JobServer {
             .map_err(Into::into)
     }
 }
+
+struct Boolish {
+    inner: bool,
+}
+
+impl std::ops::Deref for Boolish {
+    type Target = bool;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Boolish {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(serde::Deserialize)]
+        #[serde(untagged)]
+        enum BoolThing {
+            Bool(bool),
+            String(String),
+        }
+
+        let thing: BoolThing = serde::Deserialize::deserialize(deserializer)?;
+
+        match thing {
+            BoolThing::Bool(inner) => Ok(Boolish { inner }),
+            BoolThing::String(s) if s.to_lowercase() == "false" => Ok(Boolish { inner: false }),
+            BoolThing::String(_) => Ok(Boolish { inner: true }),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Boolish;
+
+    #[test]
+    fn boolish_works() {
+        const CASES: &[(&str, bool)] = &[
+            ("false", false),
+            ("\"false\"", false),
+            ("\"FALSE\"", false),
+            ("true", true),
+            ("\"true\"", true),
+            ("\"anything else\"", true),
+        ];
+
+        for (case, output) in CASES {
+            let b: Boolish = serde_json::from_str(case).unwrap();
+            assert_eq!(*b, *output);
+        }
+    }
+}
