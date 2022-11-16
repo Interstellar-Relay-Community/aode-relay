@@ -20,7 +20,6 @@ use std::{
     },
     time::{Duration, SystemTime},
 };
-use tracing::{debug, info, warn};
 use tracing_awc::Tracing;
 
 const ONE_SECOND: u64 = 1;
@@ -193,7 +192,7 @@ impl Requests {
     fn count_err(&self) {
         let count = self.consecutive_errors.fetch_add(1, Ordering::Relaxed);
         if count + 1 >= self.error_limit {
-            warn!("{} consecutive errors, rebuilding http client", count);
+            tracing::warn!("{} consecutive errors, rebuilding http client", count);
             *self.client.borrow_mut() = Client::builder()
                 .wrap(Tracing)
                 .add_default_header(("User-Agent", self.user_agent.clone()))
@@ -261,7 +260,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        debug!("Response from {}, {}", url, s);
+                        tracing::warn!("Response from {}, {}", url, s);
                     }
                 }
             }
@@ -289,7 +288,7 @@ impl Requests {
             return Err(ErrorKind::Breaker.into());
         }
 
-        info!("Fetching bytes for {}", url);
+        tracing::info!("Fetching bytes for {}", url);
         let signer = self.signer();
 
         let client: Client = self.client.borrow().clone();
@@ -329,7 +328,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        debug!("Response from {}, {}", url, s);
+                        tracing::warn!("Response from {}, {}", url, s);
                     }
                 }
             }
@@ -400,7 +399,7 @@ impl Requests {
                 if let Ok(bytes) = res.body().await {
                     if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                         if !s.is_empty() {
-                            warn!("Response from {}, {}", inbox.as_str(), s);
+                            tracing::warn!("Response from {}, {}", inbox.as_str(), s);
                         }
                     }
                 }

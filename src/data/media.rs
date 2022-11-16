@@ -19,17 +19,17 @@ impl MediaCache {
         MediaCache { db }
     }
 
-    #[tracing::instrument(name = "Get media uuid", skip_all, fields(url = url.to_string().as_str()))]
+    #[tracing::instrument(level = "debug", name = "Get media uuid", skip_all, fields(url = url.to_string().as_str()))]
     pub(crate) async fn get_uuid(&self, url: IriString) -> Result<Option<Uuid>, Error> {
         self.db.media_id(url).await
     }
 
-    #[tracing::instrument(name = "Get media url", skip(self))]
+    #[tracing::instrument(level = "debug", name = "Get media url", skip(self))]
     pub(crate) async fn get_url(&self, uuid: Uuid) -> Result<Option<IriString>, Error> {
         self.db.media_url(uuid).await
     }
 
-    #[tracing::instrument(name = "Is media outdated", skip(self))]
+    #[tracing::instrument(level = "debug", name = "Is media outdated", skip(self))]
     pub(crate) async fn is_outdated(&self, uuid: Uuid) -> Result<bool, Error> {
         if let Some(meta) = self.db.media_meta(uuid).await? {
             if meta.saved_at + MEDIA_DURATION > SystemTime::now() {
@@ -40,7 +40,7 @@ impl MediaCache {
         Ok(true)
     }
 
-    #[tracing::instrument(name = "Get media bytes", skip(self))]
+    #[tracing::instrument(level = "debug", name = "Get media bytes", skip(self))]
     pub(crate) async fn get_bytes(&self, uuid: Uuid) -> Result<Option<(String, Bytes)>, Error> {
         if let Some(meta) = self.db.media_meta(uuid).await? {
             if meta.saved_at + MEDIA_DURATION > SystemTime::now() {

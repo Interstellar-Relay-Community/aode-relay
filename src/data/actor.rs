@@ -37,7 +37,7 @@ impl ActorCache {
         ActorCache { db }
     }
 
-    #[tracing::instrument(name = "Get Actor", skip_all, fields(id = id.to_string().as_str(), requests))]
+    #[tracing::instrument(level = "debug" name = "Get Actor", skip_all, fields(id = id.to_string().as_str(), requests))]
     pub(crate) async fn get(
         &self,
         id: &IriString,
@@ -54,7 +54,7 @@ impl ActorCache {
             .map(MaybeCached::Fetched)
     }
 
-    #[tracing::instrument(name = "Add Connection", skip(self))]
+    #[tracing::instrument(level = "debug", name = "Add Connection", skip(self))]
     pub(crate) async fn add_connection(&self, actor: Actor) -> Result<(), Error> {
         let add_connection = self.db.add_connection(actor.id.clone());
         let save_actor = self.db.save_actor(actor);
@@ -64,12 +64,12 @@ impl ActorCache {
         Ok(())
     }
 
-    #[tracing::instrument(name = "Remove Connection", skip(self))]
+    #[tracing::instrument(level = "debug", name = "Remove Connection", skip(self))]
     pub(crate) async fn remove_connection(&self, actor: &Actor) -> Result<(), Error> {
         self.db.remove_connection(actor.id.clone()).await
     }
 
-    #[tracing::instrument(name = "Fetch remote actor", skip_all, fields(id = id.to_string().as_str(), requests))]
+    #[tracing::instrument(level = "debug", name = "Fetch remote actor", skip_all, fields(id = id.to_string().as_str(), requests))]
     pub(crate) async fn get_no_cache(
         &self,
         id: &IriString,

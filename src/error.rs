@@ -7,12 +7,17 @@ use actix_web::{
 };
 use http_signature_normalization_actix::PrepareSignError;
 use std::{convert::Infallible, fmt::Debug, io};
-use tracing::error;
 use tracing_error::SpanTrace;
 
 pub(crate) struct Error {
     context: SpanTrace,
     kind: ErrorKind,
+}
+
+impl Error {
+    pub(crate) fn is_breaker(&self) -> bool {
+        matches!(self.kind, ErrorKind::Breaker)
+    }
 }
 
 impl std::fmt::Debug for Error {

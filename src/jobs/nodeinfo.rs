@@ -52,7 +52,14 @@ impl QueryNodeinfo {
             return Ok(());
         };
 
-        let nodeinfo = state.requests.fetch_json::<Nodeinfo>(&href).await?;
+        let nodeinfo = match state.requests.fetch_json::<Nodeinfo>(&href).await {
+            Ok(nodeinfo) => nodeinfo,
+            Err(e) if e.is_breaker() => {
+                tracing::debug!("Not retrying due to failed breaker");
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
 
         state
             .node_cache

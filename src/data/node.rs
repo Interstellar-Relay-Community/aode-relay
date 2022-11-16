@@ -34,7 +34,7 @@ impl NodeCache {
         NodeCache { db }
     }
 
-    #[tracing::instrument(name = "Get nodes", skip(self))]
+    #[tracing::instrument(level = "debug", name = "Get nodes", skip(self))]
     pub(crate) async fn nodes(&self) -> Result<Vec<Node>, Error> {
         let infos = self.db.connected_info();
         let instances = self.db.connected_instance();
@@ -59,7 +59,7 @@ impl NodeCache {
         Ok(vec)
     }
 
-    #[tracing::instrument(name = "Is NodeInfo Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
+    #[tracing::instrument(level = "debug", name = "Is NodeInfo Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_nodeinfo_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .info(actor_id)
@@ -68,7 +68,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Is Contact Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
+    #[tracing::instrument(level = "debug", name = "Is Contact Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_contact_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .contact(actor_id)
@@ -77,7 +77,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Is Instance Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
+    #[tracing::instrument(level = "debug", name = "Is Instance Outdated", skip_all, fields(actor_id = actor_id.to_string().as_str()))]
     pub(crate) async fn is_instance_outdated(&self, actor_id: IriString) -> bool {
         self.db
             .instance(actor_id)
@@ -86,7 +86,7 @@ impl NodeCache {
             .unwrap_or(true)
     }
 
-    #[tracing::instrument(name = "Save node info", skip_all, fields(actor_id = actor_id.to_string().as_str(), software, version, reg))]
+    #[tracing::instrument(level = "debug", name = "Save node info", skip_all, fields(actor_id = actor_id.to_string().as_str(), software, version, reg))]
     pub(crate) async fn set_info(
         &self,
         actor_id: IriString,
@@ -108,6 +108,7 @@ impl NodeCache {
     }
 
     #[tracing::instrument(
+        level = "debug",
         name = "Save instance info",
         skip_all,
         fields(
@@ -144,6 +145,7 @@ impl NodeCache {
     }
 
     #[tracing::instrument(
+        level = "debug",
         name = "Save contact info",
         skip_all,
         fields(

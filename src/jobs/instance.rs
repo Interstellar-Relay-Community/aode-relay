@@ -47,10 +47,18 @@ impl QueryInstance {
         let scheme = self.actor_id.scheme_str();
         let instance_uri = iri!(format!("{}://{}/api/v1/instance", scheme, authority));
 
-        let instance = state
+        let instance = match state
             .requests
             .fetch_json::<Instance>(instance_uri.as_str())
-            .await?;
+            .await
+        {
+            Ok(instance) => instance,
+            Err(e) if e.is_breaker() => {
+                tracing::debug!("Not retrying due to failed breaker");
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
 
         let description = instance.short_description.unwrap_or(instance.description);
 
