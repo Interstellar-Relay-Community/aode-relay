@@ -162,6 +162,14 @@ impl std::fmt::Debug for Requests {
     }
 }
 
+fn build_client(user_agent: &str) -> Client {
+    Client::builder()
+        .wrap(Tracing)
+        .add_default_header(("User-Agent", user_agent.to_string()))
+        .timeout(Duration::from_secs(15))
+        .finish()
+}
+
 impl Requests {
     pub(crate) fn new(
         key_id: String,
@@ -170,12 +178,7 @@ impl Requests {
         breakers: Breakers,
     ) -> Self {
         Requests {
-            client: Rc::new(RefCell::new(
-                Client::builder()
-                    .wrap(Tracing)
-                    .add_default_header(("User-Agent", user_agent.clone()))
-                    .finish(),
-            )),
+            client: Rc::new(RefCell::new(build_client(&user_agent))),
             consecutive_errors: Rc::new(AtomicUsize::new(0)),
             error_limit: 3,
             key_id,
@@ -190,10 +193,7 @@ impl Requests {
         let count = self.consecutive_errors.fetch_add(1, Ordering::Relaxed);
         if count + 1 >= self.error_limit {
             tracing::warn!("{} consecutive errors, rebuilding http client", count);
-            *self.client.borrow_mut() = Client::builder()
-                .wrap(Tracing)
-                .add_default_header(("User-Agent", self.user_agent.clone()))
-                .finish();
+            *self.client.borrow_mut() = build_client(&self.user_agent);
             self.reset_err();
         }
     }
