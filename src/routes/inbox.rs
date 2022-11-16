@@ -16,7 +16,7 @@ use activitystreams::{
 use actix_web::{web, HttpResponse};
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 
-#[tracing::instrument(name = "Inbox", skip(actors, client, jobs, config, state, verified))]
+#[tracing::instrument(name = "Inbox", skip_all)]
 pub(crate) async fn route(
     state: web::Data<State>,
     actors: web::Data<ActorCache>,
