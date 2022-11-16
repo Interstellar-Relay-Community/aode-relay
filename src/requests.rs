@@ -1,7 +1,7 @@
 use crate::error::{Error, ErrorKind};
 use activitystreams::iri_string::types::IriString;
 use actix_web::{http::header::Date, web::Bytes};
-use awc::{Client, ClientResponse};
+use awc::{error::SendRequestError, Client, ClientResponse};
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
 use rand::thread_rng;
@@ -203,8 +203,16 @@ impl Requests {
     async fn check_response(
         &self,
         parsed_url: &IriString,
-        res: &mut ClientResponse,
-    ) -> Result<(), Error> {
+        res: Result<ClientResponse, SendRequestError>,
+    ) -> Result<ClientResponse, Error> {
+        if res.is_err() {
+            self.count_err();
+            self.breakers.fail(&parsed_url);
+        }
+
+        let mut res =
+            res.map_err(|e| ErrorKind::SendRequest(parsed_url.to_string(), e.to_string()))?;
+
         self.reset_err();
 
         if !res.status().is_success() {
@@ -226,7 +234,7 @@ impl Requests {
 
         self.breakers.succeed(&parsed_url);
 
-        Ok(())
+        Ok(res)
     }
 
     #[tracing::instrument(name = "Fetch Json", skip(self), fields(signing_string))]
@@ -275,14 +283,7 @@ impl Requests {
             .send()
             .await;
 
-        if res.is_err() {
-            self.count_err();
-            self.breakers.fail(&parsed_url);
-        }
-
-        let mut res = res.map_err(|e| ErrorKind::SendRequest(url.to_string(), e.to_string()))?;
-
-        self.check_response(&parsed_url, &mut res).await?;
+        let mut res = self.check_response(&parsed_url, res).await?;
 
         let body = res
             .body()
@@ -320,14 +321,7 @@ impl Requests {
             .send()
             .await;
 
-        if res.is_err() {
-            self.breakers.fail(&parsed_url);
-            self.count_err();
-        }
-
-        let mut res = res.map_err(|e| ErrorKind::SendRequest(url.to_string(), e.to_string()))?;
-
-        self.check_response(&parsed_url, &mut res).await?;
+        let mut res = self.check_response(&parsed_url, res).await?;
 
         let content_type = if let Some(content_type) = res.headers().get("content-type") {
             if let Ok(s) = content_type.to_str() {
@@ -387,14 +381,7 @@ impl Requests {
 
         let res = req.send_body(body).await;
 
-        if res.is_err() {
-            self.count_err();
-            self.breakers.fail(&inbox);
-        }
-
-        let mut res = res.map_err(|e| ErrorKind::SendRequest(inbox.to_string(), e.to_string()))?;
-
-        self.check_response(&inbox, &mut res).await?;
+        self.check_response(&inbox, res).await?;
 
         Ok(())
     }
