@@ -11,6 +11,9 @@ pub(crate) struct Args {
 
     #[arg(short, long, help = "Undo allowing or blocking domains")]
     undo: bool,
+
+    #[arg(short, long, help = "List allowed and blocked domains")]
+    list: bool,
 }
 
 impl Args {
@@ -28,5 +31,9 @@ impl Args {
 
     pub(crate) fn undo(&self) -> bool {
         self.undo
+    }
+
+    pub(crate) fn list(&self) -> bool {
+        self.list
     }
 }

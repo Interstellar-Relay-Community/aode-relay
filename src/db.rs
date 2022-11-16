@@ -464,6 +464,10 @@ impl Db {
         self.unblock(|inner| Ok(inner.blocks().collect())).await
     }
 
+    pub(crate) async fn allows(&self) -> Result<Vec<String>, Error> {
+        self.unblock(|inner| Ok(inner.allowed().collect())).await
+    }
+
     pub(crate) async fn inboxes(&self) -> Result<Vec<IriString>, Error> {
         self.unblock(|inner| Ok(inner.connected_actors().map(|actor| actor.inbox).collect()))
             .await

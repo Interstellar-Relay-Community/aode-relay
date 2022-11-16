@@ -101,6 +101,16 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let args = Args::new();
 
+    if args.list() {
+        for domain in db.blocks().await? {
+            println!("block {}", domain);
+        }
+        for domain in db.allows().await? {
+            println!("allow {}", domain);
+        }
+        return Ok(());
+    }
+
     if !args.blocks().is_empty() || !args.allowed().is_empty() {
         if args.undo() {
             db.remove_blocks(args.blocks().to_vec()).await?;
