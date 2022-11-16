@@ -187,6 +187,10 @@ impl Requests {
         }
     }
 
+    pub(crate) fn reset_breaker(&self, iri: &IriString) {
+        self.breakers.succeed(iri);
+    }
+
     fn count_err(&self) {
         let count = self.consecutive_errors.fetch_add(1, Ordering::Relaxed);
         if count + 1 >= self.error_limit {

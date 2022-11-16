@@ -26,6 +26,9 @@ impl MyVerify {
     ) -> Result<bool, Error> {
         let public_key_id = iri!(key_id);
 
+        // receiving an activity from a domain indicates it is probably online
+        self.0.reset_breaker(&public_key_id);
+
         let actor_id = if let Some(mut actor_id) = self
             .2
             .db
