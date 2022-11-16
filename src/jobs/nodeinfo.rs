@@ -41,10 +41,18 @@ impl QueryNodeinfo {
         let scheme = self.actor_id.scheme_str();
         let well_known_uri = iri!(format!("{}://{}/.well-known/nodeinfo", scheme, authority));
 
-        let well_known = state
+        let well_known = match state
             .requests
             .fetch_json::<WellKnown>(well_known_uri.as_str())
-            .await?;
+            .await
+        {
+            Ok(well_known) => well_known,
+            Err(e) if e.is_breaker() => {
+                tracing::debug!("Not retrying due to failed breaker");
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
 
         let href = if let Some(link) = well_known.links.into_iter().find(|l| l.rel.is_supported()) {
             link.href
