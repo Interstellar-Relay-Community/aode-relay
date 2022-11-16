@@ -90,6 +90,7 @@ HTTPS=true
 PRETTY_LOG=false
 PUBLISH_BLOCKS=true
 SLED_PATH=./sled/db-0.34
+RUST_LOG=warn
 OPENTELEMETRY_URL=localhost:4317
 TELEGRAM_TOKEN=secret
 TELEGRAM_ADMIN_HANDLE=your_handle
@@ -114,6 +115,8 @@ Whether the current server is running on an HTTPS port or not. This is used for 
 Whether or not to publish a list of blocked domains in the `nodeinfo` metadata for the server. It defaults to `false`.
 ##### `SLED_PATH`
 Where to store the on-disk database of connected servers. This defaults to `./sled/db-0.34`.
+##### `RUST_LOG`
+The log level to print. Available levels are `ERROR`, `WARN`, `INFO`, `DEBUG`, and `TRACE`. You can also specify module paths to enable some logs but not others, such as `RUST_LOG=warn,tracing_actix_web=info,relay=info`
 ##### `SOURCE_REPO`
 The URL to the source code for the relay. This defaults to `https://git.asonix.dog/asonix/relay`, but should be changed if you're running a fork hosted elsewhere.
 ##### `OPENTELEMETRY_URL`
