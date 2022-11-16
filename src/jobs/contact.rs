@@ -40,10 +40,18 @@ impl QueryContact {
             return Ok(());
         }
 
-        let contact = state
+        let contact = match state
             .requests
             .fetch::<AcceptedActors>(self.contact_id.as_str())
-            .await?;
+            .await
+        {
+            Ok(contact) => contact,
+            Err(e) if e.is_breaker() => {
+                tracing::debug!("Not retrying due to failed breaker");
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
 
         let (username, display_name, url, avatar) =
             to_contact(contact).ok_or(ErrorKind::Extract("contact"))?;

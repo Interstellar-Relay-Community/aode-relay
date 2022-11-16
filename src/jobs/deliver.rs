@@ -40,6 +40,10 @@ impl Deliver {
                 tracing::debug!("Not trying due to failed breaker");
                 return Ok(());
             }
+            if e.is_bad_request() {
+                tracing::debug!("Server didn't understand the activity");
+                return Ok(());
+            }
             return Err(e);
         }
         Ok(())

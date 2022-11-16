@@ -57,6 +57,10 @@ impl QueryInstance {
                 tracing::debug!("Not retrying due to failed breaker");
                 return Ok(());
             }
+            Err(e) if e.is_not_found() => {
+                tracing::debug!("Server doesn't implement instance endpoint");
+                return Ok(());
+            }
             Err(e) => return Err(e),
         };
 

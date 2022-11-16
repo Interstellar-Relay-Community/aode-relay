@@ -1,9 +1,6 @@
 use crate::error::{Error, ErrorKind};
 use activitystreams::iri_string::types::IriString;
-use actix_web::{
-    http::{header::Date, StatusCode},
-    web::Bytes,
-};
+use actix_web::{http::header::Date, web::Bytes};
 use awc::Client;
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
@@ -394,19 +391,16 @@ impl Requests {
         self.reset_err();
 
         if !res.status().is_success() {
-            // Bad Request means the server didn't understand our activity - that's fine
-            if res.status() != StatusCode::BAD_REQUEST {
-                if let Ok(bytes) = res.body().await {
-                    if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
-                        if !s.is_empty() {
-                            tracing::warn!("Response from {}, {}", inbox.as_str(), s);
-                        }
+            if let Ok(bytes) = res.body().await {
+                if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
+                    if !s.is_empty() {
+                        tracing::warn!("Response from {}, {}", inbox.as_str(), s);
                     }
                 }
-
-                self.breakers.fail(&inbox);
-                return Err(ErrorKind::Status(inbox.to_string(), res.status()).into());
             }
+
+            self.breakers.fail(&inbox);
+            return Err(ErrorKind::Status(inbox.to_string(), res.status()).into());
         }
 
         self.breakers.succeed(&inbox);
