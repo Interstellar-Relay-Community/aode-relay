@@ -29,7 +29,7 @@ impl AdminConfig {
     }
 
     fn verify(&self, token: XApiToken) -> Result<bool, Error> {
-        Ok(bcrypt::verify(&token.0, &self.hashed_api_token).map_err(Error::bcrypt_verify)?)
+        bcrypt::verify(&token.0, &self.hashed_api_token).map_err(Error::bcrypt_verify)
     }
 }
 
