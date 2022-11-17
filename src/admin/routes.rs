@@ -14,6 +14,15 @@ pub(crate) async fn allow(
     Ok(HttpResponse::NoContent().finish())
 }
 
+pub(crate) async fn disallow(
+    admin: Admin,
+    Json(Domains { domains }): Json<Domains>,
+) -> Result<HttpResponse, Error> {
+    admin.db_ref().remove_allows(domains).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
 pub(crate) async fn block(
     admin: Admin,
     Json(Domains { domains }): Json<Domains>,
@@ -23,20 +32,29 @@ pub(crate) async fn block(
     Ok(HttpResponse::NoContent().finish())
 }
 
-pub(crate) async fn allowed(admin: Admin) -> Result<HttpResponse, Error> {
-    let allowed_domains = admin.db_ref().allowed_domains().await?;
+pub(crate) async fn unblock(
+    admin: Admin,
+    Json(Domains { domains }): Json<Domains>,
+) -> Result<HttpResponse, Error> {
+    admin.db_ref().remove_blocks(domains).await?;
 
-    Ok(HttpResponse::Ok().json(AllowedDomains { allowed_domains }))
+    Ok(HttpResponse::NoContent().finish())
 }
 
-pub(crate) async fn blocked(admin: Admin) -> Result<HttpResponse, Error> {
+pub(crate) async fn allowed(admin: Admin) -> Result<Json<AllowedDomains>, Error> {
+    let allowed_domains = admin.db_ref().allows().await?;
+
+    Ok(Json(AllowedDomains { allowed_domains }))
+}
+
+pub(crate) async fn blocked(admin: Admin) -> Result<Json<BlockedDomains>, Error> {
     let blocked_domains = admin.db_ref().blocks().await?;
 
-    Ok(HttpResponse::Ok().json(BlockedDomains { blocked_domains }))
+    Ok(Json(BlockedDomains { blocked_domains }))
 }
 
-pub(crate) async fn connected(admin: Admin) -> Result<HttpResponse, Error> {
+pub(crate) async fn connected(admin: Admin) -> Result<Json<ConnectedActors>, Error> {
     let connected_actors = admin.db_ref().connected_ids().await?;
 
-    Ok(HttpResponse::Ok().json(ConnectedActors { connected_actors }))
+    Ok(Json(ConnectedActors { connected_actors }))
 }

@@ -36,6 +36,9 @@ To simply run the server, the command is as follows
 $ ./relay
 ```
 
+#### Administration
+> **NOTE:** The server _must be running_ in order to update the lists with the following commands
+
 To learn about any other tasks, the `--help` flag can be passed
 ```bash
 An activitypub relay
@@ -91,6 +94,7 @@ PRETTY_LOG=false
 PUBLISH_BLOCKS=true
 SLED_PATH=./sled/db-0.34
 RUST_LOG=warn
+API_TOKEN=somepasswordishtoken
 OPENTELEMETRY_URL=localhost:4317
 TELEGRAM_TOKEN=secret
 TELEGRAM_ADMIN_HANDLE=your_handle
@@ -119,6 +123,8 @@ Where to store the on-disk database of connected servers. This defaults to `./sl
 The log level to print. Available levels are `ERROR`, `WARN`, `INFO`, `DEBUG`, and `TRACE`. You can also specify module paths to enable some logs but not others, such as `RUST_LOG=warn,tracing_actix_web=info,relay=info`
 ##### `SOURCE_REPO`
 The URL to the source code for the relay. This defaults to `https://git.asonix.dog/asonix/relay`, but should be changed if you're running a fork hosted elsewhere.
+##### `API_TOKEN`
+The Secret token used to access the admin APIs. This must be set for the commandline to function
 ##### `OPENTELEMETRY_URL`
 A URL for exporting opentelemetry spans. This is mostly useful for debugging. There is no default, since most people probably don't run an opentelemetry collector.
 ##### `TELEGRAM_TOKEN`

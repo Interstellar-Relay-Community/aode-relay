@@ -160,7 +160,7 @@ impl std::fmt::Debug for Requests {
     }
 }
 
-fn build_client(user_agent: &str) -> Client {
+pub(crate) fn build_client(user_agent: &str) -> Client {
     Client::builder()
         .wrap(Tracing)
         .add_default_header(("User-Agent", user_agent.to_string()))

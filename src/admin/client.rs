@@ -14,12 +14,28 @@ pub(crate) async fn allow(
     post_domains(client, config, domains, AdminUrlKind::Allow).await
 }
 
+pub(crate) async fn disallow(
+    client: &Client,
+    config: &Config,
+    domains: Vec<String>,
+) -> Result<(), Error> {
+    post_domains(client, config, domains, AdminUrlKind::Disallow).await
+}
+
 pub(crate) async fn block(
     client: &Client,
     config: &Config,
     domains: Vec<String>,
 ) -> Result<(), Error> {
     post_domains(client, config, domains, AdminUrlKind::Block).await
+}
+
+pub(crate) async fn unblock(
+    client: &Client,
+    config: &Config,
+    domains: Vec<String>,
+) -> Result<(), Error> {
+    post_domains(client, config, domains, AdminUrlKind::Unblock).await
 }
 
 pub(crate) async fn allowed(client: &Client, config: &Config) -> Result<AllowedDomains, Error> {

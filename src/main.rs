@@ -99,30 +99,50 @@ async fn main() -> Result<(), anyhow::Error> {
 
     init_subscriber(Config::software_name(), config.opentelemetry_url())?;
 
-    let db = Db::build(&config)?;
-
     let args = Args::new();
 
-    if args.list() {
-        for domain in db.blocks().await? {
-            println!("block {}", domain);
+    if args.any() {
+        let client = requests::build_client(&config.user_agent());
+
+        if !args.blocks().is_empty() || !args.allowed().is_empty() {
+            if args.undo() {
+                admin::client::unblock(&client, &config, args.blocks().to_vec()).await?;
+                admin::client::disallow(&client, &config, args.allowed().to_vec()).await?;
+            } else {
+                admin::client::block(&client, &config, args.blocks().to_vec()).await?;
+                admin::client::allow(&client, &config, args.allowed().to_vec()).await?;
+            }
+            println!("Updated lists");
         }
-        for domain in db.allows().await? {
-            println!("allow {}", domain);
+
+        if args.list() {
+            let (blocked, allowed, connected) = tokio::try_join!(
+                admin::client::blocked(&client, &config),
+                admin::client::allowed(&client, &config),
+                admin::client::connected(&client, &config)
+            )?;
+
+            let mut report = String::from("Report:\n");
+            if !allowed.allowed_domains.is_empty() {
+                report += "\nAllowed\n\t";
+                report += &allowed.allowed_domains.join("\n\t");
+            }
+            if !blocked.blocked_domains.is_empty() {
+                report += "\n\nBlocked\n\t";
+                report += &blocked.blocked_domains.join("\n\t");
+            }
+            if !connected.connected_actors.is_empty() {
+                report += "\n\nConnected\n\t";
+                report += &connected.connected_actors.join("\n\t");
+            }
+            report += "\n";
+            println!("{report}");
         }
+
         return Ok(());
     }
 
-    if !args.blocks().is_empty() || !args.allowed().is_empty() {
-        if args.undo() {
-            db.remove_blocks(args.blocks().to_vec()).await?;
-            db.remove_allows(args.allowed().to_vec()).await?;
-        } else {
-            db.add_blocks(args.blocks().to_vec()).await?;
-            db.add_allows(args.allowed().to_vec()).await?;
-        }
-        return Ok(());
-    }
+    let db = Db::build(&config)?;
 
     let media = MediaCache::new(db.clone());
     let state = State::build(db.clone()).await?;
@@ -178,7 +198,9 @@ async fn main() -> Result<(), anyhow::Error> {
                 web::scope("/api/v1").service(
                     web::scope("/admin")
                         .route("/allow", web::post().to(admin::routes::allow))
+                        .route("/disallow", web::post().to(admin::routes::disallow))
                         .route("/block", web::post().to(admin::routes::block))
+                        .route("/unblock", web::post().to(admin::routes::unblock))
                         .route("/allowed", web::get().to(admin::routes::allowed))
                         .route("/blocked", web::get().to(admin::routes::blocked))
                         .route("/connected", web::get().to(admin::routes::connected)),

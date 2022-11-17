@@ -281,10 +281,6 @@ impl Db {
         self.unblock(|inner| Ok(inner.connected().collect())).await
     }
 
-    pub(crate) async fn allowed_domains(&self) -> Result<Vec<String>, Error> {
-        self.unblock(|inner| Ok(inner.allowed().collect())).await
-    }
-
     pub(crate) async fn save_info(&self, actor_id: IriString, info: Info) -> Result<(), Error> {
         self.unblock(move |inner| {
             let vec = serde_json::to_vec(&info)?;

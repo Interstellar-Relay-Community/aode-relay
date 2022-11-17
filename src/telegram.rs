@@ -105,7 +105,7 @@ async fn answer(bot: Bot, msg: Message, cmd: Command, db: Db) -> ResponseResult<
                 .await?;
         }
         Command::ListAllowed => {
-            if let Ok(allowed) = db.allowed_domains().await {
+            if let Ok(allowed) = db.allows().await {
                 bot.send_message(msg.chat.id, allowed.join("\n")).await?;
             }
         }

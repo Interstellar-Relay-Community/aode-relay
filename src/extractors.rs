@@ -1,6 +1,6 @@
 use actix_web::{
     dev::Payload,
-    error::ParseError,
+    error::{BlockingError, ParseError},
     http::{
         header::{from_one_raw_str, Header, HeaderName, HeaderValue, TryIntoHeaderValue},
         StatusCode,
@@ -9,12 +9,9 @@ use actix_web::{
     FromRequest, HttpMessage, HttpRequest, HttpResponse, ResponseError,
 };
 use bcrypt::{BcryptError, DEFAULT_COST};
+use futures_util::future::LocalBoxFuture;
 use http_signature_normalization_actix::prelude::InvalidHeaderValue;
-use std::{
-    convert::Infallible,
-    future::{ready, Ready},
-    str::FromStr,
-};
+use std::{convert::Infallible, str::FromStr};
 use tracing_error::SpanTrace;
 
 use crate::db::Db;
@@ -32,7 +29,7 @@ impl AdminConfig {
     }
 
     fn verify(&self, token: XApiToken) -> Result<bool, Error> {
-        Ok(bcrypt::verify(&self.hashed_api_token, &token.0).map_err(Error::bcrypt_verify)?)
+        Ok(bcrypt::verify(&token.0, &self.hashed_api_token).map_err(Error::bcrypt_verify)?)
     }
 }
 
@@ -41,18 +38,34 @@ pub(crate) struct Admin {
 }
 
 impl Admin {
-    #[tracing::instrument(level = "debug", skip(req))]
-    fn verify(req: &HttpRequest) -> Result<Self, Error> {
+    fn prepare_verify(
+        req: &HttpRequest,
+    ) -> Result<(Data<Db>, Data<AdminConfig>, XApiToken), Error> {
         let hashed_api_token = req
             .app_data::<Data<AdminConfig>>()
-            .ok_or_else(Error::missing_config)?;
+            .ok_or_else(Error::missing_config)?
+            .clone();
 
         let x_api_token = XApiToken::parse(req).map_err(Error::parse_header)?;
 
-        if hashed_api_token.verify(x_api_token)? {
-            let db = req.app_data::<Data<Db>>().ok_or_else(Error::missing_db)?;
+        let db = req
+            .app_data::<Data<Db>>()
+            .ok_or_else(Error::missing_db)?
+            .clone();
 
-            return Ok(Self { db: db.clone() });
+        Ok((db, hashed_api_token, x_api_token))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn verify(
+        hashed_api_token: Data<AdminConfig>,
+        x_api_token: XApiToken,
+    ) -> Result<(), Error> {
+        if actix_web::web::block(move || hashed_api_token.verify(x_api_token))
+            .await
+            .map_err(Error::canceled)??
+        {
+            return Ok(());
         }
 
         Err(Error::invalid())
@@ -113,6 +126,13 @@ impl Error {
             kind: ErrorKind::ParseHeader(e),
         }
     }
+
+    fn canceled(_: BlockingError) -> Self {
+        Error {
+            context: SpanTrace::capture(),
+            kind: ErrorKind::Canceled,
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -125,6 +145,9 @@ enum ErrorKind {
 
     #[error("Missing Db")]
     MissingDb,
+
+    #[error("Panic in verify")]
+    Canceled,
 
     #[error("Verifying")]
     BCryptVerify(#[source] BcryptError),
@@ -152,10 +175,15 @@ impl ResponseError for Error {
 
 impl FromRequest for Admin {
     type Error = Error;
-    type Future = Ready<Result<Self, Self::Error>>;
+    type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        ready(Admin::verify(req))
+        let res = Self::prepare_verify(req);
+        Box::pin(async move {
+            let (db, c, t) = res?;
+            Self::verify(c, t).await?;
+            Ok(Admin { db })
+        })
     }
 }
 

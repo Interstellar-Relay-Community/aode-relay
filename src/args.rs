@@ -17,6 +17,10 @@ pub(crate) struct Args {
 }
 
 impl Args {
+    pub(crate) fn any(&self) -> bool {
+        !self.blocks.is_empty() || !self.allowed.is_empty() || self.list
+    }
+
     pub(crate) fn new() -> Self {
         Self::parse()
     }

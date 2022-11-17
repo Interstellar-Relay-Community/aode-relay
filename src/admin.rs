@@ -10,15 +10,15 @@ pub(crate) struct Domains {
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub(crate) struct AllowedDomains {
-    allowed_domains: Vec<String>,
+    pub(crate) allowed_domains: Vec<String>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub(crate) struct BlockedDomains {
-    blocked_domains: Vec<String>,
+    pub(crate) blocked_domains: Vec<String>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub(crate) struct ConnectedActors {
-    connected_actors: Vec<IriString>,
+    pub(crate) connected_actors: Vec<IriString>,
 }

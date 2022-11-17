@@ -71,7 +71,9 @@ pub enum UrlKind {
 #[derive(Debug)]
 pub enum AdminUrlKind {
     Allow,
+    Disallow,
     Block,
+    Unblock,
     Allowed,
     Blocked,
     Connected,
@@ -324,8 +326,12 @@ impl Config {
         let iri = match kind {
             AdminUrlKind::Allow => FixedBaseResolver::new(self.base_uri.as_ref())
                 .try_resolve(IriRelativeStr::new("api/v1/admin/allow")?.as_ref())?,
+            AdminUrlKind::Disallow => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/disallow")?.as_ref())?,
             AdminUrlKind::Block => FixedBaseResolver::new(self.base_uri.as_ref())
                 .try_resolve(IriRelativeStr::new("api/v1/admin/block")?.as_ref())?,
+            AdminUrlKind::Unblock => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/unblock")?.as_ref())?,
             AdminUrlKind::Allowed => FixedBaseResolver::new(self.base_uri.as_ref())
                 .try_resolve(IriRelativeStr::new("api/v1/admin/allowed")?.as_ref())?,
             AdminUrlKind::Blocked => FixedBaseResolver::new(self.base_uri.as_ref())
