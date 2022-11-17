@@ -1,6 +1,7 @@
 use crate::{
     data::{ActorCache, State},
     error::Error,
+    extractors::{AdminConfig, XApiToken},
     middleware::MyVerify,
     requests::Requests,
 };
@@ -32,6 +33,7 @@ pub(crate) struct ParsedConfig {
     opentelemetry_url: Option<IriString>,
     telegram_token: Option<String>,
     telegram_admin_handle: Option<String>,
+    api_token: Option<String>,
 }
 
 #[derive(Clone)]
@@ -49,6 +51,7 @@ pub struct Config {
     opentelemetry_url: Option<IriString>,
     telegram_token: Option<String>,
     telegram_admin_handle: Option<String>,
+    api_token: Option<String>,
 }
 
 #[derive(Debug)]
@@ -63,6 +66,15 @@ pub enum UrlKind {
     Media(Uuid),
     NodeInfo,
     Outbox,
+}
+
+#[derive(Debug)]
+pub enum AdminUrlKind {
+    Allow,
+    Block,
+    Allowed,
+    Blocked,
+    Connected,
 }
 
 impl std::fmt::Debug for Config {
@@ -84,6 +96,7 @@ impl std::fmt::Debug for Config {
             )
             .field("telegram_token", &"[redacted]")
             .field("telegram_admin_handle", &self.telegram_admin_handle)
+            .field("api_token", &"[redacted]")
             .finish()
     }
 }
@@ -93,7 +106,7 @@ impl Config {
         let config = config::Config::builder()
             .set_default("hostname", "localhost:8080")?
             .set_default("addr", "127.0.0.1")?
-            .set_default::<_, u64>("port", 8080)?
+            .set_default("port", 8080u64)?
             .set_default("debug", true)?
             .set_default("restricted_mode", false)?
             .set_default("validate_signatures", false)?
@@ -104,6 +117,7 @@ impl Config {
             .set_default("opentelemetry_url", None as Option<&str>)?
             .set_default("telegram_token", None as Option<&str>)?
             .set_default("telegram_admin_handle", None as Option<&str>)?
+            .set_default("api_token", None as Option<&str>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -126,6 +140,7 @@ impl Config {
             opentelemetry_url: config.opentelemetry_url,
             telegram_token: config.telegram_token,
             telegram_admin_handle: config.telegram_admin_handle,
+            api_token: config.api_token,
         })
     }
 
@@ -155,6 +170,24 @@ impl Config {
             VerifySignature::new(MyVerify(requests, actors, state), Default::default())
         } else {
             VerifySignature::new(MyVerify(requests, actors, state), Default::default()).optional()
+        }
+    }
+
+    pub(crate) fn x_api_token(&self) -> Option<XApiToken> {
+        self.api_token.clone().map(XApiToken::new)
+    }
+
+    pub(crate) fn admin_config(&self) -> Option<actix_web::web::Data<AdminConfig>> {
+        if let Some(api_token) = &self.api_token {
+            match AdminConfig::build(api_token) {
+                Ok(conf) => Some(actix_web::web::Data::new(conf)),
+                Err(e) => {
+                    tracing::error!("Error creating admin config: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
         }
     }
 
@@ -277,6 +310,28 @@ impl Config {
                 .try_resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())?,
             UrlKind::Outbox => FixedBaseResolver::new(self.base_uri.as_ref())
                 .try_resolve(IriRelativeStr::new("outbox")?.as_ref())?,
+        };
+
+        Ok(iri)
+    }
+
+    pub(crate) fn generate_admin_url(&self, kind: AdminUrlKind) -> IriString {
+        self.do_generate_admin_url(kind)
+            .expect("Generated valid IRI")
+    }
+
+    fn do_generate_admin_url(&self, kind: AdminUrlKind) -> Result<IriString, Error> {
+        let iri = match kind {
+            AdminUrlKind::Allow => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/allow")?.as_ref())?,
+            AdminUrlKind::Block => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/block")?.as_ref())?,
+            AdminUrlKind::Allowed => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/allowed")?.as_ref())?,
+            AdminUrlKind::Blocked => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/blocked")?.as_ref())?,
+            AdminUrlKind::Connected => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/connected")?.as_ref())?,
         };
 
         Ok(iri)

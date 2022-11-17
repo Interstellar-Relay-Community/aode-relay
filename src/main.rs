@@ -12,12 +12,14 @@ use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
 use tracing_subscriber::{filter::Targets, fmt::format::FmtSpan, layer::SubscriberExt, Layer};
 
+mod admin;
 mod apub;
 mod args;
 mod config;
 mod data;
 mod db;
 mod error;
+mod extractors;
 mod jobs;
 mod middleware;
 mod requests;
@@ -135,15 +137,22 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let bind_address = config.bind_address();
     HttpServer::new(move || {
-        App::new()
-            .wrap(TracingLogger::default())
+        let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
             .app_data(web::Data::new(state.requests(&config)))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server.clone()))
-            .app_data(web::Data::new(media.clone()))
+            .app_data(web::Data::new(media.clone()));
+
+        let app = if let Some(data) = config.admin_config() {
+            app.app_data(data)
+        } else {
+            app
+        };
+
+        app.wrap(TracingLogger::default())
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
@@ -165,6 +174,16 @@ async fn main() -> Result<(), anyhow::Error> {
                     .service(web::resource("/nodeinfo").route(web::get().to(nodeinfo_meta))),
             )
             .service(web::resource("/static/{filename}").route(web::get().to(statics)))
+            .service(
+                web::scope("/api/v1").service(
+                    web::scope("/admin")
+                        .route("/allow", web::post().to(admin::routes::allow))
+                        .route("/block", web::post().to(admin::routes::block))
+                        .route("/allowed", web::get().to(admin::routes::allowed))
+                        .route("/blocked", web::get().to(admin::routes::blocked))
+                        .route("/connected", web::get().to(admin::routes::connected)),
+                ),
+            )
     })
     .bind(bind_address)?
     .run()

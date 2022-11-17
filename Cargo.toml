@@ -29,6 +29,7 @@ activitystreams = "0.7.0-alpha.19"
 activitystreams-ext = "0.1.0-alpha.2"
 ammonia = "3.1.0"
 awc = { version = "3.0.0", default-features = false, features = ["rustls"] }
+bcrypt = "0.13"
 base64 = "0.13"
 clap = { version = "4.0.0", features = ["derive"] }
 config = "0.13.0"

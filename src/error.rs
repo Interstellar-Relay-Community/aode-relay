@@ -180,6 +180,9 @@ pub(crate) enum ErrorKind {
 
     #[error("Failed to extract fields from {0}")]
     Extract(&'static str),
+
+    #[error("No API Token supplied")]
+    MissingApiToken,
 }
 
 impl ResponseError for Error {
