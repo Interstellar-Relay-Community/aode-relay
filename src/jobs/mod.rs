@@ -1,5 +1,4 @@
 pub mod apub;
-mod cache_media;
 mod contact;
 mod deliver;
 mod deliver_many;
@@ -8,7 +7,7 @@ mod nodeinfo;
 mod process_listeners;
 
 pub(crate) use self::{
-    cache_media::CacheMedia, contact::QueryContact, deliver::Deliver, deliver_many::DeliverMany,
+    contact::QueryContact, deliver::Deliver, deliver_many::DeliverMany,
     instance::QueryInstance, nodeinfo::QueryNodeinfo,
 };
 
@@ -59,7 +58,6 @@ pub(crate) fn create_workers(
     .register::<QueryNodeinfo>()
     .register::<QueryInstance>()
     .register::<Listeners>()
-    .register::<CacheMedia>()
     .register::<QueryContact>()
     .register::<apub::Announce>()
     .register::<apub::Follow>()

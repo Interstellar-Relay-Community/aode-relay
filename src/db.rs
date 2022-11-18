@@ -3,7 +3,6 @@ use crate::{
     error::{Error, ErrorKind},
 };
 use activitystreams::iri_string::types::IriString;
-use actix_web::web::Bytes;
 use rsa::{
     pkcs8::{DecodePrivateKey, EncodePrivateKey},
     RsaPrivateKey,
@@ -26,8 +25,6 @@ struct Inner {
     settings: Tree,
     media_url_media_id: Tree,
     media_id_media_url: Tree,
-    media_id_media_bytes: Tree,
-    media_id_media_meta: Tree,
     actor_id_info: Tree,
     actor_id_instance: Tree,
     actor_id_contact: Tree,
@@ -61,12 +58,6 @@ impl std::fmt::Debug for Actor {
             .field("saved_at", &self.saved_at)
             .finish()
     }
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub(crate) struct MediaMeta {
-    pub(crate) media_type: String,
-    pub(crate) saved_at: SystemTime,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -253,8 +244,6 @@ impl Db {
                 settings: db.open_tree("settings")?,
                 media_url_media_id: db.open_tree("media-url-media-id")?,
                 media_id_media_url: db.open_tree("media-id-media-url")?,
-                media_id_media_bytes: db.open_tree("media-id-media-bytes")?,
-                media_id_media_meta: db.open_tree("media-id-media-meta")?,
                 actor_id_info: db.open_tree("actor-id-info")?,
                 actor_id_instance: db.open_tree("actor-id-instance")?,
                 actor_id_contact: db.open_tree("actor-id-contact")?,
@@ -392,25 +381,6 @@ impl Db {
         .await
     }
 
-    pub(crate) async fn save_bytes(
-        &self,
-        id: Uuid,
-        meta: MediaMeta,
-        bytes: Bytes,
-    ) -> Result<(), Error> {
-        self.unblock(move |inner| {
-            let vec = serde_json::to_vec(&meta)?;
-
-            inner
-                .media_id_media_bytes
-                .insert(id.as_bytes(), bytes.as_ref())?;
-            inner.media_id_media_meta.insert(id.as_bytes(), vec)?;
-
-            Ok(())
-        })
-        .await
-    }
-
     pub(crate) async fn media_id(&self, url: IriString) -> Result<Option<Uuid>, Error> {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_url_media_id.get(url.as_str().as_bytes())? {
@@ -426,29 +396,6 @@ impl Db {
         self.unblock(move |inner| {
             if let Some(ivec) = inner.media_id_media_url.get(id.as_bytes())? {
                 Ok(url_from_ivec(ivec))
-            } else {
-                Ok(None)
-            }
-        })
-        .await
-    }
-
-    pub(crate) async fn media_bytes(&self, id: Uuid) -> Result<Option<Bytes>, Error> {
-        self.unblock(move |inner| {
-            if let Some(ivec) = inner.media_id_media_bytes.get(id.as_bytes())? {
-                Ok(Some(Bytes::copy_from_slice(&ivec)))
-            } else {
-                Ok(None)
-            }
-        })
-        .await
-    }
-
-    pub(crate) async fn media_meta(&self, id: Uuid) -> Result<Option<MediaMeta>, Error> {
-        self.unblock(move |inner| {
-            if let Some(ivec) = inner.media_id_media_meta.get(id.as_bytes())? {
-                let meta = serde_json::from_slice(&ivec)?;
-                Ok(Some(meta))
             } else {
                 Ok(None)
             }

@@ -1,8 +1,5 @@
 use crate::{data::MediaCache, error::Error, requests::Requests};
-use actix_web::{
-    http::header::{CacheControl, CacheDirective},
-    web, HttpResponse,
-};
+use actix_web::{body::BodyStream, web, HttpResponse};
 use uuid::Uuid;
 
 #[tracing::instrument(name = "Media", skip(media, requests))]
@@ -13,30 +10,17 @@ pub(crate) async fn route(
 ) -> Result<HttpResponse, Error> {
     let uuid = uuid.into_inner();
 
-    if let Some((content_type, bytes)) = media.get_bytes(uuid).await? {
-        return Ok(cached(content_type, bytes));
-    }
-
     if let Some(url) = media.get_url(uuid).await? {
-        let (content_type, bytes) = requests.fetch_bytes(url.as_str()).await?;
+        let res = requests.fetch_response(url).await?;
 
-        media
-            .store_bytes(uuid, content_type.clone(), bytes.clone())
-            .await?;
+        let mut response = HttpResponse::build(res.status());
 
-        return Ok(cached(content_type, bytes));
+        for (name, value) in res.headers().iter().filter(|(h, _)| *h != "connection") {
+            response.insert_header((name.clone(), value.clone()));
+        }
+
+        return Ok(response.body(BodyStream::new(res)));
     }
 
     Ok(HttpResponse::NotFound().finish())
-}
-
-fn cached(content_type: String, bytes: web::Bytes) -> HttpResponse {
-    HttpResponse::Ok()
-        .insert_header(CacheControl(vec![
-            CacheDirective::Public,
-            CacheDirective::MaxAge(60 * 60 * 24),
-            CacheDirective::Extension("immutable".to_owned(), None),
-        ]))
-        .content_type(content_type)
-        .body(bytes)
 }

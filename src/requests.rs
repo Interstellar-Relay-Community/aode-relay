@@ -1,6 +1,6 @@
 use crate::error::{Error, ErrorKind};
 use activitystreams::iri_string::types::IriString;
-use actix_web::{http::header::Date, web::Bytes};
+use actix_web::http::header::Date;
 use awc::{error::SendRequestError, Client, ClientResponse};
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
@@ -294,11 +294,9 @@ impl Requests {
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
-    #[tracing::instrument(name = "Fetch Bytes", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_bytes(&self, url: &str) -> Result<(String, Bytes), Error> {
-        let parsed_url = url.parse::<IriString>()?;
-
-        if !self.breakers.should_try(&parsed_url) {
+    #[tracing::instrument(name = "Fetch response", skip(self), fields(signing_string))]
+    pub(crate) async fn fetch_response(&self, url: IriString) -> Result<ClientResponse, Error> {
+        if !self.breakers.should_try(&url) {
             return Err(ErrorKind::Breaker.into());
         }
 
@@ -307,9 +305,10 @@ impl Requests {
 
         let client: Client = self.client.borrow().clone();
         let res = client
-            .get(url)
+            .get(url.as_str())
             .insert_header(("Accept", "*/*"))
             .insert_header(Date(SystemTime::now().into()))
+            .no_decompress()
             .signature(
                 self.config.clone(),
                 self.key_id.clone(),
@@ -322,26 +321,9 @@ impl Requests {
             .send()
             .await;
 
-        let mut res = self.check_response(&parsed_url, res).await?;
+        let res = self.check_response(&url, res).await?;
 
-        let content_type = if let Some(content_type) = res.headers().get("content-type") {
-            if let Ok(s) = content_type.to_str() {
-                s.to_owned()
-            } else {
-                return Err(ErrorKind::ContentType.into());
-            }
-        } else {
-            return Err(ErrorKind::ContentType.into());
-        };
-
-        let bytes = match res.body().limit(1024 * 1024 * 4).await {
-            Err(e) => {
-                return Err(ErrorKind::ReceiveResponse(url.to_string(), e.to_string()).into());
-            }
-            Ok(bytes) => bytes,
-        };
-
-        Ok((content_type, bytes))
+        Ok(res)
     }
 
     #[tracing::instrument(

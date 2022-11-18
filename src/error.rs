@@ -130,9 +130,6 @@ pub(crate) enum ErrorKind {
     #[error("{0}")]
     HostMismatch(#[from] CheckError),
 
-    #[error("Invalid or missing content type")]
-    ContentType,
-
     #[error("Couldn't flush buffer")]
     FlushBuffer,
 

@@ -1,7 +1,7 @@
 use crate::{
     config::UrlKind,
     error::{Error, ErrorKind},
-    jobs::{cache_media::CacheMedia, Boolish, JobState},
+    jobs::{Boolish, JobState},
 };
 use activitystreams::{iri, iri_string::types::IriString};
 use background_jobs::ActixJob;
@@ -74,8 +74,6 @@ impl QueryInstance {
             };
 
             let avatar = state.config.generate_url(UrlKind::Media(uuid));
-
-            state.job_server.queue(CacheMedia::new(uuid)).await?;
 
             state
                 .node_cache
