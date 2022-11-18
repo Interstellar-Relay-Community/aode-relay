@@ -495,16 +495,15 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8660626a2d8781b50cbe0e3b63d8e2a7e08a90e80fa2bca8e8cc19deff72ebf4"
+checksum = "47263ad9c5679419347dae655c2fa2cba078b0eaa51ac758d4f0e9690c06910b"
 dependencies = [
  "actix-rt",
  "anyhow",
  "async-mutex",
  "async-trait",
  "background-jobs-core",
- "num_cpus",
  "serde",
  "serde_json",
  "thiserror",
