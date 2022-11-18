@@ -224,9 +224,6 @@ impl Requests {
 
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
-                    if s.to_lowercase().contains("http signature") {
-                        return Err(ErrorKind::SignedDelivery(parsed_url.to_string()).into());
-                    }
                     if !s.is_empty() {
                         tracing::warn!("Response from {}, {}", parsed_url, s);
                     }

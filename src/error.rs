@@ -100,9 +100,6 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't sign digest")]
     Signature(#[from] signature::Error),
 
-    #[error("Server {0} failed to validate our signature")]
-    SignedDelivery(String),
-
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
 
