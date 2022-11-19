@@ -1,9 +1,13 @@
 use crate::{
     admin::{AllowedDomains, BlockedDomains, ConnectedActors, Domains},
+    collector::{MemoryCollector, Snapshot},
     error::Error,
     extractors::Admin,
 };
-use actix_web::{web::Json, HttpResponse};
+use actix_web::{
+    web::{Data, Json},
+    HttpResponse,
+};
 
 pub(crate) async fn allow(
     admin: Admin,
@@ -57,4 +61,11 @@ pub(crate) async fn connected(admin: Admin) -> Result<Json<ConnectedActors>, Err
     let connected_actors = admin.db_ref().connected_ids().await?;
 
     Ok(Json(ConnectedActors { connected_actors }))
+}
+
+pub(crate) async fn stats(
+    _admin: Admin,
+    collector: Data<MemoryCollector>,
+) -> Result<Json<Snapshot>, Error> {
+    Ok(Json(collector.snapshot()))
 }

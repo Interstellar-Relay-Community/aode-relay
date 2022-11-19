@@ -15,6 +15,7 @@ use tracing_subscriber::{filter::Targets, fmt::format::FmtSpan, layer::Subscribe
 mod admin;
 mod apub;
 mod args;
+mod collector;
 mod config;
 mod data;
 mod db;
@@ -98,6 +99,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let config = Config::build()?;
 
     init_subscriber(Config::software_name(), config.opentelemetry_url())?;
+    let collector = collector::MemoryCollector::new();
+    collector.install()?;
 
     let args = Args::new();
 
@@ -164,7 +167,8 @@ async fn main() -> Result<(), anyhow::Error> {
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server.clone()))
-            .app_data(web::Data::new(media.clone()));
+            .app_data(web::Data::new(media.clone()))
+            .app_data(web::Data::new(collector.clone()));
 
         let app = if let Some(data) = config.admin_config() {
             app.app_data(data)
@@ -203,7 +207,8 @@ async fn main() -> Result<(), anyhow::Error> {
                         .route("/unblock", web::post().to(admin::routes::unblock))
                         .route("/allowed", web::get().to(admin::routes::allowed))
                         .route("/blocked", web::get().to(admin::routes::blocked))
-                        .route("/connected", web::get().to(admin::routes::connected)),
+                        .route("/connected", web::get().to(admin::routes::connected))
+                        .route("/stats", web::get().to(admin::routes::stats)),
                 ),
             )
     })
