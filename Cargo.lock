@@ -485,9 +485,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "793a813f9145c5f3a27b8dcd834c0927de68bbd60d53a369e5894f3cc5759020"
+checksum = "62dc7cfc967d6714768097a876ca2941a54a26976c6d3c95ea6da48974890970"
 dependencies = [
  "background-jobs-actix",
  "background-jobs-core",
@@ -495,15 +495,16 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.13.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47263ad9c5679419347dae655c2fa2cba078b0eaa51ac758d4f0e9690c06910b"
+checksum = "ea433afb3fbbb6dc2614bad9f6671517f6cffcd523981e568cdb595dc7fa6399"
 dependencies = [
  "actix-rt",
  "anyhow",
  "async-mutex",
  "async-trait",
  "background-jobs-core",
+ "metrics",
  "serde",
  "serde_json",
  "thiserror",
@@ -515,14 +516,15 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-core"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48e78e842fe2ae461319e3d1843c12e301630e65650332b02032ac70b0dfc66f"
+checksum = "b3071bf7a5e46638085076957dc189b2b0b147cd279eb09510b7af54e95085ef"
 dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
  "event-listener",
+ "metrics",
  "serde",
  "serde_json",
  "thiserror",
@@ -1564,6 +1566,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b9b8653cec6897f73b519a43fba5ee3d50f62fe9af80b428accdcc093b4a849"
+dependencies = [
+ "ahash",
+ "metrics-macros",
+ "portable-atomic",
+]
+
+[[package]]
+name = "metrics-macros"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "731f8ecebd9f3a4aa847dfe75455e4757a45da40a7793d2f0b1f9b6ed18b23f3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2064,6 +2088,12 @@ dependencies = [
  "der",
  "spki",
 ]
+
+[[package]]
+name = "portable-atomic"
+version = "0.3.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15eb2c6e362923af47e13c23ca5afb859e83d54452c55b0b9ac763b8f7c1ac16"
 
 [[package]]
 name = "ppv-lite86"

@@ -70,7 +70,7 @@ tokio = { version = "1", features = ["macros", "sync"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [dependencies.background-jobs]
-version = "0.13.0"
+version = "0.14.0"
 default-features = false
 features = ["background-jobs-actix", "error-logging"]
 
