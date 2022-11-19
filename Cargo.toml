@@ -38,6 +38,8 @@ dashmap = "5.1.0"
 dotenv = "0.15.0"
 futures-util = "0.3.17"
 lru = "0.8.0"
+metrics = "0.20.1"
+metrics-util = "0.14.0"
 mime = "0.3.16"
 opentelemetry = { version = "0.18", features = ["rt-tokio"] }
 opentelemetry-otlp = "0.11"
