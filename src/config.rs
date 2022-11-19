@@ -77,6 +77,7 @@ pub enum AdminUrlKind {
     Allowed,
     Blocked,
     Connected,
+    Stats,
 }
 
 impl std::fmt::Debug for Config {
@@ -338,6 +339,8 @@ impl Config {
                 .try_resolve(IriRelativeStr::new("api/v1/admin/blocked")?.as_ref())?,
             AdminUrlKind::Connected => FixedBaseResolver::new(self.base_uri.as_ref())
                 .try_resolve(IriRelativeStr::new("api/v1/admin/connected")?.as_ref())?,
+            AdminUrlKind::Stats => FixedBaseResolver::new(self.base_uri.as_ref())
+                .try_resolve(IriRelativeStr::new("api/v1/admin/stats")?.as_ref())?,
         };
 
         Ok(iri)

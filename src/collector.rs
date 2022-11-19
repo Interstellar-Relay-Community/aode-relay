@@ -29,25 +29,25 @@ struct Inner {
     registry: Registry<Key, GenerationalStorage<AtomicStorage>>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct Counter {
     labels: Vec<(String, String)>,
     value: u64,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct Gauge {
     labels: Vec<(String, String)>,
     value: f64,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct Histogram {
     labels: Vec<(String, String)>,
     value: Vec<(f64, Option<f64>)>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Snapshot {
     counters: HashMap<String, Vec<Counter>>,
     gauges: HashMap<String, Vec<Gauge>>,

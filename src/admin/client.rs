@@ -1,5 +1,6 @@
 use crate::{
     admin::{AllowedDomains, BlockedDomains, ConnectedActors, Domains},
+    collector::Snapshot,
     config::{AdminUrlKind, Config},
     error::{Error, ErrorKind},
 };
@@ -48,6 +49,10 @@ pub(crate) async fn blocked(client: &Client, config: &Config) -> Result<BlockedD
 
 pub(crate) async fn connected(client: &Client, config: &Config) -> Result<ConnectedActors, Error> {
     get_results(client, config, AdminUrlKind::Connected).await
+}
+
+pub(crate) async fn stats(client: &Client, config: &Config) -> Result<Snapshot, Error> {
+    get_results(client, config, AdminUrlKind::Stats).await
 }
 
 async fn get_results<T: DeserializeOwned>(

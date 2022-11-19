@@ -14,11 +14,14 @@ pub(crate) struct Args {
 
     #[arg(short, long, help = "List allowed and blocked domains")]
     list: bool,
+
+    #[arg(short, long, help = "Get statistics from the server")]
+    stats: bool,
 }
 
 impl Args {
     pub(crate) fn any(&self) -> bool {
-        !self.blocks.is_empty() || !self.allowed.is_empty() || self.list
+        !self.blocks.is_empty() || !self.allowed.is_empty() || self.list || self.stats
     }
 
     pub(crate) fn new() -> Self {
@@ -39,5 +42,9 @@ impl Args {
 
     pub(crate) fn list(&self) -> bool {
         self.list
+    }
+
+    pub(crate) fn stats(&self) -> bool {
+        self.stats
     }
 }

@@ -142,6 +142,11 @@ async fn main() -> Result<(), anyhow::Error> {
             println!("{report}");
         }
 
+        if args.stats() {
+            let stats = admin::client::stats(&client, &config).await?;
+            println!("{:#?}", stats);
+        }
+
         return Ok(());
     }
 
