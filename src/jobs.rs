@@ -48,8 +48,6 @@ pub(crate) fn create_workers(
         .map(|p| p.get())
         .unwrap_or(1) as u64;
 
-    let parallelism = (parallelism / 2).max(1);
-
     let shared = WorkerConfig::new_managed(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
             state.clone(),
@@ -70,9 +68,9 @@ pub(crate) fn create_workers(
     .register::<apub::Forward>()
     .register::<apub::Reject>()
     .register::<apub::Undo>()
-    .set_worker_count("maintenance", parallelism)
-    .set_worker_count("apub", parallelism)
-    .set_worker_count("deliver", parallelism * 3)
+    .set_worker_count("maintenance", parallelism * 2)
+    .set_worker_count("apub", parallelism * 2)
+    .set_worker_count("deliver", parallelism * 8)
     .start_with_threads(NonZeroUsize::try_from(parallelism as usize).expect("nonzero"));
 
     shared.every(Duration::from_secs(60 * 5), Listeners);
