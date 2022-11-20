@@ -44,9 +44,8 @@ pub(crate) fn create_workers(
     media: MediaCache,
     config: Config,
 ) -> (Manager, JobServer) {
-    let parallelism = std::thread::available_parallelism()
-        .map(|p| p.get())
-        .unwrap_or(1) as u64;
+    let parallelism =
+        std::thread::available_parallelism().unwrap_or(NonZeroUsize::try_from(1).expect("nonzero"));
 
     let shared = WorkerConfig::new_managed(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
@@ -68,10 +67,10 @@ pub(crate) fn create_workers(
     .register::<apub::Forward>()
     .register::<apub::Reject>()
     .register::<apub::Undo>()
-    .set_worker_count("maintenance", parallelism * 2)
-    .set_worker_count("apub", parallelism * 2)
-    .set_worker_count("deliver", parallelism * 8)
-    .start_with_threads(NonZeroUsize::try_from(parallelism as usize).expect("nonzero"));
+    .set_worker_count("maintenance", 2)
+    .set_worker_count("apub", 2)
+    .set_worker_count("deliver", 8)
+    .start_with_threads(parallelism);
 
     shared.every(Duration::from_secs(60 * 5), Listeners);
 
