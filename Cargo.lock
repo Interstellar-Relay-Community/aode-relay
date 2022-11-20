@@ -499,9 +499,9 @@ dependencies = [
 
 [[package]]
 name = "background-jobs-actix"
-version = "0.14.1"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3aba1bc1cdff87161a6e2e00bf9dc1712412ee926a065d96cc0a03dc851b5fd3"
+checksum = "99f8bfe0a984c8d0bc7e67b376cc05e0b9015fdd3ee878900046120ef781c47e"
 dependencies = [
  "actix-rt",
  "anyhow",
