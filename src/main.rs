@@ -45,7 +45,7 @@ fn init_subscriber(
     LogTracer::init()?;
 
     let targets: Targets = std::env::var("RUST_LOG")
-        .unwrap_or_else(|_| "info".into())
+        .unwrap_or_else(|_| "warn".into())
         .parse()?;
 
     let format_layer = tracing_subscriber::fmt::layer()

@@ -112,8 +112,8 @@ impl Config {
             .set_default("port", 8080u64)?
             .set_default("debug", true)?
             .set_default("restricted_mode", false)?
-            .set_default("validate_signatures", false)?
-            .set_default("https", false)?
+            .set_default("validate_signatures", true)?
+            .set_default("https", true)?
             .set_default("publish_blocks", false)?
             .set_default("sled_path", "./sled/db-0-34")?
             .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?

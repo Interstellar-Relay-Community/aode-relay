@@ -112,15 +112,15 @@ Whether to print incoming activities to the console when requests hit the /inbox
 ##### `RESTRICTED_MODE`
 This setting enables an 'allowlist' setup where only servers that have been explicitly enabled through the `relay -a` command can join the relay. This is `false` by default. If `RESTRICTED_MODE` is not enabled, then manually allowing domains with `relay -a` has no effect.
 ##### `VALIDATE_SIGNATURES`
-This setting enforces checking HTTP signatures on incoming activities. It defaults to `false` but should be set to `true` in production scenarios
+This setting enforces checking HTTP signatures on incoming activities. It defaults to `true`
 ##### `HTTPS`
-Whether the current server is running on an HTTPS port or not. This is used for generating URLs to the current running relay. By default it is set to `false`, but should be `true` in production scenarios.
+Whether the current server is running on an HTTPS port or not. This is used for generating URLs to the current running relay. By default it is set to `true`
 ##### `PUBLISH_BLOCKS`
 Whether or not to publish a list of blocked domains in the `nodeinfo` metadata for the server. It defaults to `false`.
 ##### `SLED_PATH`
 Where to store the on-disk database of connected servers. This defaults to `./sled/db-0.34`.
 ##### `RUST_LOG`
-The log level to print. Available levels are `ERROR`, `WARN`, `INFO`, `DEBUG`, and `TRACE`. You can also specify module paths to enable some logs but not others, such as `RUST_LOG=warn,tracing_actix_web=info,relay=info`
+The log level to print. Available levels are `ERROR`, `WARN`, `INFO`, `DEBUG`, and `TRACE`. You can also specify module paths to enable some logs but not others, such as `RUST_LOG=warn,tracing_actix_web=info,relay=info`. This defaults to `warn`
 ##### `SOURCE_REPO`
 The URL to the source code for the relay. This defaults to `https://git.asonix.dog/asonix/relay`, but should be changed if you're running a fork hosted elsewhere.
 ##### `API_TOKEN`
