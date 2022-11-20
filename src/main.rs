@@ -108,8 +108,10 @@ fn main() -> Result<(), anyhow::Error> {
         return client_main(config, args);
     }
 
+    tracing::warn!("Opening DB");
     let db = Db::build(&config)?;
 
+    tracing::warn!("Building caches");
     let actors = ActorCache::new(db.clone());
     let media = MediaCache::new(db.clone());
 
