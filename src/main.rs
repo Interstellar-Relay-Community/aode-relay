@@ -144,7 +144,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
         if args.stats() {
             let stats = admin::client::stats(&client, &config).await?;
-            println!("{:#?}", stats);
+            stats.present();
         }
 
         return Ok(());
