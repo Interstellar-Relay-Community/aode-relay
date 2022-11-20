@@ -50,6 +50,7 @@ impl ActixJob for DeliverMany {
     type Future = LocalBoxFuture<'static, Result<(), anyhow::Error>>;
 
     const NAME: &'static str = "relay::jobs::DeliverMany";
+    const QUEUE: &'static str = "deliver";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move { self.perform(state).await.map_err(Into::into) })

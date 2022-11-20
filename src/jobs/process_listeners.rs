@@ -28,6 +28,7 @@ impl ActixJob for Listeners {
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
     const NAME: &'static str = "relay::jobs::Listeners";
+    const QUEUE: &'static str = "maintenance";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move { self.perform(state).await.map_err(Into::into) })

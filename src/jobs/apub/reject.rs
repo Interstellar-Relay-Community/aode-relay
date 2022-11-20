@@ -38,6 +38,7 @@ impl ActixJob for Reject {
     type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
 
     const NAME: &'static str = "relay::jobs::apub::Reject";
+    const QUEUE: &'static str = "apub";
 
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move { self.perform(state).await.map_err(Into::into) })
