@@ -136,7 +136,8 @@ impl MergeCounter {
                 labels: start.labels,
                 value: start.value.saturating_sub(end.value),
             }),
-            (Some(only), None) | (None, Some(only)) => Some(Counter {
+            (Some(only), None) => Some(only),
+            (None, Some(only)) => Some(Counter {
                 labels: only.labels,
                 value: 0,
             }),
