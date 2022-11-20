@@ -10,7 +10,7 @@ $ sudo docker run --rm -it \
     -e ADDR=0.0.0.0 \
     -e SLED_PATH=/mnt/sled/db-0.34 \
     -p 8080:8080 \
-    asonix/relay:0.3.23
+    asonix/relay:0.3.52
 ```
 This will launch the relay with the database stored in "./sled/db-0.34" and listening on port 8080
 #### Cargo
