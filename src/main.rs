@@ -33,7 +33,7 @@ use self::{
     data::{ActorCache, MediaCache, State},
     db::Db,
     jobs::create_workers,
-    middleware::{DebugPayload, RelayResolver},
+    middleware::{DebugPayload, RelayResolver, Timings},
     routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
 };
 
@@ -182,6 +182,7 @@ async fn main() -> Result<(), anyhow::Error> {
         };
 
         app.wrap(TracingLogger::default())
+            .wrap(Timings)
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
