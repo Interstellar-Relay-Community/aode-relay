@@ -45,7 +45,7 @@ pub(crate) fn create_workers(
     config: Config,
 ) -> (Manager, JobServer) {
     let parallelism =
-        std::thread::available_parallelism().unwrap_or(NonZeroUsize::try_from(1).expect("nonzero"));
+        std::thread::available_parallelism().unwrap_or_else(|_| NonZeroUsize::try_from(1).expect("nonzero"));
 
     let shared = WorkerConfig::new_managed(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
