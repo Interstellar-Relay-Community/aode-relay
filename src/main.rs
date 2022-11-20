@@ -94,6 +94,12 @@ fn init_subscriber(
 
 #[actix_rt::main]
 async fn main() -> Result<(), anyhow::Error> {
+    actix_rt::spawn(do_main()).await??;
+    tracing::warn!("Application exit");
+    Ok(())
+}
+
+async fn do_main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
 
     let config = Config::build()?;
@@ -222,7 +228,11 @@ async fn main() -> Result<(), anyhow::Error> {
     .run()
     .await?;
 
+    tracing::warn!("Server closed");
+
     drop(manager);
+
+    tracing::warn!("Main complete");
 
     Ok(())
 }
