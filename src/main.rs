@@ -168,7 +168,7 @@ async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error>
         stats.present();
     }
 
-    return Ok(());
+    Ok(())
 }
 
 #[actix_rt::main]
