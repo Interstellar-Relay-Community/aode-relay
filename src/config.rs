@@ -186,6 +186,11 @@ impl Config {
         let mut certs_reader = BufReader::new(std::fs::File::open(&tls.cert)?);
         let certs = rustls_pemfile::certs(&mut certs_reader)?;
 
+        if certs.is_empty() {
+            tracing::warn!("No certs read from certificate file");
+            return Ok(None);
+        }
+
         let mut key_reader = BufReader::new(std::fs::File::open(&tls.key)?);
         let key = rustls_pemfile::read_one(&mut key_reader)?;
 
