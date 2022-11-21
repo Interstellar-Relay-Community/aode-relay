@@ -27,9 +27,9 @@ impl Drop for LogOnDrop {
     }
 }
 
-impl<S> Transform<S, ServiceRequest> for Timings
+impl<S, B> Transform<S, ServiceRequest> for Timings
 where
-    S: Service<ServiceRequest, Response = ServiceResponse, Error = actix_web::Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
     S::Future: 'static,
 {
     type Response = S::Response;
@@ -43,9 +43,9 @@ where
     }
 }
 
-impl<S> Service<ServiceRequest> for TimingsMiddleware<S>
+impl<S, B> Service<ServiceRequest> for TimingsMiddleware<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse, Error = actix_web::Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
     S::Future: 'static,
 {
     type Response = S::Response;
