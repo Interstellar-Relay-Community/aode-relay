@@ -143,9 +143,18 @@ impl Config {
         let scheme = if config.https { "https" } else { "http" };
         let base_uri = iri!(format!("{}://{}", scheme, config.hostname)).into_absolute();
 
-        let tls = config
-            .tls_key
-            .and_then(|key| config.tls_cert.map(|cert| TlsConfig { key, cert }));
+        let tls = match (config.tls_key, config.tls_cert) {
+            (Some(key), Some(cert)) => Some(TlsConfig { key, cert }),
+            (Some(_), None) => {
+                tracing::warn!("TLS_KEY is set but TLS_CERT isn't , not building TLS config");
+                None
+            }
+            (None, Some(_)) => {
+                tracing::warn!("TLS_CERT is set but TLS_KEY isn't , not building TLS config");
+                None
+            }
+            (None, None) => None,
+        };
 
         Ok(Config {
             hostname: config.hostname,
@@ -170,6 +179,7 @@ impl Config {
         let tls = if let Some(tls) = &self.tls {
             tls
         } else {
+            tracing::warn!("No TLS config present");
             return Ok(None);
         };
 
@@ -177,18 +187,22 @@ impl Config {
         let certs = rustls_pemfile::certs(&mut certs_reader)?;
 
         let mut key_reader = BufReader::new(std::fs::File::open(&tls.key)?);
-        let keys = rustls_pemfile::read_all(&mut key_reader)?;
+        let key = rustls_pemfile::read_one(&mut key_reader)?;
 
         let certs = certs.into_iter().map(Certificate).collect();
 
-        let key = if let Some(key) = keys.into_iter().find_map(|item| match item {
-            rustls_pemfile::Item::RSAKey(der) => Some(PrivateKey(der)),
-            rustls_pemfile::Item::PKCS8Key(der) => Some(PrivateKey(der)),
-            rustls_pemfile::Item::ECKey(der) => Some(PrivateKey(der)),
-            _ => None,
-        }) {
-            key
+        let key = if let Some(key) = key {
+            match key {
+                rustls_pemfile::Item::RSAKey(der) => PrivateKey(der),
+                rustls_pemfile::Item::PKCS8Key(der) => PrivateKey(der),
+                rustls_pemfile::Item::ECKey(der) => PrivateKey(der),
+                _ => {
+                    tracing::warn!("Unknown key format: {:?}", key);
+                    return Ok(None);
+                }
+            }
         } else {
+            tracing::warn!("Failed to read private key");
             return Ok(None);
         };
 
