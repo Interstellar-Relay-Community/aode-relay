@@ -38,6 +38,8 @@ pub(crate) struct ParsedConfig {
     tls_key: Option<PathBuf>,
     tls_cert: Option<PathBuf>,
     footer_blurb: Option<String>,
+    local_domains: Option<String>,
+    local_blurb: Option<String>,
 }
 
 #[derive(Clone)]
@@ -58,6 +60,8 @@ pub struct Config {
     api_token: Option<String>,
     tls: Option<TlsConfig>,
     footer_blurb: Option<String>,
+    local_domains: Vec<String>,
+    local_blurb: Option<String>,
 }
 
 #[derive(Clone)]
@@ -115,6 +119,8 @@ impl std::fmt::Debug for Config {
             .field("tls_key", &"[redacted]")
             .field("tls_cert", &"[redacted]")
             .field("footer_blurb", &self.footer_blurb)
+            .field("local_domains", &self.local_domains)
+            .field("local_blurb", &self.local_blurb)
             .finish()
     }
 }
@@ -139,6 +145,8 @@ impl Config {
             .set_default("tls_key", None as Option<&str>)?
             .set_default("tls_cert", None as Option<&str>)?
             .set_default("footer_blurb", None as Option<&str>)?
+            .set_default("local_domains", None as Option<&str>)?
+            .set_default("local_blurb", None as Option<&str>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -160,6 +168,13 @@ impl Config {
             (None, None) => None,
         };
 
+        let local_domains = config
+            .local_domains
+            .iter()
+            .flat_map(|s| s.split(","))
+            .map(|d| d.to_string())
+            .collect();
+
         Ok(Config {
             hostname: config.hostname,
             addr: config.addr,
@@ -177,6 +192,8 @@ impl Config {
             api_token: config.api_token,
             tls,
             footer_blurb: config.footer_blurb,
+            local_domains,
+            local_blurb: config.local_blurb,
         })
     }
 
@@ -227,6 +244,20 @@ impl Config {
         }
 
         None
+    }
+
+    pub(crate) fn local_blurb(&self) -> Option<crate::templates::Html<&str>> {
+        if let Some(blurb) = &self.local_blurb {
+            if !blurb.is_empty() {
+                return Some(crate::templates::Html(blurb));
+            }
+        }
+
+        None
+    }
+
+    pub(crate) fn local_domains(&self) -> &[String] {
+        &self.local_domains
     }
 
     pub(crate) fn sled_path(&self) -> &PathBuf {

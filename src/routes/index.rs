@@ -20,7 +20,29 @@ pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, Error> {
-    let mut nodes = state.node_cache().nodes().await?;
+    let all_nodes = state.node_cache().nodes().await?;
+
+    let mut nodes = Vec::new();
+    let mut local = Vec::new();
+
+    for node in all_nodes {
+        if node
+            .base
+            .authority_str()
+            .map(|authority| {
+                config
+                    .local_domains()
+                    .iter()
+                    .find(|domain| domain.as_str() == authority)
+                    .is_some()
+            })
+            .unwrap_or(false)
+        {
+            local.push(node);
+        } else {
+            nodes.push(node);
+        }
+    }
 
     nodes.sort_by(|lhs, rhs| match (open_reg(lhs), open_reg(rhs)) {
         (true, true) | (false, false) => std::cmp::Ordering::Equal,
@@ -37,7 +59,7 @@ pub(crate) async fn route(
 
     let mut buf = BufWriter::new(Vec::new());
 
-    crate::templates::index(&mut buf, &nodes, &config)?;
+    crate::templates::index(&mut buf, &local, &nodes, &config)?;
     let buf = buf.into_inner().map_err(|e| {
         tracing::error!("Error rendering template, {}", e.error());
         ErrorKind::FlushBuffer

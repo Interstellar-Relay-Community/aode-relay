@@ -41,7 +41,7 @@ header {
     }
 }
 
-section {
+article {
     background-color: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -51,8 +51,16 @@ section {
     max-width: 700px;
     padding-bottom: 32px;
 
-    > p:first-child {
-        margin-top: 0;
+    section {
+      border-bottom: 1px solid #e5e5e5;
+
+      > h4:first-child,
+      > p:first-child {
+          margin-top: 0;
+      }
+      > p:last-child {
+        margin-bottom: 0;
+      }
     }
 
     h3 {
@@ -67,13 +75,13 @@ section {
 
     li {
         padding-top: 36px;
-        border-bottom: 1px solid #e5e5e5;
     }
 
     .padded {
         padding: 0 24px;
     }
 
+    .local-explainer,
     .joining {
         padding: 24px;
     }
@@ -174,8 +182,10 @@ footer {
 
                 li {
                     padding: 0;
-                    border-bottom: none;
                 }
+            }
+            article section {
+              border-bottom: none;
             }
         }
     }
@@ -226,7 +236,7 @@ footer {
         padding: 24px;
     }
 
-    section {
+    article {
         border-left: none;
         border-right: none;
         border-radius: 0;

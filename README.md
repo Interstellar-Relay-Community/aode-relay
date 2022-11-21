@@ -100,7 +100,9 @@ TELEGRAM_TOKEN=secret
 TELEGRAM_ADMIN_HANDLE=your_handle
 TLS_KEY=/path/to/key
 TLS_CERT=/path/to/cert
-FOOTER_BLURB="Contact <a href=\"https://masto.asonix.dog/@asonix\">@asonix</a>
+FOOTER_BLURB="Contact <a href=\"https://masto.asonix.dog/@asonix\">@asonix</a> for inquiries"
+LOCAL_DOMAINS=masto.asonix.dog
+LOCAL_BLURB="<p>Welcome to my cool relay where I have cool relay things happening. I hope you enjoy your stay!</p>"
 ```
 
 #### Descriptions
@@ -140,6 +142,10 @@ Optional - This is specified if you are running the relay directly on the intern
 Optional - This is specified if you are running the relay directly on the internet and have a TLS certificate chain to provide HTTPS for your relay
 ##### `FOOTER_BLURB`
 Optional - Add custom notes in the footer of the page
+##### `LOCAL_DOMAINS`
+Optional - domains of mastodon servers run by the same admin as the relay
+##### `LOCAL_BLURB`
+Optional - description for the relay
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.
