@@ -98,6 +98,8 @@ API_TOKEN=somepasswordishtoken
 OPENTELEMETRY_URL=localhost:4317
 TELEGRAM_TOKEN=secret
 TELEGRAM_ADMIN_HANDLE=your_handle
+TLS_KEY=/path/to/key
+TLS_CERT=/path/to/cert
 ```
 
 #### Descriptions
@@ -131,6 +133,10 @@ A URL for exporting opentelemetry spans. This is mostly useful for debugging. Th
 A Telegram Bot Token for running the relay administration bot. There is no default.
 ##### `TELEGRAM_ADMIN_HANDLE`
 The handle of the telegram user allowed to administer the relay. There is no default.
+##### `TLS_KEY`
+Optional - This is specified if you are running the relay directly on the internet and have a TLS key to provide HTTPS for your relay
+##### `TLS_CERT`
+Optional - This is specified if you are running the relay directly on the internet and have a TLS certificate chain to provide HTTPS for your relay
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.

@@ -14,8 +14,9 @@ use activitystreams::{
 };
 use config::Environment;
 use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
+use rustls::{Certificate, PrivateKey};
 use sha2::{Digest, Sha256};
-use std::{net::IpAddr, path::PathBuf};
+use std::{io::BufReader, net::IpAddr, path::PathBuf};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -34,6 +35,8 @@ pub(crate) struct ParsedConfig {
     telegram_token: Option<String>,
     telegram_admin_handle: Option<String>,
     api_token: Option<String>,
+    tls_key: Option<PathBuf>,
+    tls_cert: Option<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -52,6 +55,13 @@ pub struct Config {
     telegram_token: Option<String>,
     telegram_admin_handle: Option<String>,
     api_token: Option<String>,
+    tls: Option<TlsConfig>,
+}
+
+#[derive(Clone)]
+struct TlsConfig {
+    key: PathBuf,
+    cert: PathBuf,
 }
 
 #[derive(Debug)]
@@ -100,6 +110,8 @@ impl std::fmt::Debug for Config {
             .field("telegram_token", &"[redacted]")
             .field("telegram_admin_handle", &self.telegram_admin_handle)
             .field("api_token", &"[redacted]")
+            .field("tls_key", &"[redacted]")
+            .field("tls_cert", &"[redacted]")
             .finish()
     }
 }
@@ -121,6 +133,8 @@ impl Config {
             .set_default("telegram_token", None as Option<&str>)?
             .set_default("telegram_admin_handle", None as Option<&str>)?
             .set_default("api_token", None as Option<&str>)?
+            .set_default("tls_key", None as Option<&str>)?
+            .set_default("tls_cert", None as Option<&str>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -128,6 +142,10 @@ impl Config {
 
         let scheme = if config.https { "https" } else { "http" };
         let base_uri = iri!(format!("{}://{}", scheme, config.hostname)).into_absolute();
+
+        let tls = config
+            .tls_key
+            .and_then(|key| config.tls_cert.map(|cert| TlsConfig { key, cert }));
 
         Ok(Config {
             hostname: config.hostname,
@@ -144,7 +162,37 @@ impl Config {
             telegram_token: config.telegram_token,
             telegram_admin_handle: config.telegram_admin_handle,
             api_token: config.api_token,
+            tls,
         })
+    }
+
+    pub(crate) fn open_keys(&self) -> Result<Option<(Vec<Certificate>, PrivateKey)>, Error> {
+        let tls = if let Some(tls) = &self.tls {
+            tls
+        } else {
+            return Ok(None);
+        };
+
+        let mut certs_reader = BufReader::new(std::fs::File::open(&tls.cert)?);
+        let certs = rustls_pemfile::certs(&mut certs_reader)?;
+
+        let mut key_reader = BufReader::new(std::fs::File::open(&tls.key)?);
+        let keys = rustls_pemfile::read_all(&mut key_reader)?;
+
+        let certs = certs.into_iter().map(Certificate).collect();
+
+        let key = if let Some(key) = keys.into_iter().find_map(|item| match item {
+            rustls_pemfile::Item::RSAKey(der) => Some(PrivateKey(der)),
+            rustls_pemfile::Item::PKCS8Key(der) => Some(PrivateKey(der)),
+            rustls_pemfile::Item::ECKey(der) => Some(PrivateKey(der)),
+            _ => None,
+        }) {
+            key
+        } else {
+            return Ok(None);
+        };
+
+        Ok(Some((certs, key)))
     }
 
     pub(crate) fn sled_path(&self) -> &PathBuf {

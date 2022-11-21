@@ -8,6 +8,7 @@ use collector::MemoryCollector;
 use console_subscriber::ConsoleLayer;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
+use rustls::ServerConfig;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
@@ -203,9 +204,10 @@ async fn do_server_main(
         telegram::start(admin_handle.to_owned(), db.clone(), token);
     }
 
+    let keys = config.open_keys()?;
+
     let bind_address = config.bind_address();
-    tracing::warn!("Binding to {}:{}", bind_address.0, bind_address.1);
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
@@ -258,10 +260,24 @@ async fn do_server_main(
                         .route("/stats", web::get().to(admin::routes::stats)),
                 ),
             )
-    })
-    .bind(bind_address)?
-    .run()
-    .await?;
+    });
+
+    if let Some((certs, key)) = keys {
+        tracing::warn!("Binding to {}:{} with TLS", bind_address.0, bind_address.1);
+        let server_config = ServerConfig::builder()
+            .with_safe_default_cipher_suites()
+            .with_safe_default_kx_groups()
+            .with_safe_default_protocol_versions()?
+            .with_no_client_auth()
+            .with_single_cert(certs, key)?;
+        server
+            .bind_rustls(bind_address, server_config)?
+            .run()
+            .await?;
+    } else {
+        tracing::warn!("Binding to {}:{}", bind_address.0, bind_address.1);
+        server.bind(bind_address)?.run().await?;
+    }
 
     tracing::warn!("Server closed");
 

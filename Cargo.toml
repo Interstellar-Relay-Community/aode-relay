@@ -23,7 +23,9 @@ default = []
 [dependencies]
 anyhow = "1.0"
 actix-rt = "2.7.0"
-actix-web = { version = "4.0.1", default-features = false }
+actix-web = { version = "4.0.1", default-features = false, features = [
+  "rustls",
+] }
 actix-webfinger = "0.4.0"
 activitystreams = "0.7.0-alpha.19"
 activitystreams-ext = "0.1.0-alpha.2"
@@ -48,6 +50,8 @@ quanta = "0.10.1"
 rand = "0.8"
 rsa = "0.7"
 rsa-magic-public-key = "0.6.0"
+rustls = "0.20.7"
+rustls-pemfile = "1.0.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = { version = "0.10", features = ["oid"] }
