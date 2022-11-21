@@ -33,8 +33,7 @@ pub(crate) async fn route(
                 config
                     .local_domains()
                     .iter()
-                    .find(|domain| domain.as_str() == authority)
-                    .is_some()
+                    .any(|domain| domain.as_str() == authority)
             })
             .unwrap_or(false)
         {

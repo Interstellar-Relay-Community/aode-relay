@@ -171,7 +171,7 @@ impl Config {
         let local_domains = config
             .local_domains
             .iter()
-            .flat_map(|s| s.split(","))
+            .flat_map(|s| s.split(','))
             .map(|d| d.to_string())
             .collect();
 
