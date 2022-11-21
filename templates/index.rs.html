@@ -84,6 +84,9 @@ templates::{info, instance, statics::index_css},
     </section>
   </main>
   <footer>
+    @if let Some(blurb) = config.footer_blurb() {
+    <div>@blurb</div>
+    }
     <p>
       The source code for this project can be found at
       <a href="@config.source_code()">@config.source_code()</a>

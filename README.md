@@ -100,6 +100,7 @@ TELEGRAM_TOKEN=secret
 TELEGRAM_ADMIN_HANDLE=your_handle
 TLS_KEY=/path/to/key
 TLS_CERT=/path/to/cert
+FOOTER_BLURB="Contact <a href=\"https://masto.asonix.dog/@asonix\">@asonix</a>
 ```
 
 #### Descriptions
@@ -137,6 +138,8 @@ The handle of the telegram user allowed to administer the relay. There is no def
 Optional - This is specified if you are running the relay directly on the internet and have a TLS key to provide HTTPS for your relay
 ##### `TLS_CERT`
 Optional - This is specified if you are running the relay directly on the internet and have a TLS certificate chain to provide HTTPS for your relay
+##### `FOOTER_BLURB`
+Optional - Add custom notes in the footer of the page
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.

@@ -37,6 +37,7 @@ pub(crate) struct ParsedConfig {
     api_token: Option<String>,
     tls_key: Option<PathBuf>,
     tls_cert: Option<PathBuf>,
+    footer_blurb: Option<String>,
 }
 
 #[derive(Clone)]
@@ -56,6 +57,7 @@ pub struct Config {
     telegram_admin_handle: Option<String>,
     api_token: Option<String>,
     tls: Option<TlsConfig>,
+    footer_blurb: Option<String>,
 }
 
 #[derive(Clone)]
@@ -112,6 +114,7 @@ impl std::fmt::Debug for Config {
             .field("api_token", &"[redacted]")
             .field("tls_key", &"[redacted]")
             .field("tls_cert", &"[redacted]")
+            .field("footer_blurb", &self.footer_blurb)
             .finish()
     }
 }
@@ -135,6 +138,7 @@ impl Config {
             .set_default("api_token", None as Option<&str>)?
             .set_default("tls_key", None as Option<&str>)?
             .set_default("tls_cert", None as Option<&str>)?
+            .set_default("footer_blurb", None as Option<&str>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -172,6 +176,7 @@ impl Config {
             telegram_admin_handle: config.telegram_admin_handle,
             api_token: config.api_token,
             tls,
+            footer_blurb: config.footer_blurb,
         })
     }
 
@@ -212,6 +217,16 @@ impl Config {
         };
 
         Ok(Some((certs, key)))
+    }
+
+    pub(crate) fn footer_blurb(&self) -> Option<crate::templates::Html<&str>> {
+        if let Some(blurb) = &self.footer_blurb {
+            if !blurb.is_empty() {
+                return Some(crate::templates::Html(blurb));
+            }
+        }
+
+        None
     }
 
     pub(crate) fn sled_path(&self) -> &PathBuf {
