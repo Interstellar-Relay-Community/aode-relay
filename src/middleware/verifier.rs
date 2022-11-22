@@ -16,7 +16,7 @@ use std::{future::Future, pin::Pin};
 pub(crate) struct MyVerify(pub Requests, pub ActorCache, pub State);
 
 impl MyVerify {
-    #[tracing::instrument("Verify signature", skip(self, signature))]
+    #[tracing::instrument("Verify request", skip(self, signature, signing_string))]
     async fn verify(
         &self,
         algorithm: Option<Algorithm>,
@@ -106,6 +106,7 @@ impl PublicKeyResponse {
     }
 }
 
+#[tracing::instrument("Verify signature")]
 async fn do_verify(
     public_key: &str,
     signature: String,
@@ -121,7 +122,9 @@ async fn do_verify(
             let hashed = Sha256::new_with_prefix(signing_string.as_bytes());
 
             let verifying_key = VerifyingKey::new_with_prefix(public_key);
-            verifying_key.verify_digest(hashed, &signature)?;
+            verifying_key
+                .verify_digest(hashed, &signature)
+                .map_err(ErrorKind::VerifySignature)?;
 
             Ok(()) as Result<(), Error>
         })

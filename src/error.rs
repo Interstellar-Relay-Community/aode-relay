@@ -103,6 +103,9 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't read signature")]
     ReadSignature(signature::Error),
 
+    #[error("Couldn't verify signature")]
+    VerifySignature(signature::Error),
+
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),
 
