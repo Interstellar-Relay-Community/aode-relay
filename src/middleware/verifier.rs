@@ -113,15 +113,18 @@ async fn do_verify(
 ) -> Result<(), Error> {
     let public_key = RsaPublicKey::from_public_key_pem(public_key.trim())?;
 
+    let span = tracing::Span::current();
     web::block(move || {
-        let decoded = base64::decode(signature)?;
-        let signature = Signature::from_bytes(&decoded)?;
-        let hashed = Sha256::new_with_prefix(signing_string.as_bytes());
+        span.in_scope(|| {
+            let decoded = base64::decode(signature)?;
+            let signature = Signature::from_bytes(&decoded).map_err(ErrorKind::ReadSignature)?;
+            let hashed = Sha256::new_with_prefix(signing_string.as_bytes());
 
-        let verifying_key = VerifyingKey::new_with_prefix(public_key);
-        verifying_key.verify_digest(hashed, &signature)?;
+            let verifying_key = VerifyingKey::new_with_prefix(public_key);
+            verifying_key.verify_digest(hashed, &signature)?;
 
-        Ok(()) as Result<(), Error>
+            Ok(()) as Result<(), Error>
+        })
     })
     .await??;
 
