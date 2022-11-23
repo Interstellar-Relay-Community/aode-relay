@@ -1,4 +1,3 @@
-use indexmap::IndexMap;
 use metrics::{Key, Recorder, SetRecorderError};
 use metrics_util::{
     registry::{AtomicStorage, GenerationalStorage, Recency, Registry},
@@ -16,6 +15,8 @@ const MINUTES: u64 = 60 * SECONDS;
 const HOURS: u64 = 60 * MINUTES;
 const DAYS: u64 = 24 * HOURS;
 
+type DistributionMap = BTreeMap<Vec<(String, String)>, Summary>;
+
 #[derive(Clone)]
 pub struct MemoryCollector {
     inner: Arc<Inner>,
@@ -23,7 +24,7 @@ pub struct MemoryCollector {
 
 struct Inner {
     descriptions: RwLock<HashMap<String, metrics::SharedString>>,
-    distributions: RwLock<HashMap<String, IndexMap<Vec<(String, String)>, Summary>>>,
+    distributions: RwLock<HashMap<String, DistributionMap>>,
     recency: Recency<Key>,
     registry: Registry<Key, GenerationalStorage<AtomicStorage>>,
 }
@@ -289,7 +290,7 @@ impl Inner {
             }
 
             let mut d = self.distributions.write().unwrap();
-            let outer_entry = d.entry(name.clone()).or_insert_with(IndexMap::new);
+            let outer_entry = d.entry(name.clone()).or_insert_with(BTreeMap::new);
 
             let entry = outer_entry
                 .entry(labels)
@@ -303,8 +304,7 @@ impl Inner {
         }
 
         let d = self.distributions.read().unwrap().clone();
-        let h = d
-            .into_iter()
+        d.into_iter()
             .map(|(key, value)| {
                 (
                     key,
@@ -320,9 +320,7 @@ impl Inner {
                         .collect(),
                 )
             })
-            .collect();
-
-        h
+            .collect()
     }
 
     fn snapshot(&self) -> Snapshot {

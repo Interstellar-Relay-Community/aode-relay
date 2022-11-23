@@ -301,7 +301,6 @@ dependencies = [
  "dotenv",
  "futures-util",
  "http-signature-normalization-actix",
- "indexmap",
  "lru",
  "metrics",
  "metrics-util",
