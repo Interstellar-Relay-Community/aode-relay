@@ -7,6 +7,19 @@ use actix_web::{web, HttpResponse};
 use rand::{seq::SliceRandom, thread_rng};
 use std::io::BufWriter;
 
+const MINIFY_CONFIG: minify_html::Cfg = minify_html::Cfg {
+    do_not_minify_doctype: true,
+    ensure_spec_compliant_unquoted_attribute_values: true,
+    keep_closing_tags: true,
+    keep_html_and_head_opening_tags: false,
+    keep_spaces_between_attributes: true,
+    keep_comments: false,
+    minify_js: true,
+    minify_css: true,
+    remove_bangs: true,
+    remove_processing_instructions: true,
+};
+
 fn open_reg(node: &Node) -> bool {
     node.instance
         .as_ref()
@@ -59,10 +72,12 @@ pub(crate) async fn route(
     let mut buf = BufWriter::new(Vec::new());
 
     crate::templates::index(&mut buf, &local, &nodes, &config)?;
-    let buf = buf.into_inner().map_err(|e| {
+    let html = buf.into_inner().map_err(|e| {
         tracing::error!("Error rendering template, {}", e.error());
         ErrorKind::FlushBuffer
     })?;
 
-    Ok(HttpResponse::Ok().content_type("text/html").body(buf))
+    let html = minify_html::minify(&html, &MINIFY_CONFIG);
+
+    Ok(HttpResponse::Ok().content_type("text/html").body(html))
 }

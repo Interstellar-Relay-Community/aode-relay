@@ -236,20 +236,20 @@ impl Config {
         Ok(Some((certs, key)))
     }
 
-    pub(crate) fn footer_blurb(&self) -> Option<crate::templates::Html<&str>> {
+    pub(crate) fn footer_blurb(&self) -> Option<crate::templates::Html<String>> {
         if let Some(blurb) = &self.footer_blurb {
             if !blurb.is_empty() {
-                return Some(crate::templates::Html(blurb));
+                return Some(crate::templates::Html(ammonia::clean(blurb)));
             }
         }
 
         None
     }
 
-    pub(crate) fn local_blurb(&self) -> Option<crate::templates::Html<&str>> {
+    pub(crate) fn local_blurb(&self) -> Option<crate::templates::Html<String>> {
         if let Some(blurb) = &self.local_blurb {
             if !blurb.is_empty() {
-                return Some(crate::templates::Html(blurb));
+                return Some(crate::templates::Html(ammonia::clean(blurb)));
             }
         }
 
