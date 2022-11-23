@@ -5,7 +5,7 @@ use actix_web::{
     HttpMessage,
 };
 use futures_util::{
-    future::{LocalBoxFuture, TryFutureExt},
+    future::TryFutureExt,
     stream::{once, TryStreamExt},
 };
 use std::{
@@ -45,7 +45,7 @@ where
 {
     type Response = S::Response;
     type Error = S::Error;
-    type Future = LocalBoxFuture<'static, Result<S::Response, S::Error>>;
+    type Future = S::Future;
 
     fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.1.poll_ready(cx)
@@ -68,13 +68,9 @@ where
                 )),
             });
 
-            let fut = self.1.call(req);
-
-            Box::pin(async move { fut.await })
+            self.1.call(req)
         } else {
-            let fut = self.1.call(req);
-
-            Box::pin(async move { fut.await })
+            self.1.call(req)
         }
     }
 }
