@@ -2,7 +2,7 @@
 #![allow(clippy::needless_borrow)]
 
 use activitystreams::iri_string::types::IriString;
-use actix_web::{web, App, HttpServer};
+use actix_web::{middleware::Compress, web, App, HttpServer};
 use collector::MemoryCollector;
 #[cfg(feature = "console")]
 use console_subscriber::ConsoleLayer;
@@ -224,7 +224,8 @@ async fn do_server_main(
             app
         };
 
-        app.wrap(TracingLogger::default())
+        app.wrap(Compress::default())
+            .wrap(TracingLogger::default())
             .wrap(Timings)
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
