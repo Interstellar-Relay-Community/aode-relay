@@ -25,6 +25,8 @@ anyhow = "1.0"
 actix-rt = "2.7.0"
 actix-web = { version = "4.0.1", default-features = false, features = [
   "rustls",
+  "compress-brotli",
+  "compress-gzip",
 ] }
 actix-webfinger = "0.4.0"
 activitystreams = "0.7.0-alpha.19"
