@@ -308,6 +308,7 @@ dependencies = [
  "mime",
  "opentelemetry",
  "opentelemetry-otlp",
+ "pin-project-lite",
  "quanta",
  "rand",
  "rsa",
