@@ -54,27 +54,6 @@ templates::{info, instance, statics::index_css},
       }
     </article>
     }
-    @if !nodes.is_empty() {
-    <article>
-      <h3>@nodes.len() Connected Servers</h3>
-      <ul>
-        @for node in nodes {
-        @if let Some(inst) = node.instance.as_ref() {
-        <li>
-          @:instance(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(),
-          &node.base)
-        </li>
-        } else {
-        @if let Some(inf) = node.info.as_ref() {
-        <li>
-          @:info(inf, &node.base)
-        </li>
-        }
-        }
-        }
-      </ul>
-    </article>
-    }
     <article>
       <h3>Joining</h3>
       <section class="joining">
@@ -111,6 +90,27 @@ templates::{info, instance, statics::index_css},
         </p>
       </section>
     </article>
+    @if !nodes.is_empty() {
+    <article>
+      <h3>@nodes.len() Connected Servers</h3>
+      <ul>
+        @for node in nodes {
+        @if let Some(inst) = node.instance.as_ref() {
+        <li>
+          @:instance(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(),
+          &node.base)
+        </li>
+        } else {
+        @if let Some(inf) = node.info.as_ref() {
+        <li>
+          @:info(inf, &node.base)
+        </li>
+        }
+        }
+        }
+      </ul>
+    </article>
+    }
   </main>
   <footer>
     @if let Some(blurb) = config.footer_blurb() {
