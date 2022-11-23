@@ -11,7 +11,7 @@ use actix_web::{
 use bcrypt::{BcryptError, DEFAULT_COST};
 use futures_util::future::LocalBoxFuture;
 use http_signature_normalization_actix::prelude::InvalidHeaderValue;
-use std::{convert::Infallible, str::FromStr};
+use std::{convert::Infallible, str::FromStr, time::Instant};
 use tracing_error::SpanTrace;
 
 use crate::db::Db;
@@ -178,10 +178,15 @@ impl FromRequest for Admin {
     type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let now = Instant::now();
         let res = Self::prepare_verify(req);
         Box::pin(async move {
             let (db, c, t) = res?;
             Self::verify(c, t).await?;
+            metrics::histogram!(
+                "relay.admin.verify",
+                now.elapsed().as_micros() as f64 / 1_000_000_f64
+            );
             Ok(Admin { db })
         })
     }
