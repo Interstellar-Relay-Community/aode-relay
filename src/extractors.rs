@@ -61,7 +61,8 @@ impl Admin {
         hashed_api_token: Data<AdminConfig>,
         x_api_token: XApiToken,
     ) -> Result<(), Error> {
-        if actix_web::web::block(move || hashed_api_token.verify(x_api_token))
+        let span = tracing::Span::current();
+        if actix_web::web::block(move || span.in_scope(|| hashed_api_token.verify(x_api_token)))
             .await
             .map_err(Error::canceled)??
         {
