@@ -2,6 +2,7 @@
 #![allow(clippy::needless_borrow)]
 
 use activitystreams::iri_string::types::IriString;
+use actix_rt::task::JoinHandle;
 use actix_web::{middleware::Compress, web, App, HttpServer};
 use collector::MemoryCollector;
 #[cfg(feature = "console")]
@@ -94,7 +95,8 @@ fn init_subscriber(
     Ok(())
 }
 
-fn main() -> Result<(), anyhow::Error> {
+#[actix_rt::main]
+async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
 
     let config = Config::build()?;
@@ -106,7 +108,7 @@ fn main() -> Result<(), anyhow::Error> {
     let args = Args::new();
 
     if args.any() {
-        return client_main(config, args);
+        return client_main(config, args).await?;
     }
 
     tracing::warn!("Opening DB");
@@ -116,16 +118,15 @@ fn main() -> Result<(), anyhow::Error> {
     let actors = ActorCache::new(db.clone());
     let media = MediaCache::new(db.clone());
 
-    server_main(db, actors, media, collector, config)?;
+    server_main(db, actors, media, collector, config).await??;
 
     tracing::warn!("Application exit");
 
     Ok(())
 }
 
-#[actix_rt::main]
-async fn client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
-    actix_rt::spawn(do_client_main(config, args)).await?
+fn client_main(config: Config, args: Args) -> JoinHandle<Result<(), anyhow::Error>> {
+    actix_rt::spawn(do_client_main(config, args))
 }
 
 async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
@@ -174,15 +175,14 @@ async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error>
     Ok(())
 }
 
-#[actix_rt::main]
-async fn server_main(
+fn server_main(
     db: Db,
     actors: ActorCache,
     media: MediaCache,
     collector: MemoryCollector,
     config: Config,
-) -> Result<(), anyhow::Error> {
-    actix_rt::spawn(do_server_main(db, actors, media, collector, config)).await?
+) -> JoinHandle<Result<(), anyhow::Error>> {
+    actix_rt::spawn(do_server_main(db, actors, media, collector, config))
 }
 
 async fn do_server_main(
