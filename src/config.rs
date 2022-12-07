@@ -8,6 +8,7 @@ use crate::{
 use activitystreams::{
     iri,
     iri_string::{
+        format::ToDedicatedString,
         resolve::FixedBaseResolver,
         types::{IriAbsoluteString, IriFragmentStr, IriRelativeStr, IriString},
     },
@@ -398,34 +399,42 @@ impl Config {
     #[tracing::instrument(level = "debug", skip_all, fields(base_uri = tracing::field::debug(&self.base_uri), kind = tracing::field::debug(&kind)))]
     fn do_generate_url(&self, kind: UrlKind) -> Result<IriString, Error> {
         let iri = match kind {
-            UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref()).try_resolve(
-                IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref(),
-            )?,
+            UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref())
+                .resolve(IriRelativeStr::new(&format!("activity/{}", Uuid::new_v4()))?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::Actor => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("actor")?.as_ref())?,
+                .resolve(IriRelativeStr::new("actor")?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::Followers => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("followers")?.as_ref())?,
+                .resolve(IriRelativeStr::new("followers")?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::Following => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("following")?.as_ref())?,
+                .resolve(IriRelativeStr::new("following")?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::Inbox => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("inbox")?.as_ref())?,
+                .resolve(IriRelativeStr::new("inbox")?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::Index => self.base_uri.clone().into(),
             UrlKind::MainKey => {
                 let actor = IriRelativeStr::new("actor")?;
                 let fragment = IriFragmentStr::new("main-key")?;
 
-                let mut resolved =
-                    FixedBaseResolver::new(self.base_uri.as_ref()).try_resolve(actor.as_ref())?;
+                let mut resolved = FixedBaseResolver::new(self.base_uri.as_ref())
+                    .resolve(actor.as_ref())
+                    .try_to_dedicated_string()?;
 
                 resolved.set_fragment(Some(fragment));
                 resolved
             }
             UrlKind::Media(uuid) => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new(&format!("media/{}", uuid))?.as_ref())?,
+                .resolve(IriRelativeStr::new(&format!("media/{}", uuid))?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::NodeInfo => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())?,
+                .resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())
+                .try_to_dedicated_string()?,
             UrlKind::Outbox => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("outbox")?.as_ref())?,
+                .resolve(IriRelativeStr::new("outbox")?.as_ref())
+                .try_to_dedicated_string()?,
         };
 
         Ok(iri)
@@ -439,21 +448,29 @@ impl Config {
     fn do_generate_admin_url(&self, kind: AdminUrlKind) -> Result<IriString, Error> {
         let iri = match kind {
             AdminUrlKind::Allow => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/allow")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/allow")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Disallow => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/disallow")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/disallow")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Block => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/block")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/block")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Unblock => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/unblock")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/unblock")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Allowed => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/allowed")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/allowed")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Blocked => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/blocked")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/blocked")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Connected => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/connected")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/connected")?.as_ref())
+                .try_to_dedicated_string()?,
             AdminUrlKind::Stats => FixedBaseResolver::new(self.base_uri.as_ref())
-                .try_resolve(IriRelativeStr::new("api/v1/admin/stats")?.as_ref())?,
+                .resolve(IriRelativeStr::new("api/v1/admin/stats")?.as_ref())
+                .try_to_dedicated_string()?,
         };
 
         Ok(iri)
