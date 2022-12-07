@@ -36,13 +36,13 @@ async fn get_inboxes(
     state.inboxes_without(&actor.inbox, &authority).await
 }
 
-fn prepare_activity<T, U, V, Kind>(
+fn prepare_activity<T, U, V>(
     mut t: T,
     id: impl TryInto<IriString, Error = U>,
     to: impl TryInto<IriString, Error = V>,
 ) -> Result<T, Error>
 where
-    T: ObjectExt<Kind> + BaseExt<Kind>,
+    T: ObjectExt + BaseExt,
     Error: From<U> + From<V>,
 {
     t.set_id(id.try_into()?)

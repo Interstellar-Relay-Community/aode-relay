@@ -29,8 +29,8 @@ actix-web = { version = "4.0.1", default-features = false, features = [
   "compress-gzip",
 ] }
 actix-webfinger = "0.4.0"
-activitystreams = "0.7.0-alpha.19"
-activitystreams-ext = "0.1.0-alpha.2"
+activitystreams = "0.7.0-alpha.21"
+activitystreams-ext = "0.1.0-alpha.3"
 ammonia = "3.1.0"
 awc = { version = "3.0.0", default-features = false, features = ["rustls"] }
 bcrypt = "0.13"
