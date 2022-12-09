@@ -298,7 +298,7 @@ checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
 
 [[package]]
 name = "ap-relay"
-version = "0.3.68"
+version = "0.3.69"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
@@ -1343,9 +1343,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1042c9eb8c9882f94be2da71787168de008f962c400706f692901238726b64d"
+checksum = "60d41016e2fd353e0a3f266ca9ac9b9dbf439c4a2bede3b400ba7ea73ac9bb3f"
 dependencies = [
  "actix-http",
  "actix-rt",
