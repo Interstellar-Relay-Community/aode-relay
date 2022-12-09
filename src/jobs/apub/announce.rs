@@ -42,7 +42,7 @@ impl Announce {
             .queue(DeliverMany::new(inboxes, announce)?)
             .await?;
 
-        state.state.cache(self.object_id, activity_id).await;
+        state.state.cache(self.object_id, activity_id);
         Ok(())
     }
 }

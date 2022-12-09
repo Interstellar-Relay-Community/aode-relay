@@ -203,7 +203,7 @@ async fn handle_announce(
         .as_single_id()
         .ok_or(ErrorKind::MissingId)?;
 
-    if state.is_cached(object_id).await {
+    if state.is_cached(object_id) {
         return Err(ErrorKind::Duplicate.into());
     }
 

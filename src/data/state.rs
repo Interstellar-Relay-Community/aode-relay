@@ -10,8 +10,7 @@ use actix_web::web;
 use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub struct State {
@@ -78,12 +77,12 @@ impl State {
             .collect())
     }
 
-    pub(crate) async fn is_cached(&self, object_id: &IriString) -> bool {
-        self.object_cache.read().await.contains(object_id)
+    pub(crate) fn is_cached(&self, object_id: &IriString) -> bool {
+        self.object_cache.read().unwrap().contains(object_id)
     }
 
-    pub(crate) async fn cache(&self, object_id: IriString, actor_id: IriString) {
-        self.object_cache.write().await.put(object_id, actor_id);
+    pub(crate) fn cache(&self, object_id: IriString, actor_id: IriString) {
+        self.object_cache.write().unwrap().put(object_id, actor_id);
     }
 
     #[tracing::instrument(level = "debug", name = "Building state", skip_all)]
