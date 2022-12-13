@@ -43,6 +43,7 @@ pub enum ValidTypes {
     Remove,
     Undo,
     Update,
+    Move,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
