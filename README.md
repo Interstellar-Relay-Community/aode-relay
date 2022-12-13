@@ -171,6 +171,9 @@ example, if the server is `https://relay.my.tld`, the correct URL would be
 - Update {anything}, the Update {anything} is relayed verbatim to listening servers
     Note that this activity will likely be rejected by the listening servers unless it has been
     signed with a JSON-LD signature
+- Add {anything}, the Add {anything} is relayed verbatim to listening servers
+    Note that this activity will likely be rejected by the listening servers unless it has been
+    signed with a JSON-LD signature
 
 ### Supported Discovery Protocols
 - Webfinger
