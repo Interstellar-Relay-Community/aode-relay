@@ -1,6 +1,8 @@
 # AodeRelay
 _A simple and efficient activitypub relay_
 
+Forked from original [Aode Relay](https://git.asonix.dog/asonix/relay), applied some customization on it.
+
 ### Installation
 #### Docker
 If running docker, you can start the relay with the following command:
