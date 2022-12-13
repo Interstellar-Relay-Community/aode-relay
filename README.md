@@ -165,13 +165,13 @@ example, if the server is `https://relay.my.tld`, the correct URL would be
 - Follow Public, become a listener of the relay
 - Undo Follow {self-actor}, stop listening on the relay, an Undo Follow will be sent back
 - Undo Follow Public, stop listening on the relay
-- Delete {anything}, the Delete {anything} is relayed verbatim to listening servers
+- Delete {anything}, the Delete {anything} is relayed verbatim to listening servers.
     Note that this activity will likely be rejected by the listening servers unless it has been
     signed with a JSON-LD signature
-- Update {anything}, the Update {anything} is relayed verbatim to listening servers
+- Update {anything}, the Update {anything} is relayed verbatim to listening servers.
     Note that this activity will likely be rejected by the listening servers unless it has been
     signed with a JSON-LD signature
-- Add {anything}, the Add {anything} is relayed verbatim to listening servers
+- Add {anything}, the Add {anything} is relayed verbatim to listening servers.
     Note that this activity will likely be rejected by the listening servers unless it has been
     signed with a JSON-LD signature
 
