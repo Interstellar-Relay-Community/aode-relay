@@ -87,6 +87,9 @@ pub(crate) async fn route(
             handle_forward(&jobs, input, actor).await?
         }
         ValidTypes::Undo => handle_undo(&config, &jobs, input, actor, is_connected).await?,
+        ValidTypes::Move => {
+            tracing::warn!("Move activity received, ignoring");
+        }
     };
 
     Ok(accepted(serde_json::json!({})))
