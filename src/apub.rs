@@ -33,6 +33,7 @@ pub struct PublicKey {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub enum ValidTypes {
+    Add,
     Accept,
     Announce,
     Create,
