@@ -24,18 +24,18 @@ struct Links {
     links: Vec<Link>,
 }
 
-#[tracing::instrument(name = "NodeInfo")]
+#[tracing::instrument(name = "NodeInfo", skip_all)]
 pub(crate) async fn route(
     config: web::Data<Config>,
     state: web::Data<State>,
 ) -> web::Json<NodeInfo> {
-    let (inboxes, blocks) = tokio::join!(state.db.inboxes(), async {
-        if config.publish_blocks() {
-            Some(state.db.blocks().await.unwrap_or_default())
-        } else {
-            None
-        }
-    });
+    let inboxes = state.db.inboxes().await;
+
+    let blocks = if config.publish_blocks() {
+        Some(state.db.blocks().await.unwrap_or_default())
+    } else {
+        None
+    };
 
     let peers = inboxes
         .unwrap_or_default()

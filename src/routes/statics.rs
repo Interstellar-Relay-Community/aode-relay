@@ -5,7 +5,7 @@ use actix_web::{
 };
 
 #[allow(clippy::async_yields_async)]
-#[tracing::instrument(name = "Statistics")]
+#[tracing::instrument(name = "Statics")]
 pub(crate) async fn route(filename: web::Path<String>) -> HttpResponse {
     if let Some(data) = StaticFile::get(&filename.into_inner()) {
         HttpResponse::Ok()

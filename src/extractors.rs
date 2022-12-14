@@ -80,7 +80,7 @@ impl Admin {
 #[derive(Debug, thiserror::Error)]
 #[error("Failed authentication")]
 pub(crate) struct Error {
-    context: SpanTrace,
+    context: String,
     #[source]
     kind: ErrorKind,
 }
@@ -88,49 +88,49 @@ pub(crate) struct Error {
 impl Error {
     fn invalid() -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::Invalid,
         }
     }
 
     fn missing_config() -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::MissingConfig,
         }
     }
 
     fn missing_db() -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::MissingDb,
         }
     }
 
     fn bcrypt_verify(e: BcryptError) -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::BCryptVerify(e),
         }
     }
 
     fn bcrypt_hash(e: BcryptError) -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::BCryptHash(e),
         }
     }
 
     fn parse_header(e: ParseError) -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::ParseHeader(e),
         }
     }
 
     fn canceled(_: BlockingError) -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: ErrorKind::Canceled,
         }
     }

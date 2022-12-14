@@ -36,11 +36,9 @@ impl NodeCache {
 
     #[tracing::instrument(level = "debug", name = "Get nodes", skip(self))]
     pub(crate) async fn nodes(&self) -> Result<Vec<Node>, Error> {
-        let infos = self.db.connected_info();
-        let instances = self.db.connected_instance();
-        let contacts = self.db.connected_contact();
-
-        let (infos, instances, contacts) = tokio::try_join!(infos, instances, contacts)?;
+        let infos = self.db.connected_info().await?;
+        let instances = self.db.connected_instance().await?;
+        let contacts = self.db.connected_contact().await?;
 
         let vec = self
             .db

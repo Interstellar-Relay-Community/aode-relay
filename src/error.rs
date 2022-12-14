@@ -10,7 +10,7 @@ use std::{convert::Infallible, fmt::Debug, io};
 use tracing_error::SpanTrace;
 
 pub(crate) struct Error {
-    context: SpanTrace,
+    context: String,
     kind: ErrorKind,
 }
 
@@ -53,7 +53,7 @@ where
 {
     fn from(error: T) -> Self {
         Error {
-            context: SpanTrace::capture(),
+            context: SpanTrace::capture().to_string(),
             kind: error.into(),
         }
     }

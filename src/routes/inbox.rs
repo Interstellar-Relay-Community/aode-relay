@@ -36,10 +36,8 @@ pub(crate) async fn route(
         .await?
         .into_inner();
 
-    let is_allowed = state.db.is_allowed(actor.id.clone());
-    let is_connected = state.db.is_connected(actor.id.clone());
-
-    let (is_allowed, is_connected) = tokio::try_join!(is_allowed, is_connected)?;
+    let is_allowed = state.db.is_allowed(actor.id.clone()).await?;
+    let is_connected = state.db.is_connected(actor.id.clone()).await?;
 
     if !is_allowed {
         return Err(ErrorKind::NotAllowed(actor.id.to_string()).into());
@@ -54,7 +52,7 @@ pub(crate) async fn route(
     } else if config.validate_signatures() {
         if let Some((verified, _)) = verified {
             if actor.public_key_id.as_str() != verified.key_id() {
-                tracing::error!("Bad actor, more info: {:?}", input);
+                tracing::error!("Actor signed with wrong key");
                 return Err(ErrorKind::BadActor(
                     actor.public_key_id.to_string(),
                     verified.key_id().to_owned(),

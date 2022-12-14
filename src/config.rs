@@ -396,7 +396,6 @@ impl Config {
         self.do_generate_url(kind).expect("Generated valid IRI")
     }
 
-    #[tracing::instrument(level = "debug", skip_all, fields(base_uri = tracing::field::debug(&self.base_uri), kind = tracing::field::debug(&kind)))]
     fn do_generate_url(&self, kind: UrlKind) -> Result<IriString, Error> {
         let iri = match kind {
             UrlKind::Activity => FixedBaseResolver::new(self.base_uri.as_ref())
