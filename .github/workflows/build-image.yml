@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'interstellar-next'
+      - 'interstellar-dev'
     tags:
       - 'v*interstellar*'
   pull_request:
@@ -33,6 +34,7 @@ jobs:
             latest=auto
           tags: |
             type=edge,branch=interstellar-next
+            type=edge,branch=interstellar-dev
             type=semver,pattern={{raw}}
             type=ref,event=pr
       - uses: docker/build-push-action@v3
