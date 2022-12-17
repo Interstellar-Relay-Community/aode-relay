@@ -257,6 +257,14 @@ impl Requests {
         self.do_fetch(url, "application/json").await
     }
 
+    #[tracing::instrument(name = "Fetch Json", skip(self), fields(signing_string))]
+    pub(crate) async fn fetch_json_msky<T>(&self, url: &str) -> Result<T, Error>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.do_fetch_msky(url, "application/json").await
+    }
+
     #[tracing::instrument(name = "Fetch Activity+Json", skip(self), fields(signing_string))]
     pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, Error>
     where
@@ -266,6 +274,20 @@ impl Requests {
     }
 
     async fn do_fetch<T>(&self, url: &str, accept: &str) -> Result<T, Error>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.do_fetch_inner(url, accept, false).await
+    }
+
+    async fn do_fetch_msky<T>(&self, url: &str, accept: &str) -> Result<T, Error>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.do_fetch_inner(url, accept, true).await
+    }
+
+    async fn do_fetch_inner<T>(&self, url: &str, accept: &str, use_post: bool) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -279,8 +301,11 @@ impl Requests {
         let span = tracing::Span::current();
 
         let client: Client = self.client.borrow().clone();
-        let res = client
-            .get(url)
+        let client_req = match use_post {
+            true => client.post(url),
+            false => client.get(url),
+        };
+        let res = client_req
             .insert_header(("Accept", accept))
             .insert_header(Date(SystemTime::now().into()))
             .signature(
