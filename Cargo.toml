@@ -91,7 +91,7 @@ default-features = false
 features = ["client", "server", "sha-2"]
 
 [dependencies.tracing-actix-web]
-version = "0.6.1"
+version = "0.7.0"
 
 [build-dependencies]
 anyhow = "1.0"
