@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use crate::{
     apub::{AcceptedActivities, AcceptedUndoObjects, UndoTypes, ValidTypes},
     config::{Config, UrlKind},
@@ -10,7 +12,7 @@ use crate::{
     routes::accepted,
 };
 use activitystreams::{
-    activity, base::AnyBase, iri_string::types::IriString, prelude::*, primitives::OneOrMany,
+    activity, base::AnyBase, iri, iri_string::types::IriString, prelude::*, primitives::OneOrMany,
     public,
 };
 use actix_web::{web, HttpResponse};
@@ -27,14 +29,38 @@ pub(crate) async fn route(
     verified: Option<(SignatureVerified, DigestVerified)>,
 ) -> Result<HttpResponse, Error> {
     let input = input.into_inner();
+    println!("ActivityActor: {:?}", input);
 
-    let actor = actors
+    let (actor, bypass_sigcheck) = match actors
         .get(
             input.actor()?.as_single_id().ok_or(ErrorKind::MissingId)?,
             &client,
         )
-        .await?
-        .into_inner();
+        .await
+    {
+        Ok(actor) => (actor.into_inner(), false),
+        Err(e) => {
+            // Create ghost to use if actor is 410 and message is delete
+            let kind = input.kind().ok_or(ErrorKind::MissingKind)?;
+            if e.is_gone() && *kind == ValidTypes::Delete {
+                let actor = input.actor()?;
+                let actor_id = actor.as_single_id().ok_or(ErrorKind::MissingId)?;
+                tracing::warn!("Actor is gone and messagetype is delete, creating ghost actor");
+                (
+                    Actor {
+                        id: actor_id.clone(),
+                        inbox: iri!("http://example.com/"),
+                        public_key: "".to_owned(),
+                        public_key_id: iri!("http://example.com/"),
+                        saved_at: SystemTime::now(),
+                    },
+                    true,
+                )
+            } else {
+                return Err(e);
+            }
+        }
+    };
 
     let is_allowed = state.db.is_allowed(actor.id.clone()).await?;
     let is_connected = state.db.is_connected(actor.id.clone()).await?;
@@ -49,7 +75,7 @@ pub(crate) async fn route(
 
     if config.validate_signatures() && verified.is_none() {
         return Err(ErrorKind::NoSignature(actor.public_key_id.to_string()).into());
-    } else if config.validate_signatures() {
+    } else if config.validate_signatures() && !bypass_sigcheck {
         if let Some((verified, _)) = verified {
             if actor.public_key_id.as_str() != verified.key_id() {
                 tracing::error!("Actor signed with wrong key");
