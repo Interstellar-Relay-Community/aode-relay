@@ -1,0 +1,11 @@
+[Unit]
+Description=Activitypub Relay Socket
+Before=multi-user.target
+After=network.target
+
+[Socket]
+Service=example-relay.service
+ListenStream=8080
+
+[Install]
+WantedBy=sockets.target

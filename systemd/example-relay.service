@@ -1,0 +1,15 @@
+[Unit]
+Description=Activitypub Relay
+Documentation=https://git.asonix.dog/asonix/relay
+Wants=network.target
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/systemd/system/example-relay.service.env
+ExecStart=/path/to/relay
+Restart=always
+
