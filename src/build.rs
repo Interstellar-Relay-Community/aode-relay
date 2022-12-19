@@ -23,7 +23,7 @@ fn git_info() {
 fn version_info() -> Result<(), anyhow::Error> {
     let cargo_toml = Path::new(&std::env::var("CARGO_MANIFEST_DIR")?).join("Cargo.toml");
 
-    let mut file = File::open(&cargo_toml)?;
+    let mut file = File::open(cargo_toml)?;
 
     let mut cargo_data = String::new();
     file.read_to_string(&mut cargo_data)?;

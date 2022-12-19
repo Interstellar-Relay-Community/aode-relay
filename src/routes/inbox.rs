@@ -17,6 +17,7 @@ use actix_web::{web, HttpResponse};
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 
 #[tracing::instrument(name = "Inbox", skip_all)]
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn route(
     state: web::Data<State>,
     actors: web::Data<ActorCache>,
