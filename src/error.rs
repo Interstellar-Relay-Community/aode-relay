@@ -197,7 +197,8 @@ impl ResponseError for Error {
             ErrorKind::Kind(_)
             | ErrorKind::MissingKind
             | ErrorKind::MissingId
-            | ErrorKind::ObjectCount | ErrorKind::NoSignature(_) => StatusCode::BAD_REQUEST,
+            | ErrorKind::ObjectCount
+            | ErrorKind::NoSignature(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

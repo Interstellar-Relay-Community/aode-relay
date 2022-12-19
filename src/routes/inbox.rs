@@ -82,7 +82,7 @@ pub(crate) async fn route(
             handle_announce(&state, &jobs, input, actor).await?
         }
         ValidTypes::Follow => handle_follow(&config, &jobs, input, actor).await?,
-        ValidTypes::Add | ValidTypes::Delete | ValidTypes::Update => {
+        ValidTypes::Add | ValidTypes::Delete | ValidTypes::Remove | ValidTypes::Update => {
             handle_forward(&jobs, input, actor).await?
         }
         ValidTypes::Undo => handle_undo(&config, &jobs, input, actor, is_connected).await?,
