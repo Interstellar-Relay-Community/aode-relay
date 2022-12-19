@@ -65,11 +65,21 @@ impl MyVerify {
 
             actor_id
         } else {
-            self.0
+            match self
+                .0
                 .fetch::<PublicKeyResponse>(public_key_id.as_str())
-                .await?
-                .actor_id()
-                .ok_or(ErrorKind::MissingId)?
+                .await
+            {
+                Ok(res) => res.actor_id().ok_or(ErrorKind::MissingId),
+                Err(e) => {
+                    if e.is_gone() {
+                        tracing::warn!("Actor gone: {}, trusting it for now.", public_key_id);
+                        return Ok(true);
+                    } else {
+                        return Err(e);
+                    }
+                }
+            }?
         };
 
         // Previously we verified the sig from an actor's local cache

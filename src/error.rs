@@ -26,6 +26,10 @@ impl Error {
     pub(crate) fn is_bad_request(&self) -> bool {
         matches!(self.kind, ErrorKind::Status(_, StatusCode::BAD_REQUEST))
     }
+
+    pub(crate) fn is_gone(&self) -> bool {
+        matches!(self.kind, ErrorKind::Status(_, StatusCode::GONE))
+    }
 }
 
 impl std::fmt::Debug for Error {

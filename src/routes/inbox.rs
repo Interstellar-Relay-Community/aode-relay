@@ -27,14 +27,26 @@ pub(crate) async fn route(
     verified: Option<(SignatureVerified, DigestVerified)>,
 ) -> Result<HttpResponse, Error> {
     let input = input.into_inner();
+    println!("ActivityActor: {:?}", input);
 
-    let actor = actors
+    let actor = match actors
         .get(
             input.actor()?.as_single_id().ok_or(ErrorKind::MissingId)?,
             &client,
         )
-        .await?
-        .into_inner();
+        .await
+    {
+        Ok(actor) => actor.into_inner(),
+        Err(e) => {
+            // Eat up the message if actor is 410 and message is delete
+            let kind = input.kind().ok_or(ErrorKind::MissingKind)?;
+            if e.is_gone() && *kind == ValidTypes::Delete {
+                return Ok(accepted(serde_json::json!({})));
+            } else {
+                return Err(e);
+            }
+        }
+    };
 
     let is_allowed = state.db.is_allowed(actor.id.clone()).await?;
     let is_connected = state.db.is_connected(actor.id.clone()).await?;
