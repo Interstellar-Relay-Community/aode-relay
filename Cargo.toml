@@ -86,7 +86,7 @@ default-features = false
 features = ["background-jobs-actix", "error-logging"]
 
 [dependencies.http-signature-normalization-actix]
-version = "0.7.1"
+version = "0.8.0"
 default-features = false
 features = ["client", "server", "sha-2"]
 

@@ -7,6 +7,7 @@ use actix_web::{middleware::Compress, web, App, HttpServer};
 use collector::MemoryCollector;
 #[cfg(feature = "console")]
 use console_subscriber::ConsoleLayer;
+use http_signature_normalization_actix::middleware::VerifySignature;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use rustls::ServerConfig;
@@ -36,7 +37,7 @@ use self::{
     data::{ActorCache, MediaCache, State},
     db::Db,
     jobs::create_workers,
-    middleware::{DebugPayload, RelayResolver, Timings},
+    middleware::{DebugPayload, MyVerify, RelayResolver, Timings},
     routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
 };
 
@@ -232,10 +233,9 @@ async fn do_server_main(
             .service(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
-                    .wrap(config.signature_middleware(
-                        state.requests(&config),
-                        actors.clone(),
-                        state.clone(),
+                    .wrap(VerifySignature::new(
+                        MyVerify(state.requests(&config), actors.clone(), state.clone()),
+                        Default::default(),
                     ))
                     .wrap(DebugPayload(config.debug()))
                     .route(web::post().to(inbox)),

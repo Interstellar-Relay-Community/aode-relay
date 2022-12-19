@@ -126,7 +126,7 @@ pub(crate) enum ErrorKind {
     BadActor(String, String),
 
     #[error("Signature verification is required, but no signature was given")]
-    NoSignature(String),
+    NoSignature(Option<String>),
 
     #[error("Wrong ActivityPub kind, {0}")]
     Kind(String),

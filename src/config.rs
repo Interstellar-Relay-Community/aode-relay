@@ -1,9 +1,6 @@
 use crate::{
-    data::{ActorCache, State},
     error::Error,
     extractors::{AdminConfig, XApiToken},
-    middleware::MyVerify,
-    requests::Requests,
 };
 use activitystreams::{
     iri,
@@ -14,7 +11,7 @@ use activitystreams::{
     },
 };
 use config::Environment;
-use http_signature_normalization_actix::prelude::{VerifyDigest, VerifySignature};
+use http_signature_normalization_actix::prelude::VerifyDigest;
 use rustls::{Certificate, PrivateKey};
 use sha2::{Digest, Sha256};
 use std::{io::BufReader, net::IpAddr, path::PathBuf};
@@ -274,19 +271,6 @@ impl Config {
             VerifyDigest::new(Sha256::new())
         } else {
             VerifyDigest::new(Sha256::new()).optional()
-        }
-    }
-
-    pub(crate) fn signature_middleware(
-        &self,
-        requests: Requests,
-        actors: ActorCache,
-        state: State,
-    ) -> VerifySignature<MyVerify> {
-        if self.validate_signatures {
-            VerifySignature::new(MyVerify(requests, actors, state), Default::default())
-        } else {
-            VerifySignature::new(MyVerify(requests, actors, state), Default::default()).optional()
         }
     }
 

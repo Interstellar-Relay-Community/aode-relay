@@ -24,29 +24,28 @@ pub(crate) async fn route(
     client: web::Data<Requests>,
     jobs: web::Data<JobServer>,
     input: web::Json<AcceptedActivities>,
-    verified: Option<(SignatureVerified, DigestVerified)>,
+    digest_verified: Option<DigestVerified>,
+    signature_verified: Option<SignatureVerified>,
 ) -> Result<HttpResponse, Error> {
     let input = input.into_inner();
-    println!("ActivityActor: {:?}", input);
 
-    let actor = match actors
+    let kind = input.kind().ok_or(ErrorKind::MissingKind)?;
+
+    if digest_verified.is_some() && signature_verified.is_none() && *kind == ValidTypes::Delete {
+        return Ok(accepted(serde_json::json!({})));
+    } else if config.validate_signatures()
+        && (digest_verified.is_none() || signature_verified.is_none())
+    {
+        return Err(ErrorKind::NoSignature(None).into());
+    }
+
+    let actor = actors
         .get(
             input.actor()?.as_single_id().ok_or(ErrorKind::MissingId)?,
             &client,
         )
-        .await
-    {
-        Ok(actor) => actor.into_inner(),
-        Err(e) => {
-            // Eat up the message if actor is 410 and message is delete
-            let kind = input.kind().ok_or(ErrorKind::MissingKind)?;
-            if e.is_gone() && *kind == ValidTypes::Delete {
-                return Ok(accepted(serde_json::json!({})));
-            } else {
-                return Err(e);
-            }
-        }
-    };
+        .await?
+        .into_inner();
 
     let is_allowed = state.db.is_allowed(actor.id.clone()).await?;
     let is_connected = state.db.is_connected(actor.id.clone()).await?;
@@ -59,10 +58,8 @@ pub(crate) async fn route(
         return Err(ErrorKind::NotSubscribed(actor.id.to_string()).into());
     }
 
-    if config.validate_signatures() && verified.is_none() {
-        return Err(ErrorKind::NoSignature(actor.public_key_id.to_string()).into());
-    } else if config.validate_signatures() {
-        if let Some((verified, _)) = verified {
+    if config.validate_signatures() {
+        if let Some(verified) = signature_verified {
             if actor.public_key_id.as_str() != verified.key_id() {
                 tracing::error!("Actor signed with wrong key");
                 return Err(ErrorKind::BadActor(
@@ -71,10 +68,13 @@ pub(crate) async fn route(
                 )
                 .into());
             }
+        } else {
+            tracing::error!("This case should never be reachable, since I handle signature checks earlier in the flow. If you see this in a log it means I did it wrong");
+            return Err(ErrorKind::NoSignature(Some(actor.public_key_id.to_string())).into());
         }
     }
 
-    match input.kind().ok_or(ErrorKind::MissingKind)? {
+    match kind {
         ValidTypes::Accept => handle_accept(&config, input).await?,
         ValidTypes::Reject => handle_reject(&config, &jobs, input, actor).await?,
         ValidTypes::Announce | ValidTypes::Create => {

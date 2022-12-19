@@ -73,8 +73,8 @@ impl MyVerify {
                 Ok(res) => res.actor_id().ok_or(ErrorKind::MissingId),
                 Err(e) => {
                     if e.is_gone() {
-                        tracing::warn!("Actor gone: {}, trusting it for now.", public_key_id);
-                        return Ok(true);
+                        tracing::warn!("Actor gone: {}", public_key_id);
+                        return Ok(false);
                     } else {
                         return Err(e);
                     }
