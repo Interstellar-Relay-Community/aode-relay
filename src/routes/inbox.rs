@@ -40,13 +40,30 @@ pub(crate) async fn route(
         return Err(ErrorKind::NoSignature(None).into());
     }
 
-    let actor = actors
-        .get(
-            input.actor()?.as_single_id().ok_or(ErrorKind::MissingId)?,
-            &client,
-        )
-        .await?
-        .into_inner();
+    let actor_id = if input.id_unchecked().is_some() {
+        input.actor()?.as_single_id().ok_or(ErrorKind::MissingId)?
+    } else {
+        input
+            .actor_unchecked()
+            .as_single_id()
+            .ok_or(ErrorKind::MissingId)?
+    };
+
+    let actor = actors.get(actor_id, &client).await?.into_inner();
+
+    if let Some(verified) = signature_verified {
+        if actor.public_key_id.as_str() != verified.key_id() {
+            tracing::error!("Actor signed with wrong key");
+            return Err(ErrorKind::BadActor(
+                actor.public_key_id.to_string(),
+                verified.key_id().to_owned(),
+            )
+            .into());
+        }
+    } else if config.validate_signatures() {
+        tracing::error!("This case should never be reachable, since I handle signature checks earlier in the flow. If you see this in a log it means I did it wrong");
+        return Err(ErrorKind::NoSignature(Some(actor.public_key_id.to_string())).into());
+    }
 
     let is_allowed = state.db.is_allowed(actor.id.clone()).await?;
     let is_connected = state.db.is_connected(actor.id.clone()).await?;
@@ -57,22 +74,6 @@ pub(crate) async fn route(
 
     if !is_connected && !valid_without_listener(&input)? {
         return Err(ErrorKind::NotSubscribed(actor.id.to_string()).into());
-    }
-
-    if config.validate_signatures() {
-        if let Some(verified) = signature_verified {
-            if actor.public_key_id.as_str() != verified.key_id() {
-                tracing::error!("Actor signed with wrong key");
-                return Err(ErrorKind::BadActor(
-                    actor.public_key_id.to_string(),
-                    verified.key_id().to_owned(),
-                )
-                .into());
-            }
-        } else {
-            tracing::error!("This case should never be reachable, since I handle signature checks earlier in the flow. If you see this in a log it means I did it wrong");
-            return Err(ErrorKind::NoSignature(Some(actor.public_key_id.to_string())).into());
-        }
     }
 
     match kind {
