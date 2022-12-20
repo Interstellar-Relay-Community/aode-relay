@@ -16,7 +16,7 @@ use activitystreams::{
 use actix_web::{web, HttpResponse};
 use http_signature_normalization_actix::prelude::{DigestVerified, SignatureVerified};
 
-#[tracing::instrument(name = "Inbox", skip_all)]
+#[tracing::instrument(name = "Inbox", skip_all, fields(id = input.id_unchecked().map(|id| id.as_str())))]
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn route(
     state: web::Data<State>,
