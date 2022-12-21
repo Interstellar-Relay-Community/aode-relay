@@ -1,5 +1,5 @@
 use crate::{
-    admin::{AllowedDomains, BlockedDomains, ConnectedActors, Domains},
+    admin::{AllowedDomains, BlockedDomains, ConnectedActors, Domains, LastSeen},
     collector::{MemoryCollector, Snapshot},
     error::Error,
     extractors::Admin,
@@ -8,6 +8,8 @@ use actix_web::{
     web::{Data, Json},
     HttpResponse,
 };
+use std::collections::{BTreeMap, BTreeSet};
+use time::OffsetDateTime;
 
 pub(crate) async fn allow(
     admin: Admin,
@@ -68,4 +70,21 @@ pub(crate) async fn stats(
     collector: Data<MemoryCollector>,
 ) -> Result<Json<Snapshot>, Error> {
     Ok(Json(collector.snapshot()))
+}
+
+pub(crate) async fn last_seen(admin: Admin) -> Result<Json<LastSeen>, Error> {
+    let nodes = admin.db_ref().last_seen().await?;
+
+    let mut last_seen: BTreeMap<OffsetDateTime, BTreeSet<String>> = BTreeMap::new();
+    let mut never = Vec::new();
+
+    for (domain, datetime) in nodes {
+        if let Some(datetime) = datetime {
+            last_seen.entry(datetime).or_default().insert(domain);
+        } else {
+            never.push(domain);
+        }
+    }
+
+    Ok(Json(LastSeen { last_seen, never }))
 }

@@ -12,6 +12,8 @@ use rand::thread_rng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::{Arc, RwLock};
 
+use super::LastOnline;
+
 #[derive(Clone)]
 pub struct State {
     pub(crate) public_key: RsaPublicKey,
@@ -19,6 +21,7 @@ pub struct State {
     object_cache: Arc<RwLock<LruCache<IriString, IriString>>>,
     node_cache: NodeCache,
     breakers: Breakers,
+    pub(crate) last_online: Arc<LastOnline>,
     pub(crate) db: Db,
 }
 
@@ -43,6 +46,7 @@ impl State {
             self.private_key.clone(),
             config.user_agent(),
             self.breakers.clone(),
+            self.last_online.clone(),
         )
     }
 
@@ -114,6 +118,7 @@ impl State {
             node_cache: NodeCache::new(db.clone()),
             breakers: Breakers::default(),
             db,
+            last_online: Arc::new(LastOnline::empty()),
         };
 
         Ok(state)

@@ -1,5 +1,5 @@
 use crate::{
-    admin::{AllowedDomains, BlockedDomains, ConnectedActors, Domains},
+    admin::{AllowedDomains, BlockedDomains, ConnectedActors, Domains, LastSeen},
     collector::Snapshot,
     config::{AdminUrlKind, Config},
     error::{Error, ErrorKind},
@@ -53,6 +53,10 @@ pub(crate) async fn connected(client: &Client, config: &Config) -> Result<Connec
 
 pub(crate) async fn stats(client: &Client, config: &Config) -> Result<Snapshot, Error> {
     get_results(client, config, AdminUrlKind::Stats).await
+}
+
+pub(crate) async fn last_seen(client: &Client, config: &Config) -> Result<LastSeen, Error> {
+    get_results(client, config, AdminUrlKind::LastSeen).await
 }
 
 async fn get_results<T: DeserializeOwned>(

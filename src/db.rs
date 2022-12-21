@@ -7,8 +7,13 @@ use rsa::{
     pkcs8::{DecodePrivateKey, EncodePrivateKey},
     RsaPrivateKey,
 };
-use sled::Tree;
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use sled::{Batch, Tree};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+    time::SystemTime,
+};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -28,6 +33,7 @@ struct Inner {
     actor_id_info: Tree,
     actor_id_instance: Tree,
     actor_id_contact: Tree,
+    last_seen: Tree,
     restricted_mode: bool,
 }
 
@@ -247,6 +253,7 @@ impl Db {
                 actor_id_info: db.open_tree("actor-id-info")?,
                 actor_id_instance: db.open_tree("actor-id-instance")?,
                 actor_id_contact: db.open_tree("actor-id-contact")?,
+                last_seen: db.open_tree("last-seen")?,
                 restricted_mode,
             }),
         })
@@ -254,7 +261,7 @@ impl Db {
 
     async fn unblock<T>(
         &self,
-        f: impl Fn(&Inner) -> Result<T, Error> + Send + 'static,
+        f: impl FnOnce(&Inner) -> Result<T, Error> + Send + 'static,
     ) -> Result<T, Error>
     where
         T: Send + 'static,
@@ -264,6 +271,48 @@ impl Db {
         let t = actix_web::web::block(move || (f)(&inner)).await??;
 
         Ok(t)
+    }
+
+    pub(crate) async fn mark_last_seen(
+        &self,
+        nodes: HashMap<String, OffsetDateTime>,
+    ) -> Result<(), Error> {
+        let mut batch = Batch::default();
+
+        for (domain, datetime) in nodes {
+            let datetime_string = serde_json::to_vec(&datetime)?;
+
+            batch.insert(domain.as_bytes(), datetime_string);
+        }
+
+        self.unblock(move |inner| inner.last_seen.apply_batch(batch).map_err(Error::from))
+            .await
+    }
+
+    pub(crate) async fn last_seen(
+        &self,
+    ) -> Result<BTreeMap<String, Option<OffsetDateTime>>, Error> {
+        self.unblock(|inner| {
+            let mut map = BTreeMap::new();
+
+            for iri in inner.connected() {
+                let Some(authority_str) = iri.authority_str() else {
+                    continue;
+                };
+
+                if let Some(datetime) = inner.last_seen.get(authority_str)? {
+                    map.insert(
+                        authority_str.to_string(),
+                        Some(serde_json::from_slice(&datetime)?),
+                    );
+                } else {
+                    map.insert(authority_str.to_string(), None);
+                }
+            }
+
+            Ok(map)
+        })
+        .await
     }
 
     pub(crate) async fn connected_ids(&self) -> Result<Vec<IriString>, Error> {

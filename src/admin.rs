@@ -1,4 +1,6 @@
 use activitystreams::iri_string::types::IriString;
+use std::collections::{BTreeMap, BTreeSet};
+use time::OffsetDateTime;
 
 pub mod client;
 pub mod routes;
@@ -21,4 +23,10 @@ pub(crate) struct BlockedDomains {
 #[derive(serde::Deserialize, serde::Serialize)]
 pub(crate) struct ConnectedActors {
     pub(crate) connected_actors: Vec<IriString>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub(crate) struct LastSeen {
+    pub(crate) last_seen: BTreeMap<OffsetDateTime, BTreeSet<String>>,
+    pub(crate) never: Vec<String>,
 }

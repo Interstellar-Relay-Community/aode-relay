@@ -1,4 +1,7 @@
-use crate::error::{Error, ErrorKind};
+use crate::{
+    data::LastOnline,
+    error::{Error, ErrorKind},
+};
 use activitystreams::iri_string::types::IriString;
 use actix_web::http::header::Date;
 use awc::{error::SendRequestError, Client, ClientResponse};
@@ -146,6 +149,7 @@ pub(crate) struct Requests {
     private_key: RsaPrivateKey,
     config: Config,
     breakers: Breakers,
+    last_online: Arc<LastOnline>,
 }
 
 impl std::fmt::Debug for Requests {
@@ -174,6 +178,7 @@ impl Requests {
         private_key: RsaPrivateKey,
         user_agent: String,
         breakers: Breakers,
+        last_online: Arc<LastOnline>,
     ) -> Self {
         Requests {
             client: Rc::new(RefCell::new(build_client(&user_agent))),
@@ -184,6 +189,7 @@ impl Requests {
             private_key,
             config: Config::default().mastodon_compat(),
             breakers,
+            last_online,
         }
     }
 
@@ -233,6 +239,7 @@ impl Requests {
             return Err(ErrorKind::Status(parsed_url.to_string(), res.status()).into());
         }
 
+        self.last_online.mark_seen(&parsed_url);
         self.breakers.succeed(&parsed_url);
 
         Ok(res)

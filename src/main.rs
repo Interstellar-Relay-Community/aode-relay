@@ -144,6 +144,39 @@ async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error>
         println!("Updated lists");
     }
 
+    if args.contacted() {
+        let last_seen = admin::client::last_seen(&client, &config).await?;
+
+        let mut report = String::from("Contacted:");
+
+        if !last_seen.never.is_empty() {
+            report += "\nNever seen:\n";
+        }
+
+        for domain in last_seen.never {
+            report += "\t";
+            report += &domain;
+            report += "\n";
+        }
+
+        if !last_seen.last_seen.is_empty() {
+            report += "\nSeen:\n";
+        }
+
+        for (datetime, domains) in last_seen.last_seen {
+            for domain in domains {
+                report += "\t";
+                report += &datetime.to_string();
+                report += " - ";
+                report += &domain;
+                report += "\n";
+            }
+        }
+
+        report += "\n";
+        println!("{report}");
+    }
+
     if args.list() {
         let (blocked, allowed, connected) = tokio::try_join!(
             admin::client::blocked(&client, &config),
@@ -258,7 +291,8 @@ async fn do_server_main(
                         .route("/allowed", web::get().to(admin::routes::allowed))
                         .route("/blocked", web::get().to(admin::routes::blocked))
                         .route("/connected", web::get().to(admin::routes::connected))
-                        .route("/stats", web::get().to(admin::routes::stats)),
+                        .route("/stats", web::get().to(admin::routes::stats))
+                        .route("/last_seen", web::get().to(admin::routes::last_seen)),
                 ),
             )
     });

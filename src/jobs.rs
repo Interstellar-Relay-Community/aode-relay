@@ -5,6 +5,7 @@ mod deliver_many;
 mod instance;
 mod nodeinfo;
 mod process_listeners;
+mod record_last_online;
 
 pub(crate) use self::{
     contact::QueryContact, deliver::Deliver, deliver_many::DeliverMany, instance::QueryInstance,
@@ -15,7 +16,7 @@ use crate::{
     config::Config,
     data::{ActorCache, MediaCache, NodeCache, State},
     error::{Error, ErrorKind},
-    jobs::process_listeners::Listeners,
+    jobs::{process_listeners::Listeners, record_last_online::RecordLastOnline},
     requests::Requests,
 };
 use background_jobs::{
@@ -62,6 +63,7 @@ pub(crate) fn create_workers(
     .register::<QueryInstance>()
     .register::<Listeners>()
     .register::<QueryContact>()
+    .register::<RecordLastOnline>()
     .register::<apub::Announce>()
     .register::<apub::Follow>()
     .register::<apub::Forward>()
@@ -73,6 +75,7 @@ pub(crate) fn create_workers(
     .start_with_threads(parallelism);
 
     shared.every(Duration::from_secs(60 * 5), Listeners);
+    shared.every(Duration::from_secs(60 * 10), RecordLastOnline);
 
     let job_server = JobServer::new(shared.queue_handle().clone());
 

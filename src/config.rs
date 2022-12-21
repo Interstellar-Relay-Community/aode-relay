@@ -92,6 +92,7 @@ pub enum AdminUrlKind {
     Blocked,
     Connected,
     Stats,
+    LastSeen,
 }
 
 impl std::fmt::Debug for Config {
@@ -429,32 +430,21 @@ impl Config {
     }
 
     fn do_generate_admin_url(&self, kind: AdminUrlKind) -> Result<IriString, Error> {
-        let iri = match kind {
-            AdminUrlKind::Allow => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/allow")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Disallow => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/disallow")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Block => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/block")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Unblock => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/unblock")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Allowed => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/allowed")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Blocked => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/blocked")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Connected => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/connected")?.as_ref())
-                .try_to_dedicated_string()?,
-            AdminUrlKind::Stats => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new("api/v1/admin/stats")?.as_ref())
-                .try_to_dedicated_string()?,
+        let path = match kind {
+            AdminUrlKind::Allow => "api/v1/admin/allow",
+            AdminUrlKind::Disallow => "api/v1/admin/disallow",
+            AdminUrlKind::Block => "api/v1/admin/block",
+            AdminUrlKind::Unblock => "api/v1/admin/unblock",
+            AdminUrlKind::Allowed => "api/v1/admin/allowed",
+            AdminUrlKind::Blocked => "api/v1/admin/blocked",
+            AdminUrlKind::Connected => "api/v1/admin/connected",
+            AdminUrlKind::Stats => "api/v1/admin/stats",
+            AdminUrlKind::LastSeen => "api/v1/admin/last_seen",
         };
+
+        let iri = FixedBaseResolver::new(self.base_uri.as_ref())
+            .resolve(IriRelativeStr::new(path)?.as_ref())
+            .try_to_dedicated_string()?;
 
         Ok(iri)
     }
