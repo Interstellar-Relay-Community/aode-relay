@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.77"
+version = "0.3.78"
 authors = ["asonix <asonix@asonix.dog>"]
 license = "AGPL-3.0"
 readme = "README.md"
@@ -43,6 +43,9 @@ dotenv = "0.15.0"
 futures-util = "0.3.17"
 lru = "0.8.0"
 metrics = "0.20.1"
+metrics-exporter-prometheus = { version = "0.11.0", default-features = false, features = [
+  "http-listener",
+] }
 metrics-util = "0.14.0"
 mime = "0.3.16"
 minify-html = "0.10.0"

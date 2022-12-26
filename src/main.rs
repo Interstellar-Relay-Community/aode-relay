@@ -4,10 +4,11 @@
 use activitystreams::iri_string::types::IriString;
 use actix_rt::task::JoinHandle;
 use actix_web::{middleware::Compress, web, App, HttpServer};
-use collector::MemoryCollector;
+use collector::{DoubleRecorder, MemoryCollector};
 #[cfg(feature = "console")]
 use console_subscriber::ConsoleLayer;
 use http_signature_normalization_actix::middleware::VerifySignature;
+use metrics_exporter_prometheus::PrometheusBuilder;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use rustls::ServerConfig;
@@ -103,8 +104,19 @@ async fn main() -> Result<(), anyhow::Error> {
     let config = Config::build()?;
 
     init_subscriber(Config::software_name(), config.opentelemetry_url())?;
+
     let collector = MemoryCollector::new();
-    collector.install()?;
+
+    if let Some(bind_addr) = config.prometheus_bind_address() {
+        let (recorder, exporter) = PrometheusBuilder::new()
+            .with_http_listener(bind_addr)
+            .build()?;
+
+        actix_rt::spawn(exporter);
+        DoubleRecorder::new(recorder, collector.clone()).install()?;
+    } else {
+        collector.install()?;
+    }
 
     let args = Args::new();
 

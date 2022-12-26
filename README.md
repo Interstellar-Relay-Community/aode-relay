@@ -10,7 +10,7 @@ $ sudo docker run --rm -it \
     -e ADDR=0.0.0.0 \
     -e SLED_PATH=/mnt/sled/db-0.34 \
     -p 8080:8080 \
-    asonix/relay:0.3.73
+    asonix/relay:0.3.78
 ```
 This will launch the relay with the database stored in "./sled/db-0.34" and listening on port 8080
 #### Cargo
@@ -103,6 +103,8 @@ TLS_CERT=/path/to/cert
 FOOTER_BLURB="Contact <a href=\"https://masto.asonix.dog/@asonix\">@asonix</a> for inquiries"
 LOCAL_DOMAINS=masto.asonix.dog
 LOCAL_BLURB="<p>Welcome to my cool relay where I have cool relay things happening. I hope you enjoy your stay!</p>"
+PROMETHEUS_ADDR=0.0.0.0
+PROMETHEUS_PORT=9000
 ```
 
 #### Descriptions
@@ -146,6 +148,10 @@ Optional - Add custom notes in the footer of the page
 Optional - domains of mastodon servers run by the same admin as the relay
 ##### `LOCAL_BLURB`
 Optional - description for the relay
+##### `PROMETHEUS_ADDR`
+Optional - Address to bind to for serving the prometheus scrape endpoint
+##### `PROMETHEUS_PORT`
+Optional - Port to bind to for serving the prometheus scrape endpoint
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.

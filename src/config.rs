@@ -14,7 +14,11 @@ use config::Environment;
 use http_signature_normalization_actix::prelude::VerifyDigest;
 use rustls::{Certificate, PrivateKey};
 use sha2::{Digest, Sha256};
-use std::{io::BufReader, net::IpAddr, path::PathBuf};
+use std::{
+    io::BufReader,
+    net::{IpAddr, SocketAddr},
+    path::PathBuf,
+};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -38,6 +42,8 @@ pub(crate) struct ParsedConfig {
     footer_blurb: Option<String>,
     local_domains: Option<String>,
     local_blurb: Option<String>,
+    prometheus_addr: Option<IpAddr>,
+    prometheus_port: Option<u16>,
 }
 
 #[derive(Clone)]
@@ -60,12 +66,19 @@ pub struct Config {
     footer_blurb: Option<String>,
     local_domains: Vec<String>,
     local_blurb: Option<String>,
+    prometheus_config: Option<PrometheusConfig>,
 }
 
 #[derive(Clone)]
 struct TlsConfig {
     key: PathBuf,
     cert: PathBuf,
+}
+
+#[derive(Clone, Debug)]
+struct PrometheusConfig {
+    addr: IpAddr,
+    port: u16,
 }
 
 #[derive(Debug)]
@@ -120,6 +133,7 @@ impl std::fmt::Debug for Config {
             .field("footer_blurb", &self.footer_blurb)
             .field("local_domains", &self.local_domains)
             .field("local_blurb", &self.local_blurb)
+            .field("prometheus_config", &self.prometheus_config)
             .finish()
     }
 }
@@ -146,6 +160,8 @@ impl Config {
             .set_default("footer_blurb", None as Option<&str>)?
             .set_default("local_domains", None as Option<&str>)?
             .set_default("local_blurb", None as Option<&str>)?
+            .set_default("prometheus_addr", None as Option<&str>)?
+            .set_default("prometheus_port", None as Option<u16>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -174,6 +190,19 @@ impl Config {
             .map(|d| d.to_string())
             .collect();
 
+        let prometheus_config = match (config.prometheus_addr, config.prometheus_port) {
+            (Some(addr), Some(port)) => Some(PrometheusConfig { addr, port }),
+            (Some(_), None) => {
+                tracing::warn!("PROMETHEUS_ADDR is set but PROMETHEUS_PORT is not set, not building Prometheus config");
+                None
+            }
+            (None, Some(_)) => {
+                tracing::warn!("PROMETHEUS_PORT is set but PROMETHEUS_ADDR is not set, not building Prometheus config");
+                None
+            }
+            (None, None) => None,
+        };
+
         Ok(Config {
             hostname: config.hostname,
             addr: config.addr,
@@ -193,7 +222,14 @@ impl Config {
             footer_blurb: config.footer_blurb,
             local_domains,
             local_blurb: config.local_blurb,
+            prometheus_config,
         })
+    }
+
+    pub(crate) fn prometheus_bind_address(&self) -> Option<SocketAddr> {
+        let config = self.prometheus_config.as_ref()?;
+
+        Some((config.addr, config.port).into())
     }
 
     pub(crate) fn open_keys(&self) -> Result<Option<(Vec<Certificate>, PrivateKey)>, Error> {
