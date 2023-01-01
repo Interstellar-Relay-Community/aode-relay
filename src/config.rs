@@ -121,6 +121,7 @@ impl std::fmt::Debug for Config {
             .field("base_uri", &self.base_uri.to_string())
             .field("sled_path", &self.sled_path)
             .field("source_repo", &self.source_repo.to_string())
+            .field("source_url", &self.source_url.to_string())
             .field(
                 "opentelemetry_url",
                 &self.opentelemetry_url.as_ref().map(|url| url.to_string()),
