@@ -33,6 +33,7 @@ pub(crate) struct ParsedConfig {
     publish_blocks: bool,
     sled_path: PathBuf,
     source_repo: IriString,
+    repository_commit_base: String,
     opentelemetry_url: Option<IriString>,
     telegram_token: Option<String>,
     telegram_admin_handle: Option<String>,
@@ -121,7 +122,6 @@ impl std::fmt::Debug for Config {
             .field("base_uri", &self.base_uri.to_string())
             .field("sled_path", &self.sled_path)
             .field("source_repo", &self.source_repo.to_string())
-            .field("source_url", &self.source_url.to_string())
             .field(
                 "opentelemetry_url",
                 &self.opentelemetry_url.as_ref().map(|url| url.to_string()),
@@ -152,6 +152,7 @@ impl Config {
             .set_default("publish_blocks", false)?
             .set_default("sled_path", "./sled/db-0-34")?
             .set_default("source_repo", "https://git.asonix.dog/asonix/relay")?
+            .set_default("repository_commit_base", "/src/commit/")?
             .set_default("opentelemetry_url", None as Option<&str>)?
             .set_default("telegram_token", None as Option<&str>)?
             .set_default("telegram_admin_handle", None as Option<&str>)?
@@ -204,6 +205,16 @@ impl Config {
             (None, None) => None,
         };
 
+        let source_url = match Self::git_hash() {
+            Some(hash) => format!(
+                "{}{}{}",
+                config.source_repo, config.repository_commit_base, hash
+            )
+            .parse()
+            .expect("constructed source URL is valid"),
+            None => config.source_repo.clone(),
+        };
+
         Ok(Config {
             hostname: config.hostname,
             addr: config.addr,
@@ -214,7 +225,7 @@ impl Config {
             publish_blocks: config.publish_blocks,
             base_uri,
             sled_path: config.sled_path,
-            source_repo: config.source_repo,
+            source_repo: source_url,
             opentelemetry_url: config.opentelemetry_url,
             telegram_token: config.telegram_token,
             telegram_admin_handle: config.telegram_admin_handle,
