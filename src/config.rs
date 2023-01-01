@@ -58,7 +58,6 @@ pub struct Config {
     base_uri: IriAbsoluteString,
     sled_path: PathBuf,
     source_repo: IriString,
-    source_url: IriString,
     opentelemetry_url: Option<IriString>,
     telegram_token: Option<String>,
     telegram_admin_handle: Option<String>,
@@ -204,11 +203,6 @@ impl Config {
             (None, None) => None,
         };
 
-        let source_url = match Self::git_hash() {
-            Some(hash) => format!("{}/tree/{}", config.source_repo, hash).parse().unwrap(),
-            None => config.source_repo.clone()
-        };
-
         Ok(Config {
             hostname: config.hostname,
             addr: config.addr,
@@ -220,7 +214,6 @@ impl Config {
             base_uri,
             sled_path: config.sled_path,
             source_repo: config.source_repo,
-            source_url,
             opentelemetry_url: config.opentelemetry_url,
             telegram_token: config.telegram_token,
             telegram_admin_handle: config.telegram_admin_handle,
@@ -410,7 +403,7 @@ impl Config {
     }
 
     pub(crate) fn source_code(&self) -> &IriString {
-        &self.source_url
+        &self.source_repo
     }
 
     pub(crate) fn opentelemetry_url(&self) -> Option<&IriString> {
