@@ -20,9 +20,56 @@ impl std::fmt::Debug for QueryInstance {
     }
 }
 
+enum InstanceApiType {
+    Mastodon,
+    Misskey,
+}
+
 impl QueryInstance {
     pub(crate) fn new(actor_id: IriString) -> Self {
         QueryInstance { actor_id }
+    }
+
+    async fn get_mastodon_instance(
+        state: &JobState,
+        scheme: &str,
+        authority: &str,
+    ) -> Result<Instance, Error> {
+        let instance_uri = iri!(format!("{}://{}/api/v1/instance", scheme, authority));
+        state
+            .requests
+            .fetch_json::<Instance>(instance_uri.as_str())
+            .await
+    }
+
+    async fn get_misskey_instance(
+        state: &JobState,
+        scheme: &str,
+        authority: &str,
+    ) -> Result<Instance, Error> {
+        let msky_meta_uri = iri!(format!("{}://{}/api/meta", scheme, authority));
+        match state
+            .requests
+            .fetch_json_msky::<MisskeyMeta>(msky_meta_uri.as_str())
+            .await
+        {
+            Ok(meta) => Ok(meta.into()),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn get_instance(
+        instance_type: InstanceApiType,
+        state: &JobState,
+        scheme: &str,
+        authority: &str,
+    ) -> Result<Instance, Error> {
+        match instance_type {
+            InstanceApiType::Mastodon => {
+                Self::get_mastodon_instance(state, scheme, authority).await
+            }
+            InstanceApiType::Misskey => Self::get_misskey_instance(state, scheme, authority).await,
+        }
     }
 
     #[tracing::instrument(name = "Query instance", skip(state))]
@@ -45,43 +92,37 @@ impl QueryInstance {
             .authority_str()
             .ok_or(ErrorKind::MissingDomain)?;
         let scheme = self.actor_id.scheme_str();
-        let instance_uri = iri!(format!("{}://{}/api/v1/instance", scheme, authority));
-        let msky_meta_uri = iri!(format!("{}://{}/api/meta", scheme, authority));
 
-        // Improved bruteforcer.
+        // Attempt all endpoint.
+        let instance_futures = [
+            Self::get_instance(InstanceApiType::Mastodon, &state, scheme, authority),
+            Self::get_instance(InstanceApiType::Misskey, &state, scheme, authority),
+        ];
 
-        let instance = match state
-            .requests
-            .fetch_json::<Instance>(instance_uri.as_str())
-            .await
-        {
-            Ok(instance) => instance,
-            Err(e) if e.is_breaker() => {
-                tracing::debug!("Not retrying due to failed breaker");
+        let mut instance_result: Option<Instance> = None;
+        for instance_future in instance_futures {
+            match instance_future.await {
+                Ok(instance) => {
+                    instance_result = Some(instance);
+                    break;
+                }
+                Err(e) if e.is_breaker() => {
+                    tracing::debug!("Not retrying due to failed breaker");
+                    return Ok(());
+                }
+                Err(e) if e.is_not_found() => {
+                    tracing::debug!("Server doesn't implement instance endpoint");
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        let instance = match instance_result {
+            Some(instance) => instance,
+            None => {
+                tracing::debug!("Server doesn't implement all instance endpoint");
                 return Ok(());
             }
-            Err(e) if e.is_not_found() => {
-                tracing::debug!("Server doesn't implement instance endpoint");
-                tracing::debug!("Attempting Misskey API");
-
-                match state
-                    .requests
-                    .fetch_json_msky::<MisskeyMeta>(msky_meta_uri.as_str())
-                    .await
-                {
-                    Ok(meta) => meta.into(),
-                    Err(e) if e.is_breaker() => {
-                        tracing::debug!("Not retrying due to failed breaker");
-                        return Ok(());
-                    }
-                    Err(e) if e.is_not_found() => {
-                        tracing::debug!("Server doesn't implement misskey meta endpoint");
-                        return Ok(());
-                    }
-                    Err(e) => return Err(e),
-                }
-            }
-            Err(e) => return Err(e),
         };
 
         let description = instance.short_description.unwrap_or(instance.description);
@@ -250,6 +291,9 @@ mod tests {
         let meta: MisskeyMeta = serde_json::from_str(MISSKEY_STELLA_INSTANCE).unwrap();
         let inst: Instance = meta.into();
 
-        assert_eq!(inst.contact.unwrap().avatar, "https://cdn.stella.place/assets/Stella.png");
+        assert_eq!(
+            inst.contact.unwrap().avatar,
+            "https://cdn.stella.place/assets/Stella.png"
+        );
     }
 }
