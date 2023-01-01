@@ -367,7 +367,7 @@ impl Config {
 
     fn git_version() -> Option<String> {
         let branch = Self::git_branch()?;
-        let hash = Self::git_hash()?;
+        let hash = Self::git_short_hash()?;
 
         Some(format!("{}-{}", branch, hash))
     }
@@ -386,6 +386,10 @@ impl Config {
 
     fn git_hash() -> Option<&'static str> {
         option_env!("GIT_HASH")
+    }
+
+    fn git_short_hash() -> Option<&'static str> {
+        option_env!("GIT_SHORT_HASH")
     }
 
     pub(crate) fn user_agent(&self) -> String {
