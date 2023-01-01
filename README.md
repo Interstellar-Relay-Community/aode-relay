@@ -130,6 +130,8 @@ Where to store the on-disk database of connected servers. This defaults to `./sl
 The log level to print. Available levels are `ERROR`, `WARN`, `INFO`, `DEBUG`, and `TRACE`. You can also specify module paths to enable some logs but not others, such as `RUST_LOG=warn,tracing_actix_web=info,relay=info`. This defaults to `warn`
 ##### `SOURCE_REPO`
 The URL to the source code for the relay. This defaults to `https://git.asonix.dog/asonix/relay`, but should be changed if you're running a fork hosted elsewhere.
+##### `REPOSITORY_COMMIT_BASE`
+The base path of the repository commit hash reference. For example, `/src/commit/` for Gitea, `/tree/` for GitLab.
 ##### `API_TOKEN`
 The Secret token used to access the admin APIs. This must be set for the commandline to function
 ##### `OPENTELEMETRY_URL`
