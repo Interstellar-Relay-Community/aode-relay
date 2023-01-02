@@ -105,6 +105,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
     init_subscriber(Config::software_name(), config.opentelemetry_url())?;
 
+    let args = Args::new();
+
+    if args.any() {
+        return client_main(config, args).await?;
+    }
+
     let collector = MemoryCollector::new();
 
     if let Some(bind_addr) = config.prometheus_bind_address() {
@@ -116,12 +122,6 @@ async fn main() -> Result<(), anyhow::Error> {
         DoubleRecorder::new(recorder, collector.clone()).install()?;
     } else {
         collector.install()?;
-    }
-
-    let args = Args::new();
-
-    if args.any() {
-        return client_main(config, args).await?;
     }
 
     tracing::warn!("Opening DB");
