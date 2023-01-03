@@ -6,7 +6,7 @@ _A simple and efficient activitypub relay_
 If running docker, you can start the relay with the following command:
 ```
 $ sudo docker run --rm -it \
-    -v "./:/mnt/" \
+    -v "$(pwd):/mnt/" \
     -e ADDR=0.0.0.0 \
     -e SLED_PATH=/mnt/sled/db-0.34 \
     -p 8080:8080 \
