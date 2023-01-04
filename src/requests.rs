@@ -305,7 +305,7 @@ impl Requests {
             true => client.post(url),
             false => client.get(url),
         };
-        let res = client_req
+        let client_signed = client_req
             .insert_header(("Accept", accept))
             .insert_header(Date(SystemTime::now().into()))
             .signature(
@@ -316,9 +316,15 @@ impl Requests {
                     span.in_scope(|| signer.sign(signing_string))
                 },
             )
-            .await?
-            .send()
-            .await;
+            .await?;
+        let res = match use_post {
+            true => {
+                let dummy = serde_json::json!({});
+                client_signed.send_json(&dummy)
+            }
+            false => client_signed.send(),
+        }
+        .await;
 
         let mut res = self.check_response(&parsed_url, res).await?;
 
