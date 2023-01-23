@@ -99,13 +99,13 @@ pub(crate) enum ErrorKind {
     PrepareSign(#[from] PrepareSignError),
 
     #[error("Couldn't sign digest")]
-    Signature(#[from] signature::Error),
+    Signature(#[from] rsa::signature::Error),
 
     #[error("Couldn't read signature")]
-    ReadSignature(signature::Error),
+    ReadSignature(rsa::signature::Error),
 
     #[error("Couldn't verify signature")]
-    VerifySignature(signature::Error),
+    VerifySignature(rsa::signature::Error),
 
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),

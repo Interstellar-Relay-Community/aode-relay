@@ -9,9 +9,12 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
 use rand::thread_rng;
-use rsa::{pkcs1v15::SigningKey, RsaPrivateKey};
-use sha2::{Digest, Sha256};
-use signature::RandomizedSigner;
+use rsa::{
+    pkcs1v15::SigningKey,
+    sha2::{Digest, Sha256},
+    signature::RandomizedSigner,
+    RsaPrivateKey,
+};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -391,7 +394,8 @@ struct Signer {
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
         let signing_key = SigningKey::<Sha256>::new_with_prefix(self.private_key.clone());
-        let signature = signing_key.try_sign_with_rng(thread_rng(), signing_string.as_bytes())?;
+        let signature =
+            signing_key.try_sign_with_rng(&mut thread_rng(), signing_string.as_bytes())?;
         Ok(STANDARD.encode(signature.as_ref()))
     }
 }

@@ -349,8 +349,6 @@ dependencies = [
  "rustls-pemfile",
  "serde",
  "serde_json",
- "sha2",
- "signature",
  "sled",
  "teloxide",
  "thiserror",
@@ -2617,9 +2615,9 @@ dependencies = [
 
 [[package]]
 name = "rsa"
-version = "0.7.2"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "094052d5470cbcef561cb848a7209968c9f12dfa6d668f4bca048ac5de51099c"
+checksum = "89b3896c9b7790b70a9aa314a30e4ae114200992a19c96cbe0ca6070edd32ab8"
 dependencies = [
  "byteorder",
  "digest",
@@ -2630,19 +2628,19 @@ dependencies = [
  "pkcs1",
  "pkcs8",
  "rand_core",
+ "sha2",
  "signature",
- "smallvec",
  "subtle",
  "zeroize",
 ]
 
 [[package]]
 name = "rsa-magic-public-key"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dc035c92400b90ee471e0ea7e041bfadd4da26dd3e716a84053d0075ed9c159"
+checksum = "a86cb93425d6e176cfa39d63e226289f13154173f18274fab609c71ff35ba3a0"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.0",
  "num-bigint-dig",
  "rsa",
  "thiserror",
@@ -2871,9 +2869,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.6.4"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
+checksum = "8fe458c98333f9c8152221191a77e2a44e8325d0193484af2e9421a53019e57d"
 dependencies = [
  "digest",
  "rand_core",

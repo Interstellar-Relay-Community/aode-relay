@@ -12,8 +12,8 @@ use activitystreams::{
 };
 use config::Environment;
 use http_signature_normalization_actix::prelude::VerifyDigest;
+use rsa::sha2::{Digest, Sha256};
 use rustls::{Certificate, PrivateKey};
-use sha2::{Digest, Sha256};
 use std::{
     io::BufReader,
     net::{IpAddr, SocketAddr},

@@ -8,9 +8,10 @@ use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use actix_web::web;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
-use rsa::{pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, RsaPublicKey};
-use sha2::{Digest, Sha256};
-use signature::{DigestVerifier, Signature};
+use rsa::{
+    pkcs1v15::Signature, pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, sha2::Sha256,
+    signature::Verifier, RsaPublicKey,
+};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug)]
@@ -129,12 +130,12 @@ async fn do_verify(
     web::block(move || {
         span.in_scope(|| {
             let decoded = STANDARD.decode(signature)?;
-            let signature = Signature::from_bytes(&decoded).map_err(ErrorKind::ReadSignature)?;
-            let hashed = Sha256::new_with_prefix(signing_string.as_bytes());
+            let signature =
+                Signature::try_from(decoded.as_slice()).map_err(ErrorKind::ReadSignature)?;
 
-            let verifying_key = VerifyingKey::new_with_prefix(public_key);
+            let verifying_key = VerifyingKey::<Sha256>::new_with_prefix(public_key);
             verifying_key
-                .verify_digest(hashed, &signature)
+                .verify(signing_string.as_bytes(), &signature)
                 .map_err(ErrorKind::VerifySignature)?;
 
             Ok(()) as Result<(), Error>
