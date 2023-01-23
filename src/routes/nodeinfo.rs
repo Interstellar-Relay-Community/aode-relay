@@ -44,6 +44,8 @@ pub(crate) async fn route(
         .map(|s| s.to_owned())
         .collect();
 
+    let open_registrations = !config.restricted_mode();
+
     web::Json(NodeInfo {
         version: NodeInfoVersion,
         software: Software {
@@ -55,7 +57,7 @@ pub(crate) async fn route(
             inbound: vec![],
             outbound: vec![],
         },
-        open_registrations: false,
+        open_registrations,
         usage: Usage {
             users: Users {
                 total: 1,
