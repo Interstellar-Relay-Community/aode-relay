@@ -71,7 +71,7 @@ pub(crate) async fn route(
 
     let mut buf = BufWriter::new(Vec::new());
 
-    crate::templates::index(&mut buf, &local, &nodes, &config)?;
+    crate::templates::index_html(&mut buf, &local, &nodes, &config)?;
     let html = buf.into_inner().map_err(|e| {
         tracing::error!("Error rendering template, {}", e.error());
         ErrorKind::FlushBuffer

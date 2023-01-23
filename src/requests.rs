@@ -5,6 +5,7 @@ use crate::{
 use activitystreams::iri_string::types::IriString;
 use actix_web::http::header::Date;
 use awc::{error::SendRequestError, Client, ClientResponse};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
 use rand::thread_rng;
@@ -391,6 +392,6 @@ impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
         let signing_key = SigningKey::<Sha256>::new_with_prefix(self.private_key.clone());
         let signature = signing_key.try_sign_with_rng(thread_rng(), signing_string.as_bytes())?;
-        Ok(base64::encode(signature.as_ref()))
+        Ok(STANDARD.encode(signature.as_ref()))
     }
 }

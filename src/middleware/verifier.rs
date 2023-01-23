@@ -6,6 +6,7 @@ use crate::{
 };
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use actix_web::web;
+use base64::{engine::general_purpose::STANDARD, Engine};
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
 use rsa::{pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
@@ -127,7 +128,7 @@ async fn do_verify(
     let span = tracing::Span::current();
     web::block(move || {
         span.in_scope(|| {
-            let decoded = base64::decode(signature)?;
+            let decoded = STANDARD.decode(signature)?;
             let signature = Signature::from_bytes(&decoded).map_err(ErrorKind::ReadSignature)?;
             let hashed = Sha256::new_with_prefix(signing_string.as_bytes());
 

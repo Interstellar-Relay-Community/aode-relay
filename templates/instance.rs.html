@@ -1,4 +1,4 @@
-@use crate::{db::{Contact, Instance}, templates::admin};
+@use crate::{db::{Contact, Instance}, templates::admin_html};
 @use activitystreams::iri_string::types::IriString;
 
 @(instance: &Instance, software: Option<&str>, contact: Option<&Contact>, base: &IriString)
@@ -30,7 +30,7 @@
         }
         @if let Some(contact) = contact {
         <h5 class="instance-admin">@instance.title's admin:</h5>
-        @:admin(contact, base)
+        @:admin_html(contact, base)
         }
       </div>
       }

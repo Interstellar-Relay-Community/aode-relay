@@ -1,7 +1,7 @@
 @use crate::{
 config::{Config, UrlKind},
 data::Node,
-templates::{info, instance, statics::index_css},
+templates::{info_html, instance_html, statics::index_css},
 };
 
 @(local: &[Node], nodes: &[Node], config: &Config)
@@ -39,13 +39,13 @@ templates::{info, instance, statics::index_css},
         @for node in local {
         @if let Some(inst) = node.instance.as_ref() {
         <li>
-          @:instance(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(),
+          @:instance_html(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(),
           &node.base)
         </li>
         } else {
         @if let Some(inf) = node.info.as_ref() {
         <li>
-          @:info(inf, &node.base)
+          @:info_html(inf, &node.base)
         </li>
         }
         }
@@ -97,13 +97,13 @@ templates::{info, instance, statics::index_css},
         @for node in nodes {
         @if let Some(inst) = node.instance.as_ref() {
         <li>
-          @:instance(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(),
+          @:instance_html(inst, node.info.as_ref().map(|info| { info.software.as_ref() }), node.contact.as_ref(),
           &node.base)
         </li>
         } else {
         @if let Some(inf) = node.info.as_ref() {
         <li>
-          @:info(inf, &node.base)
+          @:info_html(inf, &node.base)
         </li>
         }
         }
