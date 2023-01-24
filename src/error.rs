@@ -30,6 +30,10 @@ impl Error {
     pub(crate) fn is_gone(&self) -> bool {
         matches!(self.kind, ErrorKind::Status(_, StatusCode::GONE))
     }
+
+    pub(crate) fn is_malformed_json(&self) -> bool {
+        matches!(self.kind, ErrorKind::Json(_))
+    }
 }
 
 impl std::fmt::Debug for Error {

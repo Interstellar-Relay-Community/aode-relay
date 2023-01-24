@@ -113,6 +113,9 @@ impl QueryInstance {
                 Err(e) if e.is_not_found() => {
                     tracing::debug!("Server doesn't implement instance endpoint");
                 }
+                Err(e) if e.is_malformed_json() => {
+                    tracing::debug!("Server doesn't returned proper json");
+                }
                 Err(e) => return Err(e),
             }
         }
