@@ -75,7 +75,7 @@ impl MyVerify {
                 Ok(res) => res.actor_id().ok_or(ErrorKind::MissingId),
                 Err(e) => {
                     if e.is_gone() {
-                        tracing::warn!("Actor gone: {}", public_key_id);
+                        tracing::warn!("Actor gone: {public_key_id}");
                         return Ok(false);
                     } else {
                         return Err(e);
@@ -178,13 +178,13 @@ mod tests {
 
     #[test]
     fn handles_masto_keys() {
-        println!("{}", ASONIX_DOG_KEY);
+        println!("{ASONIX_DOG_KEY}");
         let _ = RsaPublicKey::from_public_key_pem(ASONIX_DOG_KEY.trim()).unwrap();
     }
 
     #[test]
     fn handles_pleromo_keys() {
-        println!("{}", KARJALAZET_KEY);
+        println!("{KARJALAZET_KEY}");
         let _ = RsaPublicKey::from_public_key_pem(KARJALAZET_KEY.trim()).unwrap();
     }
 

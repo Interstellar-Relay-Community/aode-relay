@@ -39,7 +39,7 @@ use self::{
     db::Db,
     jobs::create_workers,
     middleware::{DebugPayload, MyVerify, RelayResolver, Timings},
-    routes::{actor, inbox, index, nodeinfo, nodeinfo_meta, statics},
+    routes::{actor, healthz, inbox, index, nodeinfo, nodeinfo_meta, statics},
 };
 
 fn init_subscriber(
@@ -273,6 +273,7 @@ async fn do_server_main(
         app.wrap(Compress::default())
             .wrap(TracingLogger::default())
             .wrap(Timings)
+            .route("/healthz", web::get().to(healthz))
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(

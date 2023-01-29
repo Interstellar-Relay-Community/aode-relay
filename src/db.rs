@@ -10,7 +10,10 @@ use rsa::{
 use sled::{Batch, Tree};
 use std::{
     collections::{BTreeMap, HashMap},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
     time::SystemTime,
 };
 use time::OffsetDateTime;
@@ -22,6 +25,8 @@ pub(crate) struct Db {
 }
 
 struct Inner {
+    healthz: Tree,
+    healthz_counter: Arc<AtomicU64>,
     actor_id_actor: Tree,
     public_key_id_actor_id: Tree,
     connected_actor_ids: Tree,
@@ -242,6 +247,8 @@ impl Db {
     fn build_inner(restricted_mode: bool, db: sled::Db) -> Result<Self, Error> {
         Ok(Db {
             inner: Arc::new(Inner {
+                healthz: db.open_tree("healthz")?,
+                healthz_counter: Arc::new(AtomicU64::new(0)),
                 actor_id_actor: db.open_tree("actor-id-actor")?,
                 public_key_id_actor_id: db.open_tree("public-key-id-actor-id")?,
                 connected_actor_ids: db.open_tree("connected-actor-ids")?,
@@ -271,6 +278,21 @@ impl Db {
         let t = actix_web::web::block(move || (f)(&inner)).await??;
 
         Ok(t)
+    }
+
+    pub(crate) async fn check_health(&self) -> Result<(), Error> {
+        let next = self.inner.healthz_counter.fetch_add(1, Ordering::Relaxed);
+        self.unblock(move |inner| {
+            inner
+                .healthz
+                .insert("healthz", &next.to_be_bytes()[..])
+                .map_err(Error::from)
+        })
+        .await?;
+        self.inner.healthz.flush_async().await?;
+        self.unblock(move |inner| inner.healthz.get("healthz").map_err(Error::from))
+            .await?;
+        Ok(())
     }
 
     pub(crate) async fn mark_last_seen(
@@ -468,7 +490,7 @@ impl Db {
     pub(crate) async fn is_connected(&self, base_id: IriString) -> Result<bool, Error> {
         let scheme = base_id.scheme_str();
         let authority = base_id.authority_str().ok_or(ErrorKind::MissingDomain)?;
-        let prefix = format!("{}://{}", scheme, authority);
+        let prefix = format!("{scheme}://{authority}");
 
         self.unblock(move |inner| {
             let connected = inner
@@ -528,7 +550,7 @@ impl Db {
     }
 
     pub(crate) async fn remove_connection(&self, actor_id: IriString) -> Result<(), Error> {
-        tracing::debug!("Removing Connection: {}", actor_id);
+        tracing::debug!("Removing Connection: {actor_id}");
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids
@@ -540,7 +562,7 @@ impl Db {
     }
 
     pub(crate) async fn add_connection(&self, actor_id: IriString) -> Result<(), Error> {
-        tracing::debug!("Adding Connection: {}", actor_id);
+        tracing::debug!("Adding Connection: {actor_id}");
         self.unblock(move |inner| {
             inner
                 .connected_actor_ids

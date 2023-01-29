@@ -45,7 +45,7 @@ impl QueryInstance {
             .authority_str()
             .ok_or(ErrorKind::MissingDomain)?;
         let scheme = self.actor_id.scheme_str();
-        let instance_uri = iri!(format!("{}://{}/api/v1/instance", scheme, authority));
+        let instance_uri = iri!(format!("{scheme}://{authority}/api/v1/instance"));
 
         let instance = match state
             .requests

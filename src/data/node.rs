@@ -182,7 +182,7 @@ impl Node {
         let authority = url.authority_str().ok_or(ErrorKind::MissingDomain)?;
         let scheme = url.scheme_str();
 
-        let base = iri!(format!("{}://{}", scheme, authority));
+        let base = iri!(format!("{scheme}://{authority}"));
 
         Ok(Node {
             base,

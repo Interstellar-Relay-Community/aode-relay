@@ -61,7 +61,7 @@ impl Breakers {
                 if let Some(mut breaker) = self.inner.get_mut(authority) {
                     breaker.fail();
                     if !breaker.should_try() {
-                        tracing::warn!("Failed breaker for {}", authority);
+                        tracing::warn!("Failed breaker for {authority}");
                     }
                     false
                 } else {
@@ -235,7 +235,7 @@ impl Requests {
             if let Ok(bytes) = res.body().await {
                 if let Ok(s) = String::from_utf8(bytes.as_ref().to_vec()) {
                     if !s.is_empty() {
-                        tracing::warn!("Response from {}, {}", parsed_url, s);
+                        tracing::warn!("Response from {parsed_url}, {s}");
                     }
                 }
             }

@@ -40,11 +40,11 @@ impl std::fmt::Display for Counter {
         let labels = self
             .labels
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
+            .map(|(k, v)| format!("{k}: {v}"))
             .collect::<Vec<_>>()
             .join(", ");
 
-        write!(f, "{} - {}", labels, self.value)
+        write!(f, "{labels} - {}", self.value)
     }
 }
 
@@ -59,11 +59,11 @@ impl std::fmt::Display for Gauge {
         let labels = self
             .labels
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
+            .map(|(k, v)| format!("{k}: {v}"))
             .collect::<Vec<_>>()
             .join(", ");
 
-        write!(f, "{} - {}", labels, self.value)
+        write!(f, "{labels} - {}", self.value)
     }
 }
 
@@ -78,7 +78,7 @@ impl std::fmt::Display for Histogram {
         let labels = self
             .labels
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
+            .map(|(k, v)| format!("{k}: {v}"))
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -87,15 +87,15 @@ impl std::fmt::Display for Histogram {
             .iter()
             .map(|(k, v)| {
                 if let Some(v) = v {
-                    format!("{}: {:.6}", k, v)
+                    format!("{k}: {v:.6}")
                 } else {
-                    format!("{}: None,", k)
+                    format!("{k}: None,")
                 }
             })
             .collect::<Vec<_>>()
             .join(", ");
 
-        write!(f, "{} - {}", labels, value)
+        write!(f, "{labels} - {value}")
     }
 }
 
@@ -172,18 +172,18 @@ impl Snapshot {
                     continue;
                 }
 
-                println!("\t{}", key);
+                println!("\t{key}");
                 for counter in counters {
-                    println!("\t\t{}", counter);
+                    println!("\t\t{counter}");
                 }
             }
 
             for (key, counters) in merging {
-                println!("\t{}", key);
+                println!("\t{key}");
 
                 for (_, counter) in counters {
                     if let Some(counter) = counter.merge() {
-                        println!("\t\t{}", counter);
+                        println!("\t\t{counter}");
                     }
                 }
             }
@@ -192,10 +192,10 @@ impl Snapshot {
         if !self.gauges.is_empty() {
             println!("Gauges");
             for (key, gauges) in self.gauges {
-                println!("\t{}", key);
+                println!("\t{key}");
 
                 for gauge in gauges {
-                    println!("\t\t{}", gauge);
+                    println!("\t\t{gauge}");
                 }
             }
         }
@@ -203,10 +203,10 @@ impl Snapshot {
         if !self.histograms.is_empty() {
             println!("Histograms");
             for (key, histograms) in self.histograms {
-                println!("\t{}", key);
+                println!("\t{key}");
 
                 for histogram in histograms {
-                    println!("\t\t{}", histogram);
+                    println!("\t\t{histogram}");
                 }
             }
         }

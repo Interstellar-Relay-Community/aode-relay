@@ -39,7 +39,7 @@ impl QueryNodeinfo {
             .authority_str()
             .ok_or(ErrorKind::MissingDomain)?;
         let scheme = self.actor_id.scheme_str();
-        let well_known_uri = iri!(format!("{}://{}/.well-known/nodeinfo", scheme, authority));
+        let well_known_uri = iri!(format!("{scheme}://{authority}/.well-known/nodeinfo"));
 
         let well_known = match state
             .requests
@@ -168,7 +168,7 @@ impl<'de> serde::de::Visitor<'de> for SupportedVersionVisitor {
     type Value = SupportedVersion;
 
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "a string starting with '{}'", SUPPORTED_VERSIONS)
+        write!(f, "a string starting with '{SUPPORTED_VERSIONS}'")
     }
 
     fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
@@ -187,7 +187,7 @@ impl<'de> serde::de::Visitor<'de> for SupportedNodeinfoVisitor {
     type Value = SupportedNodeinfo;
 
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "a string starting with '{}'", SUPPORTED_NODEINFO)
+        write!(f, "a string starting with '{SUPPORTED_NODEINFO}'")
     }
 
     fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>

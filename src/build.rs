@@ -5,7 +5,7 @@ fn git_info() {
     if let Ok(output) = Command::new("git").args(["rev-parse", "HEAD"]).output() {
         if output.status.success() {
             let git_hash = String::from_utf8_lossy(&output.stdout);
-            println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+            println!("cargo:rustc-env=GIT_HASH={git_hash}");
             println!("cargo:rustc-env=GIT_SHORT_HASH={}", &git_hash[..8])
         }
     }
@@ -16,7 +16,7 @@ fn git_info() {
     {
         if output.status.success() {
             let git_branch = String::from_utf8_lossy(&output.stdout);
-            println!("cargo:rustc-env=GIT_BRANCH={}", git_branch);
+            println!("cargo:rustc-env=GIT_BRANCH={git_branch}");
         }
     }
 }
@@ -32,11 +32,11 @@ fn version_info() -> Result<(), anyhow::Error> {
     let data: toml::Value = toml::from_str(&cargo_data)?;
 
     if let Some(version) = data["package"]["version"].as_str() {
-        println!("cargo:rustc-env=PKG_VERSION={}", version);
+        println!("cargo:rustc-env=PKG_VERSION={version}");
     }
 
     if let Some(name) = data["package"]["name"].as_str() {
-        println!("cargo:rustc-env=PKG_NAME={}", name);
+        println!("cargo:rustc-env=PKG_NAME={name}");
     }
 
     Ok(())

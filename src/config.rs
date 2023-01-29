@@ -170,7 +170,7 @@ impl Config {
         let config: ParsedConfig = config.try_deserialize()?;
 
         let scheme = if config.https { "https" } else { "http" };
-        let base_uri = iri!(format!("{}://{}", scheme, config.hostname)).into_absolute();
+        let base_uri = iri!(format!("{scheme}://{}", config.hostname)).into_absolute();
 
         let tls = match (config.tls_key, config.tls_cert) {
             (Some(key), Some(cert)) => Some(TlsConfig { key, cert }),
@@ -207,8 +207,8 @@ impl Config {
 
         let source_url = match Self::git_hash() {
             Some(hash) => format!(
-                "{}{}{}",
-                config.source_repo, config.repository_commit_base, hash
+                "{}{}{hash}",
+                config.source_repo, config.repository_commit_base
             )
             .parse()
             .expect("constructed source URL is valid"),
@@ -332,7 +332,7 @@ impl Config {
             match AdminConfig::build(api_token) {
                 Ok(conf) => Some(actix_web::web::Data::new(conf)),
                 Err(e) => {
-                    tracing::error!("Error creating admin config: {}", e);
+                    tracing::error!("Error creating admin config: {e}");
                     None
                 }
             }
@@ -371,7 +371,7 @@ impl Config {
 
     pub(crate) fn software_version() -> String {
         if let Some(git) = Self::git_version() {
-            return format!("v{}-{}", Self::version(), git);
+            return format!("v{}-{git}", Self::version());
         }
 
         format!("v{}", Self::version())
@@ -381,7 +381,7 @@ impl Config {
         let branch = Self::git_branch()?;
         let hash = Self::git_short_hash()?;
 
-        Some(format!("{}-{}", branch, hash))
+        Some(format!("{branch}-{hash}"))
     }
 
     fn name() -> &'static str {
@@ -463,7 +463,7 @@ impl Config {
                 resolved
             }
             UrlKind::Media(uuid) => FixedBaseResolver::new(self.base_uri.as_ref())
-                .resolve(IriRelativeStr::new(&format!("media/{}", uuid))?.as_ref())
+                .resolve(IriRelativeStr::new(&format!("media/{uuid}"))?.as_ref())
                 .try_to_dedicated_string()?,
             UrlKind::NodeInfo => FixedBaseResolver::new(self.base_uri.as_ref())
                 .resolve(IriRelativeStr::new("nodeinfo/2.0.json")?.as_ref())

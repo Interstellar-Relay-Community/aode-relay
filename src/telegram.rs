@@ -89,19 +89,19 @@ async fn answer(bot: Bot, msg: Message, cmd: Command, db: Db) -> ResponseResult<
                 .await?;
         }
         Command::Block { domain } if db.add_blocks(vec![domain.clone()]).await.is_ok() => {
-            bot.send_message(msg.chat.id, format!("{} has been blocked", domain))
+            bot.send_message(msg.chat.id, format!("{domain} has been blocked"))
                 .await?;
         }
         Command::Unblock { domain } if db.remove_blocks(vec![domain.clone()]).await.is_ok() => {
-            bot.send_message(msg.chat.id, format!("{} has been unblocked", domain))
+            bot.send_message(msg.chat.id, format!("{domain} has been unblocked"))
                 .await?;
         }
         Command::Allow { domain } if db.add_allows(vec![domain.clone()]).await.is_ok() => {
-            bot.send_message(msg.chat.id, format!("{} has been allowed", domain))
+            bot.send_message(msg.chat.id, format!("{domain} has been allowed"))
                 .await?;
         }
         Command::Disallow { domain } if db.remove_allows(vec![domain.clone()]).await.is_ok() => {
-            bot.send_message(msg.chat.id, format!("{} has been disallowed", domain))
+            bot.send_message(msg.chat.id, format!("{domain} has been disallowed"))
                 .await?;
         }
         Command::ListAllowed => {

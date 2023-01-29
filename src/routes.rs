@@ -1,4 +1,5 @@
 mod actor;
+mod healthz;
 mod inbox;
 mod index;
 mod media;
@@ -7,6 +8,7 @@ mod statics;
 
 pub(crate) use self::{
     actor::route as actor,
+    healthz::route as healthz,
     inbox::route as inbox,
     index::route as index,
     media::route as media,
