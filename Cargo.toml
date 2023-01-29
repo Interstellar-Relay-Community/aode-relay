@@ -99,7 +99,7 @@ version = "0.7.0"
 anyhow = "1.0"
 dotenv = "0.15.0"
 ructe = { version = "0.16.0", features = ["sass", "mime03"] }
-toml = "0.5.8"
+toml = "0.7.0"
 
 [profile.dev.package.rsa]
 opt-level = 3
