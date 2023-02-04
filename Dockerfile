@@ -1,4 +1,18 @@
-FROM rust:1-bullseye
+FROM rust:1-alpine3.17 AS builder
+
+RUN apk add --no-cache openssl libc-dev openssl-dev protobuf protobuf-dev
+
+RUN mkdir -p /opt/aode-relay
+WORKDIR /opt/aode-relay
+
+ADD . /opt/aode-relay
+
+RUN cargo build --release
+
+
+FROM alpine:3.17
+
+RUN apk add --no-cache openssl ca-certificates
 
 ENV TINI_VERSION v0.19.0
 
@@ -6,19 +20,7 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
-RUN apt-get update && apt-get install -y libssl-dev protobuf-compiler
-
-RUN mkdir -p /opt/aode-relay
-WORKDIR /opt/aode-relay
-
-ADD . /opt/aode-relay
-
-RUN cargo build --release \
- && cp ./target/release/relay /usr/bin/aode-relay \
- && cd .. \
- && rm -rf aode-relay \
- && rm -rf ~/.cargo && rm -rf /usr/local/cargo \
- && mkdir aode-relay
+COPY --from=builder /opt/aode-relay/target/release/relay /usr/bin/aode-relay
 
 # Some base env configuration
 ENV ADDR 0.0.0.0
