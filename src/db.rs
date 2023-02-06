@@ -356,12 +356,12 @@ impl Db {
 
     pub(crate) async fn info(&self, actor_id: IriString) -> Result<Option<Info>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner.actor_id_info.get(actor_id.as_str().as_bytes())? {
-                let info = serde_json::from_slice(&ivec)?;
-                Ok(Some(info))
-            } else {
-                Ok(None)
-            }
+            inner
+                .actor_id_info
+                .get(actor_id.as_str().as_bytes())?
+                .map(|ivec| serde_json::from_slice(&ivec))
+                .transpose()
+                .map_err(Error::from)
         })
         .await
     }
@@ -390,12 +390,12 @@ impl Db {
 
     pub(crate) async fn instance(&self, actor_id: IriString) -> Result<Option<Instance>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner.actor_id_instance.get(actor_id.as_str().as_bytes())? {
-                let instance = serde_json::from_slice(&ivec)?;
-                Ok(Some(instance))
-            } else {
-                Ok(None)
-            }
+            inner
+                .actor_id_instance
+                .get(actor_id.as_str().as_bytes())?
+                .map(|ivec| serde_json::from_slice(&ivec))
+                .transpose()
+                .map_err(Error::from)
         })
         .await
     }
@@ -424,12 +424,12 @@ impl Db {
 
     pub(crate) async fn contact(&self, actor_id: IriString) -> Result<Option<Contact>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner.actor_id_contact.get(actor_id.as_str().as_bytes())? {
-                let contact = serde_json::from_slice(&ivec)?;
-                Ok(Some(contact))
-            } else {
-                Ok(None)
-            }
+            inner
+                .actor_id_contact
+                .get(actor_id.as_str().as_bytes())?
+                .map(|ivec| serde_json::from_slice(&ivec))
+                .transpose()
+                .map_err(Error::from)
         })
         .await
     }
@@ -454,22 +454,20 @@ impl Db {
 
     pub(crate) async fn media_id(&self, url: IriString) -> Result<Option<Uuid>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner.media_url_media_id.get(url.as_str().as_bytes())? {
-                Ok(uuid_from_ivec(ivec))
-            } else {
-                Ok(None)
-            }
+            Ok(inner
+                .media_url_media_id
+                .get(url.as_str().as_bytes())?
+                .and_then(uuid_from_ivec))
         })
         .await
     }
 
     pub(crate) async fn media_url(&self, id: Uuid) -> Result<Option<IriString>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner.media_id_media_url.get(id.as_bytes())? {
-                Ok(url_from_ivec(ivec))
-            } else {
-                Ok(None)
-            }
+            Ok(inner
+                .media_id_media_url
+                .get(id.as_bytes())?
+                .and_then(url_from_ivec))
         })
         .await
     }
@@ -509,26 +507,22 @@ impl Db {
         public_key_id: IriString,
     ) -> Result<Option<IriString>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner
+            Ok(inner
                 .public_key_id_actor_id
                 .get(public_key_id.as_str().as_bytes())?
-            {
-                Ok(url_from_ivec(ivec))
-            } else {
-                Ok(None)
-            }
+                .and_then(url_from_ivec))
         })
         .await
     }
 
     pub(crate) async fn actor(&self, actor_id: IriString) -> Result<Option<Actor>, Error> {
         self.unblock(move |inner| {
-            if let Some(ivec) = inner.actor_id_actor.get(actor_id.as_str().as_bytes())? {
-                let actor = serde_json::from_slice(&ivec)?;
-                Ok(Some(actor))
-            } else {
-                Ok(None)
-            }
+            inner
+                .actor_id_actor
+                .get(actor_id.as_str().as_bytes())?
+                .map(|ivec| serde_json::from_slice(&ivec))
+                .transpose()
+                .map_err(Error::from)
         })
         .await
     }
