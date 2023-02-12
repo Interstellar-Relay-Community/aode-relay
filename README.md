@@ -182,10 +182,16 @@ example, if the server is `https://relay.my.tld`, the correct URL would be
 - Add {anything}, the Add {anything} is relayed verbatim to listening servers.
     Note that this activity will likely be rejected by the listening servers unless it has been
     signed with a JSON-LD signature
+- Remove {anything}, the Remove {anything} is relayed verbatim to listening servers.
+    Note that this activity will likely be rejected by the listening servers unless it has been
+    signed with a JSON-LD signature
 
 ### Supported Discovery Protocols
 - Webfinger
 - NodeInfo
+
+### Known issues
+Pleroma and Akkoma do not support validating JSON-LD signatures, meaning many activities such as Delete, Update, Add, and Remove will be rejected with a message similar to `WARN: Response from https://example.com/inbox, "Invalid HTTP Signature"`. This is normal and not an issue with the relay.
 
 ### Contributing
 Feel free to open issues for anything you find an issue with. Please note that any contributed code will be licensed under the AGPLv3.
