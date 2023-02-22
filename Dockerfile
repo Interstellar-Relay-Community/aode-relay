@@ -12,13 +12,9 @@ RUN cargo build --release
 
 FROM alpine:3.17
 
-RUN apk add --no-cache openssl ca-certificates
+RUN apk add --no-cache openssl ca-certificates tini
 
-ENV TINI_VERSION v0.19.0
-
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
+ENTRYPOINT ["/sbin/tini", "--"]
 
 COPY --from=builder /opt/aode-relay/target/release/relay /usr/bin/aode-relay
 
