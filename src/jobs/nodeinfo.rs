@@ -43,7 +43,7 @@ impl QueryNodeinfo {
 
         let well_known = match state
             .requests
-            .fetch_json::<WellKnown>(well_known_uri.as_str())
+            .fetch_json::<WellKnown>(&well_known_uri)
             .await
         {
             Ok(well_known) => well_known,
@@ -55,7 +55,7 @@ impl QueryNodeinfo {
         };
 
         let href = if let Some(link) = well_known.links.into_iter().find(|l| l.rel.is_supported()) {
-            link.href
+            iri!(&link.href)
         } else {
             return Ok(());
         };

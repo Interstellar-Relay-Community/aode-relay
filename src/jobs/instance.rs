@@ -41,14 +41,14 @@ impl QueryInstance {
                 let mastodon_instance_uri = iri!(format!("{scheme}://{authority}/api/v1/instance"));
                 state
                     .requests
-                    .fetch_json::<Instance>(mastodon_instance_uri.as_str())
+                    .fetch_json::<Instance>(&mastodon_instance_uri)
                     .await
             }
             InstanceApiType::Misskey => {
                 let msky_meta_uri = iri!(format!("{scheme}://{authority}/api/meta"));
                 state
                     .requests
-                    .fetch_json_msky::<MisskeyMeta>(msky_meta_uri.as_str())
+                    .fetch_json_msky::<MisskeyMeta>(&msky_meta_uri)
                     .await
                     .map(|res| res.into())
             }

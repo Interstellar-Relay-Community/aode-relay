@@ -229,7 +229,7 @@ impl Requests {
 
         self.reset_err();
 
-        if !res.status().is_success() {
+        if res.status().is_server_error() {
             self.breakers.fail(&parsed_url);
 
             if let Ok(bytes) = res.body().await {
@@ -250,7 +250,7 @@ impl Requests {
     }
 
     #[tracing::instrument(name = "Fetch Json", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_json<T>(&self, url: &str) -> Result<T, Error>
+    pub(crate) async fn fetch_json<T>(&self, url: &IriString) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -258,75 +258,40 @@ impl Requests {
     }
 
     #[tracing::instrument(name = "Fetch Json", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_json_msky<T>(&self, url: &str) -> Result<T, Error>
+    pub(crate) async fn fetch_json_msky<T>(&self, url: &IriString) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
-        self.do_fetch_msky(url, "application/json").await
+        let mut res = self
+            .do_deliver(
+                url,
+                &serde_json::json!({}),
+                "application/json",
+                "application/json",
+            )
+            .await?;
+
+        let body = res
+            .body()
+            .await
+            .map_err(|e| ErrorKind::ReceiveResponse(url.to_string(), e.to_string()))?;
+
+        Ok(serde_json::from_slice(body.as_ref())?)
     }
 
     #[tracing::instrument(name = "Fetch Activity+Json", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch<T>(&self, url: &str) -> Result<T, Error>
+    pub(crate) async fn fetch<T>(&self, url: &IriString) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
         self.do_fetch(url, "application/activity+json").await
     }
 
-    async fn do_fetch<T>(&self, url: &str, accept: &str) -> Result<T, Error>
+    async fn do_fetch<T>(&self, url: &IriString, accept: &str) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
-        self.do_fetch_inner(url, accept, false).await
-    }
-
-    async fn do_fetch_msky<T>(&self, url: &str, accept: &str) -> Result<T, Error>
-    where
-        T: serde::de::DeserializeOwned,
-    {
-        self.do_fetch_inner(url, accept, true).await
-    }
-
-    async fn do_fetch_inner<T>(&self, url: &str, accept: &str, use_post: bool) -> Result<T, Error>
-    where
-        T: serde::de::DeserializeOwned,
-    {
-        let parsed_url = url.parse::<IriString>()?;
-
-        if !self.breakers.should_try(&parsed_url) {
-            return Err(ErrorKind::Breaker.into());
-        }
-
-        let signer = self.signer();
-        let span = tracing::Span::current();
-
-        let client: Client = self.client.borrow().clone();
-        let client_req = match use_post {
-            true => client.post(url),
-            false => client.get(url),
-        };
-        let client_signed = client_req
-            .insert_header(("Accept", accept))
-            .insert_header(Date(SystemTime::now().into()))
-            .signature(
-                self.config.clone(),
-                self.key_id.clone(),
-                move |signing_string| {
-                    span.record("signing_string", signing_string);
-                    span.in_scope(|| signer.sign(signing_string))
-                },
-            )
-            .await?;
-        let res = match use_post {
-            true => {
-                let dummy = serde_json::json!({});
-                client_signed.send_json(&dummy)
-            }
-            false => client_signed.send(),
-        }
-        .await;
-
-        let mut res = self.check_response(&parsed_url, res).await?;
+        let mut res = self.do_fetch_response(url, accept).await?;
 
         let body = res
             .body()
@@ -337,8 +302,16 @@ impl Requests {
     }
 
     #[tracing::instrument(name = "Fetch response", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_response(&self, url: IriString) -> Result<ClientResponse, Error> {
-        if !self.breakers.should_try(&url) {
+    pub(crate) async fn fetch_response(&self, url: &IriString) -> Result<ClientResponse, Error> {
+        self.do_fetch_response(url, "*/*").await
+    }
+
+    pub(crate) async fn do_fetch_response(
+        &self,
+        url: &IriString,
+        accept: &str,
+    ) -> Result<ClientResponse, Error> {
+        if !self.breakers.should_try(url) {
             return Err(ErrorKind::Breaker.into());
         }
 
@@ -348,7 +321,7 @@ impl Requests {
         let client: Client = self.client.borrow().clone();
         let res = client
             .get(url.as_str())
-            .insert_header(("Accept", "*/*"))
+            .insert_header(("Accept", accept))
             .insert_header(Date(SystemTime::now().into()))
             .no_decompress()
             .signature(
@@ -363,7 +336,7 @@ impl Requests {
             .send()
             .await;
 
-        let res = self.check_response(&url, res).await?;
+        let res = self.check_response(url, res).await?;
 
         Ok(res)
     }
@@ -373,7 +346,27 @@ impl Requests {
         skip_all,
         fields(inbox = inbox.to_string().as_str(), signing_string)
     )]
-    pub(crate) async fn deliver<T>(&self, inbox: IriString, item: &T) -> Result<(), Error>
+    pub(crate) async fn deliver<T>(&self, inbox: &IriString, item: &T) -> Result<(), Error>
+    where
+        T: serde::ser::Serialize + std::fmt::Debug,
+    {
+        self.do_deliver(
+            inbox,
+            item,
+            "application/activity+json",
+            "application/activity+json",
+        )
+        .await?;
+        Ok(())
+    }
+
+    async fn do_deliver<T>(
+        &self,
+        inbox: &IriString,
+        item: &T,
+        content_type: &str,
+        accept: &str,
+    ) -> Result<ClientResponse, Error>
     where
         T: serde::ser::Serialize + std::fmt::Debug,
     {
@@ -388,8 +381,8 @@ impl Requests {
         let client: Client = self.client.borrow().clone();
         let (req, body) = client
             .post(inbox.as_str())
-            .insert_header(("Accept", "application/activity+json"))
-            .insert_header(("Content-Type", "application/activity+json"))
+            .insert_header(("Accept", accept))
+            .insert_header(("Content-Type", content_type))
             .insert_header(Date(SystemTime::now().into()))
             .signature_with_digest(
                 self.config.clone(),
@@ -406,9 +399,9 @@ impl Requests {
 
         let res = req.send_body(body).await;
 
-        self.check_response(&inbox, res).await?;
+        let res = self.check_response(inbox, res).await?;
 
-        Ok(())
+        Ok(res)
     }
 
     fn signer(&self) -> Signer {

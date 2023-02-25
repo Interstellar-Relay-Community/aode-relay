@@ -71,7 +71,7 @@ impl ActorCache {
         id: &IriString,
         requests: &Requests,
     ) -> Result<Actor, Error> {
-        let accepted_actor = requests.fetch::<AcceptedActors>(id.as_str()).await?;
+        let accepted_actor = requests.fetch::<AcceptedActors>(id).await?;
 
         let input_authority = id.authority_components().ok_or(ErrorKind::MissingDomain)?;
         let accepted_actor_id = accepted_actor

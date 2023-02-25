@@ -42,7 +42,7 @@ impl QueryContact {
 
         let contact = match state
             .requests
-            .fetch::<AcceptedActors>(self.contact_id.as_str())
+            .fetch::<AcceptedActors>(&self.contact_id)
             .await
         {
             Ok(contact) => contact,

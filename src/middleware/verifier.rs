@@ -67,11 +67,7 @@ impl MyVerify {
 
             actor_id
         } else {
-            match self
-                .0
-                .fetch::<PublicKeyResponse>(public_key_id.as_str())
-                .await
-            {
+            match self.0.fetch::<PublicKeyResponse>(&public_key_id).await {
                 Ok(res) => res.actor_id().ok_or(ErrorKind::MissingId),
                 Err(e) => {
                     if e.is_gone() {
