@@ -216,7 +216,6 @@ impl Snapshot {
 fn key_to_parts(key: &Key) -> (String, Vec<(String, String)>) {
     let labels = key
         .labels()
-        .into_iter()
         .map(|label| (label.key().to_string(), label.value().to_string()))
         .collect();
     let name = key.name().to_string();
