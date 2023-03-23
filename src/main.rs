@@ -4,11 +4,12 @@
 use activitystreams::iri_string::types::IriString;
 use actix_rt::task::JoinHandle;
 use actix_web::{middleware::Compress, web, App, HttpServer};
-use collector::{DoubleRecorder, MemoryCollector};
+use collector::MemoryCollector;
 #[cfg(feature = "console")]
 use console_subscriber::ConsoleLayer;
 use http_signature_normalization_actix::middleware::VerifySignature;
 use metrics_exporter_prometheus::PrometheusBuilder;
+use metrics_util::layers::FanoutBuilder;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use rustls::ServerConfig;
@@ -119,7 +120,11 @@ async fn main() -> Result<(), anyhow::Error> {
             .build()?;
 
         actix_rt::spawn(exporter);
-        DoubleRecorder::new(recorder, collector.clone()).install()?;
+        let recorder = FanoutBuilder::default()
+            .add_recorder(recorder)
+            .add_recorder(collector.clone())
+            .build();
+        metrics::set_boxed_recorder(Box::new(recorder))?;
     } else {
         collector.install()?;
     }
