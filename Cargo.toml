@@ -41,7 +41,7 @@ console-subscriber = { version = "0.1", optional = true }
 dashmap = "5.1.0"
 dotenv = "0.15.0"
 futures-util = "0.3.17"
-lru = "0.9.0"
+lru = "0.10.0"
 metrics = "0.20.1"
 metrics-exporter-prometheus = { version = "0.11.0", default-features = false, features = [
   "http-listener",
