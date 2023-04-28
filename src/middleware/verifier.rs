@@ -129,7 +129,7 @@ async fn do_verify(
             let signature =
                 Signature::try_from(decoded.as_slice()).map_err(ErrorKind::ReadSignature)?;
 
-            let verifying_key = VerifyingKey::<Sha256>::new_with_prefix(public_key);
+            let verifying_key = VerifyingKey::<Sha256>::new(public_key);
             verifying_key
                 .verify(signing_string.as_bytes(), &signature)
                 .map_err(ErrorKind::VerifySignature)?;

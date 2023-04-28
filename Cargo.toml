@@ -42,20 +42,20 @@ dashmap = "5.1.0"
 dotenv = "0.15.0"
 futures-util = "0.3.17"
 lru = "0.10.0"
-metrics = "0.20.1"
-metrics-exporter-prometheus = { version = "0.11.0", default-features = false, features = [
+metrics = "0.21.0"
+metrics-exporter-prometheus = { version = "0.12.0", default-features = false, features = [
   "http-listener",
 ] }
-metrics-util = "0.14.0"
+metrics-util = "0.15.0"
 mime = "0.3.16"
 minify-html = "0.10.0"
 opentelemetry = { version = "0.18", features = ["rt-tokio"] }
 opentelemetry-otlp = "0.11"
 pin-project-lite = "0.2.9"
-quanta = "0.10.1"
+quanta = "0.11.0"
 rand = "0.8"
-rsa = { version = "0.8", features = ["sha2"] }
-rsa-magic-public-key = "0.7.0"
+rsa = { version = "0.9", features = ["sha2"] }
+rsa-magic-public-key = "0.8.0"
 rustls = "0.20.7"
 rustls-pemfile = "1.0.1"
 serde = { version = "1.0", features = ["derive"] }
@@ -83,7 +83,7 @@ tokio = { version = "1", features = ["macros", "sync"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [dependencies.background-jobs]
-version = "0.14.0"
+version = "0.15.0"
 default-features = false
 features = ["background-jobs-actix", "error-logging"]
 

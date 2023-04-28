@@ -12,7 +12,7 @@ use rand::thread_rng;
 use rsa::{
     pkcs1v15::SigningKey,
     sha2::{Digest, Sha256},
-    signature::RandomizedSigner,
+    signature::{RandomizedSigner, SignatureEncoding},
     RsaPrivateKey,
 };
 use std::{
@@ -417,9 +417,9 @@ struct Signer {
 
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
-        let signing_key = SigningKey::<Sha256>::new_with_prefix(self.private_key.clone());
+        let signing_key = SigningKey::<Sha256>::new(self.private_key.clone());
         let signature =
             signing_key.try_sign_with_rng(&mut thread_rng(), signing_string.as_bytes())?;
-        Ok(STANDARD.encode(signature.as_ref()))
+        Ok(STANDARD.encode(signature.to_bytes().as_ref()))
     }
 }
