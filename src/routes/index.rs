@@ -14,8 +14,11 @@ const MINIFY_CONFIG: minify_html::Cfg = minify_html::Cfg {
     keep_html_and_head_opening_tags: false,
     keep_spaces_between_attributes: true,
     keep_comments: false,
-    minify_js: true,
     minify_css: true,
+    minify_css_level_1: true,
+    minify_css_level_2: false,
+    minify_css_level_3: false,
+    minify_js: true,
     remove_bangs: true,
     remove_processing_instructions: true,
 };
