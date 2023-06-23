@@ -47,6 +47,7 @@ impl State {
             config.user_agent(),
             self.breakers.clone(),
             self.last_online.clone(),
+            config.client_pool_size(),
         )
     }
 

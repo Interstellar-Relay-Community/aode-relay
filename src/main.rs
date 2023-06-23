@@ -148,7 +148,7 @@ fn client_main(config: Config, args: Args) -> JoinHandle<Result<(), anyhow::Erro
 }
 
 async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
-    let client = requests::build_client(&config.user_agent());
+    let client = requests::build_client(&config.user_agent(), config.client_pool_size());
 
     if !args.blocks().is_empty() || !args.allowed().is_empty() {
         if args.undo() {

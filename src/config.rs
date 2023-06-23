@@ -45,6 +45,7 @@ pub(crate) struct ParsedConfig {
     local_blurb: Option<String>,
     prometheus_addr: Option<IpAddr>,
     prometheus_port: Option<u16>,
+    client_pool_size: usize,
 }
 
 #[derive(Clone)]
@@ -68,6 +69,7 @@ pub struct Config {
     local_domains: Vec<String>,
     local_blurb: Option<String>,
     prometheus_config: Option<PrometheusConfig>,
+    client_pool_size: usize,
 }
 
 #[derive(Clone)]
@@ -135,6 +137,7 @@ impl std::fmt::Debug for Config {
             .field("local_domains", &self.local_domains)
             .field("local_blurb", &self.local_blurb)
             .field("prometheus_config", &self.prometheus_config)
+            .field("client_pool_size", &self.client_pool_size)
             .finish()
     }
 }
@@ -164,6 +167,7 @@ impl Config {
             .set_default("local_blurb", None as Option<&str>)?
             .set_default("prometheus_addr", None as Option<&str>)?
             .set_default("prometheus_port", None as Option<u16>)?
+            .set_default("client_pool_size", 20u64)?
             .add_source(Environment::default())
             .build()?;
 
@@ -235,6 +239,7 @@ impl Config {
             local_domains,
             local_blurb: config.local_blurb,
             prometheus_config,
+            client_pool_size: config.client_pool_size,
         })
     }
 
@@ -412,6 +417,10 @@ impl Config {
             Self::software_version(),
             self.generate_url(UrlKind::Index),
         )
+    }
+
+    pub(crate) fn client_pool_size(&self) -> usize {
+        self.client_pool_size
     }
 
     pub(crate) fn source_code(&self) -> &IriString {

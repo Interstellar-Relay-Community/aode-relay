@@ -4,7 +4,7 @@ use crate::{
 };
 use activitystreams::iri_string::types::IriString;
 use actix_web::http::header::Date;
-use awc::{error::SendRequestError, Client, ClientResponse};
+use awc::{error::SendRequestError, Client, ClientResponse, Connector};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
 use http_signature_normalization_actix::prelude::*;
@@ -145,6 +145,7 @@ impl Default for Breaker {
 
 #[derive(Clone)]
 pub(crate) struct Requests {
+    pool_size: usize,
     client: Rc<RefCell<Client>>,
     consecutive_errors: Rc<AtomicUsize>,
     error_limit: usize,
@@ -159,6 +160,7 @@ pub(crate) struct Requests {
 impl std::fmt::Debug for Requests {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Requests")
+            .field("pool_size", &self.pool_size)
             .field("error_limit", &self.error_limit)
             .field("key_id", &self.key_id)
             .field("user_agent", &self.user_agent)
@@ -168,8 +170,11 @@ impl std::fmt::Debug for Requests {
     }
 }
 
-pub(crate) fn build_client(user_agent: &str) -> Client {
+pub(crate) fn build_client(user_agent: &str, pool_size: usize) -> Client {
+    let connector = Connector::new().limit(pool_size);
+
     Client::builder()
+        .connector(connector)
         .wrap(Tracing)
         .add_default_header(("User-Agent", user_agent.to_string()))
         .timeout(Duration::from_secs(15))
@@ -183,9 +188,11 @@ impl Requests {
         user_agent: String,
         breakers: Breakers,
         last_online: Arc<LastOnline>,
+        pool_size: usize,
     ) -> Self {
         Requests {
-            client: Rc::new(RefCell::new(build_client(&user_agent))),
+            pool_size,
+            client: Rc::new(RefCell::new(build_client(&user_agent, pool_size))),
             consecutive_errors: Rc::new(AtomicUsize::new(0)),
             error_limit: 3,
             key_id,
@@ -205,7 +212,7 @@ impl Requests {
         let count = self.consecutive_errors.fetch_add(1, Ordering::Relaxed);
         if count + 1 >= self.error_limit {
             tracing::warn!("{} consecutive errors, rebuilding http client", count + 1);
-            *self.client.borrow_mut() = build_client(&self.user_agent);
+            *self.client.borrow_mut() = build_client(&self.user_agent, self.pool_size);
             self.reset_err();
         }
     }
