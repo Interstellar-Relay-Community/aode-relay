@@ -16,12 +16,7 @@ use rsa::{
     RsaPrivateKey,
 };
 use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 use tracing_awc::Tracing;
@@ -146,9 +141,7 @@ impl Default for Breaker {
 #[derive(Clone)]
 pub(crate) struct Requests {
     pool_size: usize,
-    client: Rc<RefCell<Client>>,
-    consecutive_errors: Rc<AtomicUsize>,
-    error_limit: usize,
+    client: Client,
     key_id: String,
     user_agent: String,
     private_key: RsaPrivateKey,
@@ -161,7 +154,6 @@ impl std::fmt::Debug for Requests {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Requests")
             .field("pool_size", &self.pool_size)
-            .field("error_limit", &self.error_limit)
             .field("key_id", &self.key_id)
             .field("user_agent", &self.user_agent)
             .field("config", &self.config)
@@ -192,9 +184,7 @@ impl Requests {
     ) -> Self {
         Requests {
             pool_size,
-            client: Rc::new(RefCell::new(build_client(&user_agent, pool_size))),
-            consecutive_errors: Rc::new(AtomicUsize::new(0)),
-            error_limit: 3,
+            client: build_client(&user_agent, pool_size),
             key_id,
             user_agent,
             private_key,
@@ -208,33 +198,17 @@ impl Requests {
         self.breakers.succeed(iri);
     }
 
-    fn count_err(&self) {
-        let count = self.consecutive_errors.fetch_add(1, Ordering::Relaxed);
-        if count + 1 >= self.error_limit {
-            tracing::warn!("{} consecutive errors, rebuilding http client", count + 1);
-            *self.client.borrow_mut() = build_client(&self.user_agent, self.pool_size);
-            self.reset_err();
-        }
-    }
-
-    fn reset_err(&self) {
-        self.consecutive_errors.swap(0, Ordering::Relaxed);
-    }
-
     async fn check_response(
         &self,
         parsed_url: &IriString,
         res: Result<ClientResponse, SendRequestError>,
     ) -> Result<ClientResponse, Error> {
         if res.is_err() {
-            self.count_err();
             self.breakers.fail(&parsed_url);
         }
 
         let mut res =
             res.map_err(|e| ErrorKind::SendRequest(parsed_url.to_string(), e.to_string()))?;
-
-        self.reset_err();
 
         if res.status().is_server_error() {
             self.breakers.fail(&parsed_url);
@@ -325,8 +299,8 @@ impl Requests {
         let signer = self.signer();
         let span = tracing::Span::current();
 
-        let client: Client = self.client.borrow().clone();
-        let res = client
+        let res = self
+            .client
             .get(url.as_str())
             .insert_header(("Accept", accept))
             .insert_header(Date(SystemTime::now().into()))
@@ -385,8 +359,8 @@ impl Requests {
         let span = tracing::Span::current();
         let item_string = serde_json::to_string(item)?;
 
-        let client: Client = self.client.borrow().clone();
-        let (req, body) = client
+        let (req, body) = self
+            .client
             .post(inbox.as_str())
             .insert_header(("Accept", accept))
             .insert_header(("Content-Type", content_type))

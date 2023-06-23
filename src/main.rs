@@ -259,10 +259,12 @@ async fn do_server_main(
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
+        let requests = state.requests(&config);
+
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
-            .app_data(web::Data::new(state.requests(&config)))
+            .app_data(web::Data::new(requests.clone()))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server.clone()))
@@ -285,7 +287,7 @@ async fn do_server_main(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
                     .wrap(VerifySignature::new(
-                        MyVerify(state.requests(&config), actors.clone(), state.clone()),
+                        MyVerify(requests, actors.clone(), state.clone()),
                         Default::default(),
                     ))
                     .wrap(DebugPayload(config.debug()))
