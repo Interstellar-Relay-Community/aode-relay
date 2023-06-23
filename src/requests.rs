@@ -162,15 +162,25 @@ impl std::fmt::Debug for Requests {
     }
 }
 
-pub(crate) fn build_client(user_agent: &str, pool_size: usize) -> Client {
-    let connector = Connector::new().limit(pool_size);
+thread_local! {
+    static CLIENT: std::cell::OnceCell<Client> = std::cell::OnceCell::new();
+}
 
-    Client::builder()
-        .connector(connector)
-        .wrap(Tracing)
-        .add_default_header(("User-Agent", user_agent.to_string()))
-        .timeout(Duration::from_secs(15))
-        .finish()
+pub(crate) fn build_client(user_agent: &str, pool_size: usize) -> Client {
+    CLIENT.with(|client| {
+        client
+            .get_or_init(|| {
+                let connector = Connector::new().limit(pool_size);
+
+                Client::builder()
+                    .connector(connector)
+                    .wrap(Tracing)
+                    .add_default_header(("User-Agent", user_agent.to_string()))
+                    .timeout(Duration::from_secs(15))
+                    .finish()
+            })
+            .clone()
+    })
 }
 
 impl Requests {
