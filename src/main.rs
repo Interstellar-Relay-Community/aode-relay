@@ -246,10 +246,6 @@ async fn do_server_main(
     tracing::warn!("Creating state");
     let state = State::build(db.clone()).await?;
 
-    tracing::warn!("Creating workers");
-    let (manager, job_server) =
-        create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
-
     if let Some((token, admin_handle)) = config.telegram_info() {
         tracing::warn!("Creating telegram handler");
         telegram::start(admin_handle.to_owned(), db.clone(), token);
@@ -261,13 +257,16 @@ async fn do_server_main(
     let server = HttpServer::new(move || {
         let requests = state.requests(&config);
 
+        let job_server =
+            create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
+
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
             .app_data(web::Data::new(requests.clone()))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
-            .app_data(web::Data::new(job_server.clone()))
+            .app_data(web::Data::new(job_server))
             .app_data(web::Data::new(media.clone()))
             .app_data(web::Data::new(collector.clone()));
 
@@ -335,10 +334,6 @@ async fn do_server_main(
     }
 
     tracing::warn!("Server closed");
-
-    drop(manager);
-
-    tracing::warn!("Main complete");
 
     Ok(())
 }

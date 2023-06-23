@@ -21,9 +21,9 @@ use crate::{
 };
 use background_jobs::{
     memory_storage::{ActixTimer, Storage},
-    Job, Manager, QueueHandle, WorkerConfig,
+    Job, QueueHandle, WorkerConfig,
 };
-use std::{convert::TryFrom, num::NonZeroUsize, time::Duration};
+use std::time::Duration;
 
 fn debug_object(activity: &serde_json::Value) -> &serde_json::Value {
     let mut object = &activity["object"]["type"];
@@ -44,11 +44,8 @@ pub(crate) fn create_workers(
     actors: ActorCache,
     media: MediaCache,
     config: Config,
-) -> (Manager, JobServer) {
-    let parallelism = std::thread::available_parallelism()
-        .unwrap_or_else(|_| NonZeroUsize::try_from(1).expect("nonzero"));
-
-    let shared = WorkerConfig::new_managed(Storage::new(ActixTimer), move |queue_handle| {
+) -> JobServer {
+    let queue_handle = WorkerConfig::new(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
             state.clone(),
             actors.clone(),
@@ -72,14 +69,12 @@ pub(crate) fn create_workers(
     .set_worker_count("maintenance", 2)
     .set_worker_count("apub", 2)
     .set_worker_count("deliver", 8)
-    .start_with_threads(parallelism);
+    .start();
 
-    shared.every(Duration::from_secs(60 * 5), Listeners);
-    shared.every(Duration::from_secs(60 * 10), RecordLastOnline);
+    queue_handle.every(Duration::from_secs(60 * 5), Listeners);
+    queue_handle.every(Duration::from_secs(60 * 10), RecordLastOnline);
 
-    let job_server = JobServer::new(shared.queue_handle().clone());
-
-    (shared, job_server)
+    JobServer::new(queue_handle)
 }
 
 #[derive(Clone, Debug)]
