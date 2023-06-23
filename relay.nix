@@ -1,14 +1,12 @@
 { lib
-, makeWrapper
 , nixosTests
 , protobuf
 , rustPlatform
-, stdenv
 }:
 
 rustPlatform.buildRustPackage {
   pname = "relay";
-  version = "0.3.83";
+  version = "0.3.84";
   src = ./.;
   cargoLock.lockFile = ./Cargo.lock;
 
