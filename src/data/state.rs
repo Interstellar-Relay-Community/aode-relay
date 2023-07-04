@@ -11,8 +11,10 @@ use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::{Arc, RwLock};
+use std::collections::HashMap;
 
 use super::LastOnline;
+use super::node::NodeConfig;
 
 #[derive(Clone)]
 pub struct State {
@@ -20,6 +22,7 @@ pub struct State {
     private_key: RsaPrivateKey,
     object_cache: Arc<RwLock<LruCache<IriString, IriString>>>,
     node_cache: NodeCache,
+    pub(crate) node_config: Arc<RwLock<HashMap<String, NodeConfig>>>,
     breakers: Breakers,
     pub(crate) last_online: Arc<LastOnline>,
     pub(crate) db: Db,
@@ -82,6 +85,22 @@ impl State {
             .collect())
     }
 
+    pub(crate) async fn set_authority_cfg(&self, authority: &str, cfg: NodeConfig) {
+        self.node_config.write().unwrap().insert(authority.to_string(), cfg);
+    }
+
+    pub(crate) async fn clear_authority_cfg(&self, authority: &str) {
+        self.node_config.write().unwrap().remove(authority);
+    }
+
+    pub(crate) async fn get_authority_cfg(&self, authority: &str) -> Option<NodeConfig> {
+        self.node_config.read().unwrap().get(authority).cloned()
+    }
+
+    pub(crate) async fn get_all_authority_cfg(&self) -> HashMap<String, NodeConfig> {
+        self.node_config.read().unwrap().clone()
+    }
+
     pub(crate) fn is_cached(&self, object_id: &IriString) -> bool {
         self.object_cache.read().unwrap().contains(object_id)
     }
@@ -91,7 +110,7 @@ impl State {
     }
 
     #[tracing::instrument(level = "debug", name = "Building state", skip_all)]
-    pub(crate) async fn build(db: Db) -> Result<Self, Error> {
+    pub(crate) async fn build(db: Db, node_config: HashMap<String, NodeConfig>) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {
             tracing::debug!("Using existing key");
             key
@@ -117,6 +136,7 @@ impl State {
                 (1024 * 8).try_into().expect("nonzero"),
             ))),
             node_cache: NodeCache::new(db.clone()),
+            node_config: Arc::new(RwLock::new(node_config)),
             breakers: Breakers::default(),
             db,
             last_online: Arc::new(LastOnline::empty()),

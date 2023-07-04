@@ -5,10 +5,14 @@ use crate::{
 use activitystreams::iri_string::types::IriString;
 use background_jobs::ActixJob;
 use futures_util::future::LocalBoxFuture;
+use rand::{rngs::ThreadRng, Rng};
+
+use crate::data::NodeConfig;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct DeliverMany {
     to: Vec<IriString>,
+    filterable: bool,
     data: serde_json::Value,
 }
 
@@ -22,19 +26,54 @@ impl std::fmt::Debug for DeliverMany {
 }
 
 impl DeliverMany {
-    pub(crate) fn new<T>(to: Vec<IriString>, data: T) -> Result<Self, Error>
+    pub(crate) fn new<T>(to: Vec<IriString>, data: T, filterable: bool) -> Result<Self, Error>
     where
         T: serde::ser::Serialize,
     {
         Ok(DeliverMany {
             to,
+            filterable,
             data: serde_json::to_value(data)?,
         })
     }
 
+    fn apply_filter(rng: &mut ThreadRng, authority: &str, config: &NodeConfig) -> bool {
+        let dice = rng.gen::<u8>();
+
+        if config.enable_probability && config.probability < dice {
+            return false;
+        }
+
+        let has_authority = config.authority_set.contains(authority);
+
+        if config.is_allowlist {
+            has_authority
+        } else {
+            !has_authority
+        }
+    }
+
     #[tracing::instrument(name = "Deliver many", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
+        let mut thread_rng = rand::thread_rng();
+
         for inbox in self.to {
+            if self.filterable {
+                match inbox.authority_str() {
+                    Some(authority) => {
+                        if let Ok(node_config) = state.state.node_config.read() {
+                            if let Some(cfg) = node_config.get(authority) {
+                                if !Self::apply_filter(&mut thread_rng, authority, cfg) {
+                                    tracing::info!("Skipping egress to {} due to given criteria", authority);
+                                    continue;
+                                }
+                            }
+                        }
+                    },
+                    None => {} // What the heck?
+                }
+            }
+
             state
                 .job_server
                 .queue(Deliver::new(inbox, self.data.clone())?)

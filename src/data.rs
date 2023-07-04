@@ -7,5 +7,5 @@ mod state;
 pub(crate) use actor::ActorCache;
 pub(crate) use last_online::LastOnline;
 pub(crate) use media::MediaCache;
-pub(crate) use node::{Node, NodeCache};
+pub(crate) use node::{Node, NodeCache, NodeConfig};
 pub(crate) use state::State;

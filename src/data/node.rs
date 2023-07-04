@@ -4,10 +4,25 @@ use crate::{
 };
 use activitystreams::{iri, iri_string::types::IriString};
 use std::time::{Duration, SystemTime};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug)]
 pub struct NodeCache {
     db: Db,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct NodeConfig {
+    /// Probaility in prob * 256 form.
+    pub(crate) probability: u8,
+    /// Enable probabilitistic delivery.
+    pub(crate) enable_probability: bool,
+    /// Set of authorities to filter.
+    pub(crate) authority_set: HashSet<String>,
+    /// Apply authority_set as allowlist instead of denylist.
+    pub(crate) is_allowlist: bool,
+    /// Receive only mode. Silently drop all incoming activities.
+    pub(crate) receive_only: bool,
 }
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
