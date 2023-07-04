@@ -5,7 +5,7 @@ use crate::{
     extractors::Admin,
 };
 use actix_web::{
-    web::{Data, Json},
+    web::{self, Data, Json},
     HttpResponse,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -87,4 +87,46 @@ pub(crate) async fn last_seen(admin: Admin) -> Result<Json<LastSeen>, Error> {
     }
 
     Ok(Json(LastSeen { last_seen, never }))
+}
+
+pub(crate) async fn get_authority_cfg(
+    _admin: Admin,
+    state: Data<crate::data::State>,
+    domain: web::Path<String>,
+) -> Result<Json<crate::data::NodeConfig>, Error> {
+    if let Some(cfg) = state.get_authority_cfg(&domain).await {
+        Ok(Json(cfg))
+    } else {
+        Err(crate::error::ErrorKind::NotFound.into())
+    }
+}
+
+pub(crate) async fn get_all_authority_cfg(
+    _admin: Admin,
+    state: Data<crate::data::State>,
+) -> Result<Json<std::collections::HashMap<String, crate::data::NodeConfig>>, Error> {
+    let cfg = state.get_all_authority_cfg().await;
+
+    Ok(Json(cfg))
+}
+
+pub(crate) async fn set_authority_cfg(
+    _admin: Admin,
+    state: Data<crate::data::State>,
+    domain: web::Path<String>,
+    Json(cfg): Json<crate::data::NodeConfig>,
+) -> Result<HttpResponse, Error> {
+    state.set_authority_cfg(&domain, cfg).await;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+pub(crate) async fn clear_authority_cfg(
+    _admin: Admin,
+    state: Data<crate::data::State>,
+    domain: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    state.clear_authority_cfg(&domain).await;
+
+    Ok(HttpResponse::NoContent().finish())
 }

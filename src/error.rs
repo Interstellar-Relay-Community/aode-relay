@@ -188,6 +188,9 @@ pub(crate) enum ErrorKind {
 
     #[error("No API Token supplied")]
     MissingApiToken,
+
+    #[error("Resource not found")]
+    NotFound,
 }
 
 impl ResponseError for Error {
@@ -198,6 +201,7 @@ impl ResponseError for Error {
             }
             ErrorKind::NotSubscribed(_) => StatusCode::UNAUTHORIZED,
             ErrorKind::Duplicate => StatusCode::ACCEPTED,
+            ErrorKind::NotFound => StatusCode::NOT_FOUND,
             ErrorKind::Kind(_)
             | ErrorKind::MissingKind
             | ErrorKind::MissingId
