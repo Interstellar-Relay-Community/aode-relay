@@ -58,6 +58,9 @@ impl ActixJob for Deliver {
     const QUEUE: &'static str = "deliver";
     const BACKOFF: Backoff = Backoff::Exponential(8);
 
+    //TEMPORAL PATCH
+    const MAX_RETRIES: background_jobs::MaxRetries = background_jobs::MaxRetries::Count(3);
+
     fn run(self, state: Self::State) -> Self::Future {
         Box::pin(async move { self.permform(state).await.map_err(Into::into) })
     }
