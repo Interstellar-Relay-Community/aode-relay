@@ -39,7 +39,7 @@ impl Announce {
         let inboxes = get_inboxes(&state.state, &self.actor, &self.object_id).await?;
         state
             .job_server
-            .queue(DeliverMany::new(inboxes, announce)?)
+            .queue(DeliverMany::new(inboxes, announce, true)?)
             .await?;
 
         state.state.cache(self.object_id, activity_id);
