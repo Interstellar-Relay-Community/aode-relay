@@ -1,7 +1,7 @@
 use crate::{
     config::{Config, UrlKind},
     db::Actor,
-    error::Error,
+    error::{Error, ErrorKind},
     jobs::{
         apub::{get_inboxes, prepare_activity},
         DeliverMany, JobState,
@@ -34,6 +34,22 @@ impl Announce {
     #[tracing::instrument(name = "Announce", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let activity_id = state.config.generate_url(UrlKind::Activity);
+
+        let authority = self.actor.id.authority_str().ok_or_else(|| {
+            ErrorKind::MissingDomain
+        })?;
+
+        if let Ok(node_config) = state.state.node_config.read() {
+            tracing::info!("Checking if {} is receive-only", authority);
+            if let Some(cfg) = node_config.get(authority) {
+                if cfg.receive_only {
+                    tracing::info!("{} is receive-only, skipping", authority);
+                    return Ok(())
+                }
+            }
+        } else {
+            tracing::warn!("Failed to read node config, skipping receive-only check");
+        }
 
         let announce = generate_announce(&state.config, &activity_id, &self.object_id)?;
         let inboxes = get_inboxes(&state.state, &self.actor, &self.object_id).await?;

@@ -18,6 +18,7 @@ pub struct NodeConfig {
     pub(crate) enable_probability: bool,
     pub(crate) authority_set: HashSet<String>,
     pub(crate) is_allowlist: bool,
+    pub(crate) receive_only: bool,
 }
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
