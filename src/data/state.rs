@@ -85,6 +85,14 @@ impl State {
             .collect())
     }
 
+    pub(crate) async fn set_authority_cfg(&self, authority: &str, cfg: NodeConfig) {
+        self.node_config.write().unwrap().insert(authority.to_string(), cfg);
+    }
+
+    pub(crate) async fn clear_authority_cfg(&self, authority: &str) {
+        self.node_config.write().unwrap().remove(authority);
+    }
+
     pub(crate) fn is_cached(&self, object_id: &IriString) -> bool {
         self.object_cache.read().unwrap().contains(object_id)
     }
