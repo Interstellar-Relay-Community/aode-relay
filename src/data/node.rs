@@ -15,9 +15,13 @@ pub struct NodeCache {
 pub struct NodeConfig {
     /// Probaility in prob * 256 form.
     pub(crate) probability: u8,
+    /// Enable probabilitistic delivery.
     pub(crate) enable_probability: bool,
+    /// Set of authorities to filter.
     pub(crate) authority_set: HashSet<String>,
+    /// Apply authority_set as allowlist instead of denylist.
     pub(crate) is_allowlist: bool,
+    /// Receive only mode. Silently drop all incoming activities.
     pub(crate) receive_only: bool,
 }
 
