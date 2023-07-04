@@ -11,8 +11,10 @@ use lru::LruCache;
 use rand::thread_rng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::{Arc, RwLock};
+use std::collections::HashMap;
 
 use super::LastOnline;
+use super::node::NodeConfig;
 
 #[derive(Clone)]
 pub struct State {
@@ -20,6 +22,7 @@ pub struct State {
     private_key: RsaPrivateKey,
     object_cache: Arc<RwLock<LruCache<IriString, IriString>>>,
     node_cache: NodeCache,
+    pub(crate) node_config: Arc<RwLock<HashMap<String, NodeConfig>>>,
     breakers: Breakers,
     pub(crate) last_online: Arc<LastOnline>,
     pub(crate) db: Db,
@@ -117,6 +120,7 @@ impl State {
                 (1024 * 8).try_into().expect("nonzero"),
             ))),
             node_cache: NodeCache::new(db.clone()),
+            node_config: Arc::new(RwLock::new(HashMap::new())),
             breakers: Breakers::default(),
             db,
             last_online: Arc::new(LastOnline::empty()),

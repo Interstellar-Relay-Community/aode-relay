@@ -4,10 +4,20 @@ use crate::{
 };
 use activitystreams::{iri, iri_string::types::IriString};
 use std::time::{Duration, SystemTime};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug)]
 pub struct NodeCache {
     db: Db,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct NodeConfig {
+    /// Probaility in prob * 256 form.
+    pub(crate) probability: u8,
+    pub(crate) enable_probability: bool,
+    pub(crate) authority_set: HashSet<String>,
+    pub(crate) is_allowlist: bool,
 }
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
