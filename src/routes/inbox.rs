@@ -221,7 +221,8 @@ async fn handle_announce(
         .ok_or(ErrorKind::MissingId)?;
 
     if state.is_cached(object_id) {
-        return Err(ErrorKind::Duplicate.into());
+        return Ok(());
+        //return Err(ErrorKind::Duplicate.into());
     }
 
     jobs.queue(Announce::new(object_id.to_owned(), actor))
