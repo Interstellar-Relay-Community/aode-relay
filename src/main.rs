@@ -33,6 +33,8 @@ mod requests;
 mod routes;
 mod telegram;
 
+use crate::data::NodeConfig;
+
 use self::{
     args::Args,
     config::Config,
@@ -244,7 +246,9 @@ async fn do_server_main(
     config: Config,
 ) -> Result<(), anyhow::Error> {
     tracing::warn!("Creating state");
-    let state = State::build(db.clone()).await?;
+    let node_config = std::collections::HashMap::new();
+
+    let state = State::build(db.clone(), node_config).await?;
 
     if let Some((token, admin_handle)) = config.telegram_info() {
         tracing::warn!("Creating telegram handler");
@@ -306,6 +310,10 @@ async fn do_server_main(
                         .route("/allow", web::post().to(admin::routes::allow))
                         .route("/disallow", web::post().to(admin::routes::disallow))
                         .route("/block", web::post().to(admin::routes::block))
+                        .route("/authority_cfg/{domain}", web::put().to(admin::routes::set_authority_cfg))
+                        .route("/authority_cfg/{domain}", web::delete().to(admin::routes::clear_authority_cfg))
+                        .route("/authority_cfg/{domain}", web::get().to(admin::routes::get_authority_cfg))
+                        .route("/authority_cfg/", web::get().to(admin::routes::get_all_authority_cfg))
                         .route("/unblock", web::post().to(admin::routes::unblock))
                         .route("/allowed", web::get().to(admin::routes::allowed))
                         .route("/blocked", web::get().to(admin::routes::blocked))

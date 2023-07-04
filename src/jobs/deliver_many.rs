@@ -64,6 +64,7 @@ impl DeliverMany {
                         if let Ok(node_config) = state.state.node_config.read() {
                             if let Some(cfg) = node_config.get(authority) {
                                 if !Self::apply_filter(&mut thread_rng, authority, cfg) {
+                                    tracing::info!("Skipping egress to {} due to given criteria", authority);
                                     continue;
                                 }
                             }
