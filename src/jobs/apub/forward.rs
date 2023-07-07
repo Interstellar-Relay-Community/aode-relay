@@ -36,11 +36,15 @@ impl Forward {
             .as_single_id()
             .ok_or(ErrorKind::MissingId)?;
 
+        let authority = self.actor.id.authority_str().ok_or_else(|| {
+            ErrorKind::MissingDomain
+        })?;
+
         let inboxes = get_inboxes(&state.state, &self.actor, object_id).await?;
 
         state
             .job_server
-            .queue(DeliverMany::new(inboxes, self.input, false)?)
+            .queue(DeliverMany::new(inboxes, self.input, authority.to_owned(), false)?)
             .await?;
 
         Ok(())
