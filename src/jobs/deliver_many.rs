@@ -14,6 +14,7 @@ pub(crate) struct DeliverMany {
     to: Vec<IriString>,
     filterable: bool,
     data: serde_json::Value,
+    actor_authority: String,
 }
 
 impl std::fmt::Debug for DeliverMany {
@@ -26,7 +27,7 @@ impl std::fmt::Debug for DeliverMany {
 }
 
 impl DeliverMany {
-    pub(crate) fn new<T>(to: Vec<IriString>, data: T, filterable: bool) -> Result<Self, Error>
+    pub(crate) fn new<T>(to: Vec<IriString>, data: T, actor_authority: String, filterable: bool) -> Result<Self, Error>
     where
         T: serde::ser::Serialize,
     {
@@ -34,6 +35,7 @@ impl DeliverMany {
             to,
             filterable,
             data: serde_json::to_value(data)?,
+            actor_authority,
         })
     }
 
@@ -57,20 +59,25 @@ impl DeliverMany {
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let mut thread_rng = rand::thread_rng();
 
+
         for inbox in self.to {
             if self.filterable {
-                match inbox.authority_str() {
-                    Some(authority) => {
-                        if let Ok(node_config) = state.state.node_config.read() {
-                            if let Some(cfg) = node_config.get(authority) {
-                                if !Self::apply_filter(&mut thread_rng, authority, cfg) {
-                                    tracing::info!("Skipping egress to {} due to given criteria", authority);
-                                    continue;
-                                }
-                            }
-                        }
-                    },
-                    None => {} // What the heck?
+                // All inbox should have... authority... but...
+                let inbox_authority = inbox.authority_str().unwrap_or("");
+
+                let node_config = match state.state.node_config.read() {
+                    Ok(node_config) => node_config,
+                    Err(e) => {
+                        tracing::error!("Failed to acquire read lock for node config: {}", e);
+                        continue;
+                    }
+                };
+
+                if let Some(cfg) = node_config.get(inbox_authority) {
+                    if !Self::apply_filter(&mut thread_rng, &self.actor_authority, cfg) {
+                        tracing::info!("Skipping egress to {} due to given criteria", inbox_authority);
+                        continue;
+                    }
                 }
             }
 
