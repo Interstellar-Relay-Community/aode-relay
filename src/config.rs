@@ -291,7 +291,15 @@ impl Config {
     pub(crate) fn footer_blurb(&self) -> Option<crate::templates::Html<String>> {
         if let Some(blurb) = &self.footer_blurb {
             if !blurb.is_empty() {
-                return Some(crate::templates::Html(ammonia::clean(blurb)));
+                return Some(crate::templates::Html(
+                    ammonia::Builder::new()
+                        .add_tag_attributes("a", &["rel"])
+                        .add_tag_attributes("area", &["rel"])
+                        .add_tag_attributes("link", &["rel"])
+                        .link_rel(None)
+                        .clean(blurb)
+                        .to_string()
+                ));
             }
         }
 
@@ -301,7 +309,15 @@ impl Config {
     pub(crate) fn local_blurb(&self) -> Option<crate::templates::Html<String>> {
         if let Some(blurb) = &self.local_blurb {
             if !blurb.is_empty() {
-                return Some(crate::templates::Html(ammonia::clean(blurb)));
+                return Some(crate::templates::Html(
+                    ammonia::Builder::new()
+                        .add_tag_attributes("a", &["rel"])
+                        .add_tag_attributes("area", &["rel"])
+                        .add_tag_attributes("link", &["rel"])
+                        .link_rel(None)
+                        .clean(blurb)
+                        .to_string()
+                ));
             }
         }
 
