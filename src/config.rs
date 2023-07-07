@@ -20,7 +20,6 @@ use std::{
     path::PathBuf,
 };
 use uuid::Uuid;
-use maplit::hashset;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub(crate) struct ParsedConfig {
@@ -292,12 +291,7 @@ impl Config {
     pub(crate) fn footer_blurb(&self) -> Option<crate::templates::Html<String>> {
         if let Some(blurb) = &self.footer_blurb {
             if !blurb.is_empty() {
-                return Some(crate::templates::Html(
-                    ammonia::Builder::new()
-                        .generic_attributes(hashset!["rel"])
-                        .link_rel(None)
-                        .clean(blurb)
-                ));
+                return Some(crate::templates::Html(ammonia::clean(blurb)));
             }
         }
 
@@ -307,12 +301,7 @@ impl Config {
     pub(crate) fn local_blurb(&self) -> Option<crate::templates::Html<String>> {
         if let Some(blurb) = &self.local_blurb {
             if !blurb.is_empty() {
-                return Some(crate::templates::Html(
-                    ammonia::Builder::new()
-                        .generic_attributes(hashset!["rel"])
-                        .link_rel(None)
-                        .clean(blurb)
-                ));
+                return Some(crate::templates::Html(ammonia::clean(blurb)));
             }
         }
 
