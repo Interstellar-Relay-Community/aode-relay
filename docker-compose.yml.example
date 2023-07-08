@@ -1,0 +1,25 @@
+version: '3.3'
+
+services:
+  relay:
+    #image: interstellarflights/aode-relay:edge
+    image: ghcr.io/interstellar-relay-community/aode-relay:edge
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    restart: always
+    volumes:
+      - './relay/sled:/var/lib/aode-relay/sled'
+    environment:
+      - HOSTNAME=ap.example.com
+      - DEBUG=true
+      - RESTRICTED_MODE=true
+      - VALIDATE_SIGNATURES=true
+      - HTTPS=true
+      - PRETTY_LOG=false
+      - PUBLISH_BLOCKS=true
+      - SOURCE_REPO=https://github.com/Interstellar-Relay-Community/aode-relay
+      - REPOSITORY_COMMIT_BASE=/tree/
+      - PROMETHEUS_ADDR=0.0.0.0
+      - PROMETHEUS_PORT=8081
+      - API_TOKEN=[REDACTED]
