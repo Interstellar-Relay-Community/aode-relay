@@ -33,7 +33,7 @@ ENV RUST_LOG warn
 ENV PROMETHEUS_ADDR 0.0.0.0
 ENV PROMETHEUS_PORT 8081
 
-VOLUME "/var/lib/aode-relay/sled"
+VOLUME "/var/lib/aode-relay"
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
