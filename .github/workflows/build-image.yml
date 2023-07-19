@@ -7,10 +7,15 @@ on:
       - 'interstellar-dev'
     tags:
       - 'v*interstellar*'
+    paths:
+      - .github/workflows/build-image.yml
+      - Dockerfile
+      - src/**.rs
   pull_request:
     paths:
       - .github/workflows/build-image.yml
       - Dockerfile
+      - src/**.rs
 
 permissions:
   contents: read
