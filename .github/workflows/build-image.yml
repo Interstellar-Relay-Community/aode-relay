@@ -41,11 +41,11 @@ jobs:
             type=edge,branch=interstellar-dev
             type=semver,pattern={{raw}}
             type=ref,event=pr
-      - uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=interstellarflights/aode-relay:edge
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}
           cache-to: type=inline
