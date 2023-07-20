@@ -97,6 +97,6 @@ impl ActorCache {
 fn get_inbox(actor: &AcceptedActors) -> Result<&IriString, Error> {
     Ok(actor
         .endpoints()?
-        .and_then(|e| e.shared_inbox)
+        .and_then(|e| e.shared_inbox.as_ref())
         .unwrap_or(actor.inbox()?))
 }
