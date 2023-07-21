@@ -22,7 +22,7 @@ steps:
   pull: always
   commands:
   - rustup component add clippy
-  - cargo clippy -- -D warnings
+  - cargo clippy --no-deps -- -D warnings
 
 trigger:
   event:
