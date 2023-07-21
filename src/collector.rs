@@ -159,7 +159,7 @@ impl Snapshot {
                     let entry = merging.entry(name).or_insert_with(HashMap::new);
 
                     for counter in counters {
-                        let mut merge_counter = entry
+                        let merge_counter = entry
                             .entry(counter.labels.clone())
                             .or_insert_with(MergeCounter::default);
                         if key == *start {
