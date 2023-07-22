@@ -41,4 +41,4 @@ CMD ["/usr/bin/aode-relay"]
 
 EXPOSE 8080 8081
 
-HEALTHCHECK CMD curl --silent --fail "localhost:$PORT/.well-known/nodeinfo" > /dev/null || exit 1
+HEALTHCHECK CMD curl -sSf "localhost:$PORT/healthz" > /dev/null || exit 1
