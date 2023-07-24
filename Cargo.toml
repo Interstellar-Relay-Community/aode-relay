@@ -98,7 +98,7 @@ version = "0.7.5"
 [build-dependencies]
 anyhow = "1.0"
 dotenv = "0.15.0"
-ructe = { version = "0.16.0", features = ["sass", "mime03"] }
+ructe = { version = "0.17.0", features = ["sass", "mime03"] }
 toml = "0.7.0"
 
 [profile.dev.package.rsa]
