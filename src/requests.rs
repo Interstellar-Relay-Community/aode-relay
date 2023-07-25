@@ -166,7 +166,7 @@ thread_local! {
     static CLIENT: std::cell::OnceCell<Client> = std::cell::OnceCell::new();
 }
 
-pub(crate) fn build_client(user_agent: &str, pool_size: usize) -> Client {
+pub(crate) fn build_client(user_agent: &str, pool_size: usize, timeout_seconds: u64) -> Client {
     CLIENT.with(|client| {
         client
             .get_or_init(|| {
@@ -176,7 +176,7 @@ pub(crate) fn build_client(user_agent: &str, pool_size: usize) -> Client {
                     .connector(connector)
                     .wrap(Tracing)
                     .add_default_header(("User-Agent", user_agent.to_string()))
-                    .timeout(Duration::from_secs(15))
+                    .timeout(Duration::from_secs(timeout_seconds))
                     .finish()
             })
             .clone()
@@ -191,10 +191,11 @@ impl Requests {
         breakers: Breakers,
         last_online: Arc<LastOnline>,
         pool_size: usize,
+        timeout_seconds: u64,
     ) -> Self {
         Requests {
             pool_size,
-            client: build_client(&user_agent, pool_size),
+            client: build_client(&user_agent, pool_size, timeout_seconds),
             key_id,
             user_agent,
             private_key,

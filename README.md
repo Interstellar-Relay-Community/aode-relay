@@ -105,6 +105,7 @@ LOCAL_DOMAINS=masto.asonix.dog
 LOCAL_BLURB="<p>Welcome to my cool relay where I have cool relay things happening. I hope you enjoy your stay!</p>"
 PROMETHEUS_ADDR=0.0.0.0
 PROMETHEUS_PORT=9000
+CLIENT_TIMEOUT=10
 CLIENT_POOL_SIZE=20
 DELIVER_CONCURRENCY=8
 ```
@@ -156,6 +157,9 @@ Optional - description for the relay
 Optional - Address to bind to for serving the prometheus scrape endpoint
 ##### `PROMETHEUS_PORT`
 Optional - Port to bind to for serving the prometheus scrape endpoint
+##### `CLIENT_TIMEOUT`
+Optional - How long the relay will hold open a connection (in seconds) to a remote server during
+fetches and deliveries. This defaults to 10
 ##### `CLIENT_POOL_SIZE`
 Optional - How many connections the relay should maintain per thread. This value will be multiplied
 by the number of cores available to the relay. This defaults to 20, so a 4-core machine will have a

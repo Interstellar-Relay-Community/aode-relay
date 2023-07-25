@@ -48,6 +48,7 @@ impl State {
             self.breakers.clone(),
             self.last_online.clone(),
             config.client_pool_size(),
+            config.client_timeout(),
         )
     }
 

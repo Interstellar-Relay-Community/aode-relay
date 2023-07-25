@@ -46,6 +46,7 @@ pub(crate) struct ParsedConfig {
     prometheus_addr: Option<IpAddr>,
     prometheus_port: Option<u16>,
     deliver_concurrency: u64,
+    client_timeout: u64,
     client_pool_size: usize,
 }
 
@@ -71,6 +72,7 @@ pub struct Config {
     local_blurb: Option<String>,
     prometheus_config: Option<PrometheusConfig>,
     deliver_concurrency: u64,
+    client_timeout: u64,
     client_pool_size: usize,
 }
 
@@ -140,6 +142,7 @@ impl std::fmt::Debug for Config {
             .field("local_blurb", &self.local_blurb)
             .field("prometheus_config", &self.prometheus_config)
             .field("deliver_concurrency", &self.deliver_concurrency)
+            .field("client_timeout", &self.client_timeout)
             .field("client_pool_size", &self.client_pool_size)
             .finish()
     }
@@ -171,6 +174,7 @@ impl Config {
             .set_default("prometheus_addr", None as Option<&str>)?
             .set_default("prometheus_port", None as Option<u16>)?
             .set_default("deliver_concurrency", 8u64)?
+            .set_default("client_timeout", 10u64)?
             .set_default("client_pool_size", 20u64)?
             .add_source(Environment::default())
             .build()?;
@@ -244,8 +248,13 @@ impl Config {
             local_blurb: config.local_blurb,
             prometheus_config,
             deliver_concurrency: config.deliver_concurrency,
+            client_timeout: config.client_timeout,
             client_pool_size: config.client_pool_size,
         })
+    }
+
+    pub(crate) fn client_timeout(&self) -> u64 {
+        self.client_timeout
     }
 
     pub(crate) fn deliver_concurrency(&self) -> u64 {
