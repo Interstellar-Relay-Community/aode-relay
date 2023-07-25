@@ -106,6 +106,7 @@ LOCAL_BLURB="<p>Welcome to my cool relay where I have cool relay things happenin
 PROMETHEUS_ADDR=0.0.0.0
 PROMETHEUS_PORT=9000
 CLIENT_POOL_SIZE=20
+DELIVER_CONCURRENCY=8
 ```
 
 #### Descriptions
@@ -160,6 +161,9 @@ Optional - How many connections the relay should maintain per thread. This value
 by the number of cores available to the relay. This defaults to 20, so a 4-core machine will have a
 maximum of 160 simultaneous outbound connections. If you run into problems related to "Too many open
 files", you can either decrease this number or increase the ulimit for your system.
+##### `DELIVER_CONCURRENCY`
+Optional - How many deliver requests the relay should allow to be in-flight per thread. the default
+is 8
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.
