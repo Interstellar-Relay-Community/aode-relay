@@ -45,6 +45,7 @@ pub(crate) struct ParsedConfig {
     local_blurb: Option<String>,
     prometheus_addr: Option<IpAddr>,
     prometheus_port: Option<u16>,
+    deliver_concurrency: u64,
     client_pool_size: usize,
 }
 
@@ -69,6 +70,7 @@ pub struct Config {
     local_domains: Vec<String>,
     local_blurb: Option<String>,
     prometheus_config: Option<PrometheusConfig>,
+    deliver_concurrency: u64,
     client_pool_size: usize,
 }
 
@@ -137,6 +139,7 @@ impl std::fmt::Debug for Config {
             .field("local_domains", &self.local_domains)
             .field("local_blurb", &self.local_blurb)
             .field("prometheus_config", &self.prometheus_config)
+            .field("deliver_concurrency", &self.deliver_concurrency)
             .field("client_pool_size", &self.client_pool_size)
             .finish()
     }
@@ -167,6 +170,7 @@ impl Config {
             .set_default("local_blurb", None as Option<&str>)?
             .set_default("prometheus_addr", None as Option<&str>)?
             .set_default("prometheus_port", None as Option<u16>)?
+            .set_default("deliver_concurrency", 8u64)?
             .set_default("client_pool_size", 20u64)?
             .add_source(Environment::default())
             .build()?;
@@ -239,8 +243,13 @@ impl Config {
             local_domains,
             local_blurb: config.local_blurb,
             prometheus_config,
+            deliver_concurrency: config.deliver_concurrency,
             client_pool_size: config.client_pool_size,
         })
+    }
+
+    pub(crate) fn deliver_concurrency(&self) -> u64 {
+        self.deliver_concurrency
     }
 
     pub(crate) fn prometheus_bind_address(&self) -> Option<SocketAddr> {
@@ -298,7 +307,7 @@ impl Config {
                         .add_tag_attributes("link", &["rel"])
                         .link_rel(None)
                         .clean(blurb)
-                        .to_string()
+                        .to_string(),
                 ));
             }
         }
@@ -316,7 +325,7 @@ impl Config {
                         .add_tag_attributes("link", &["rel"])
                         .link_rel(None)
                         .clean(blurb)
-                        .to_string()
+                        .to_string(),
                 ));
             }
         }

@@ -45,6 +45,8 @@ pub(crate) fn create_workers(
     media: MediaCache,
     config: Config,
 ) -> JobServer {
+    let deliver_concurrency = config.deliver_concurrency();
+
     let queue_handle = WorkerConfig::new(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
             state.clone(),
@@ -68,7 +70,7 @@ pub(crate) fn create_workers(
     .register::<apub::Undo>()
     .set_worker_count("maintenance", 2)
     .set_worker_count("apub", 2)
-    .set_worker_count("deliver", 8)
+    .set_worker_count("deliver", deliver_concurrency)
     .start();
 
     queue_handle.every(Duration::from_secs(60 * 5), Listeners);
