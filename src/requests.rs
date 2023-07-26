@@ -7,7 +7,7 @@ use actix_web::http::header::Date;
 use awc::{error::SendRequestError, Client, ClientResponse, Connector};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
-use http_signature_normalization_actix::prelude::*;
+use http_signature_normalization_actix::{prelude::*, Canceled, Spawn};
 use rand::thread_rng;
 use rsa::{
     pkcs1v15::SigningKey,
@@ -16,7 +16,12 @@ use rsa::{
     RsaPrivateKey,
 };
 use std::{
-    sync::Arc,
+    panic::AssertUnwindSafe,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread::JoinHandle,
     time::{Duration, SystemTime},
 };
 use tracing_awc::Tracing;
@@ -145,7 +150,7 @@ pub(crate) struct Requests {
     key_id: String,
     user_agent: String,
     private_key: RsaPrivateKey,
-    config: Config,
+    config: Config<Spawner>,
     breakers: Breakers,
     last_online: Arc<LastOnline>,
 }
@@ -192,6 +197,7 @@ impl Requests {
         last_online: Arc<LastOnline>,
         pool_size: usize,
         timeout_seconds: u64,
+        spawner: Spawner,
     ) -> Self {
         Requests {
             pool_size,
@@ -199,7 +205,7 @@ impl Requests {
             key_id,
             user_agent,
             private_key,
-            config: Config::default().mastodon_compat(),
+            config: Config::new().mastodon_compat().spawner(spawner),
             breakers,
             last_online,
         }
@@ -413,5 +419,111 @@ impl Signer {
         let signature =
             signing_key.try_sign_with_rng(&mut thread_rng(), signing_string.as_bytes())?;
         Ok(STANDARD.encode(signature.to_bytes().as_ref()))
+    }
+}
+
+fn signature_thread(
+    receiver: flume::Receiver<Box<dyn FnOnce() + Send>>,
+    shutdown: flume::Receiver<()>,
+) {
+    let stopping = AtomicBool::new(false);
+    while !stopping.load(Ordering::Acquire) {
+        flume::Selector::new()
+            .recv(&receiver, |res| match res {
+                Ok(f) => {
+                    let res = std::panic::catch_unwind(AssertUnwindSafe(move || {
+                        (f)();
+                    }));
+
+                    if let Err(e) = res {
+                        tracing::warn!("Signature fn panicked: {e:?}");
+                    }
+                }
+                Err(_) => {
+                    tracing::warn!("Receive error, stopping");
+                    stopping.store(true, Ordering::Release)
+                }
+            })
+            .recv(&shutdown, |_| {
+                tracing::warn!("Stopping");
+                stopping.store(true, Ordering::Release)
+            })
+            .wait();
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Spawner {
+    sender: flume::Sender<Box<dyn FnOnce() + Send>>,
+    threads: Option<Arc<Vec<JoinHandle<()>>>>,
+    shutdown: flume::Sender<()>,
+}
+
+impl Spawner {
+    pub(crate) fn build() -> std::io::Result<Self> {
+        let threads = std::thread::available_parallelism()
+            .map(usize::from)
+            .unwrap_or(1);
+
+        let (sender, receiver) = flume::bounded(8);
+        let (shutdown, shutdown_rx) = flume::bounded(threads);
+
+        let threads = (0..threads)
+            .map(|i| {
+                let receiver = receiver.clone();
+                let shutdown_rx = shutdown_rx.clone();
+                std::thread::Builder::new()
+                    .name(format!("signature-thread-{i}"))
+                    .spawn(move || {
+                        signature_thread(receiver, shutdown_rx);
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Spawner {
+            sender,
+            threads: Some(Arc::new(threads)),
+            shutdown,
+        })
+    }
+}
+
+impl Drop for Spawner {
+    fn drop(&mut self) {
+        if let Some(threads) = self.threads.take().and_then(Arc::into_inner) {
+            for _ in &threads {
+                let _ = self.shutdown.send(());
+            }
+
+            for thread in threads {
+                let _ = thread.join();
+            }
+        }
+    }
+}
+
+impl Spawn for Spawner {
+    type Future<T> = std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, Canceled>>>>;
+
+    fn spawn_blocking<Func, Out>(&self, func: Func) -> Self::Future<Out>
+    where
+        Func: FnOnce() -> Out + Send + 'static,
+        Out: Send + 'static,
+    {
+        let sender = self.sender.clone();
+
+        Box::pin(async move {
+            let (tx, rx) = flume::bounded(1);
+
+            let _ = sender
+                .send_async(Box::new(move || {
+                    if tx.send((func)()).is_err() {
+                        tracing::warn!("Requestor hung up");
+                    }
+                }))
+                .await;
+
+            rx.recv_async().await.map_err(|_| Canceled)
+        })
     }
 }

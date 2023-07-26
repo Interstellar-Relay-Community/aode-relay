@@ -33,6 +33,8 @@ mod requests;
 mod routes;
 mod telegram;
 
+use crate::requests::Spawner;
+
 use self::{
     args::Args,
     config::Config,
@@ -257,12 +259,19 @@ async fn do_server_main(
 
     let keys = config.open_keys()?;
 
+    let spawner = Spawner::build()?;
+
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
-        let requests = state.requests(&config);
+        let requests = state.requests(&config, spawner.clone());
 
-        let job_server =
-            create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
+        let job_server = create_workers(
+            state.clone(),
+            actors.clone(),
+            media.clone(),
+            config.clone(),
+            spawner.clone(),
+        );
 
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
