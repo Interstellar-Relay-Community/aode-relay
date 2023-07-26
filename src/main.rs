@@ -281,7 +281,8 @@ async fn do_server_main(
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server))
             .app_data(web::Data::new(media.clone()))
-            .app_data(web::Data::new(collector.clone()));
+            .app_data(web::Data::new(collector.clone()))
+            .app_data(web::Data::new(spawner.clone()));
 
         let app = if let Some(data) = config.admin_config() {
             app.app_data(data)
@@ -299,7 +300,7 @@ async fn do_server_main(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
                     .wrap(VerifySignature::new(
-                        MyVerify(requests, actors.clone(), state.clone()),
+                        MyVerify(requests, actors.clone(), state.clone(), spawner.clone()),
                         Default::default(),
                     ))
                     .wrap(DebugPayload(config.debug()))
