@@ -189,6 +189,7 @@ pub(crate) fn build_client(user_agent: &str, pool_size: usize, timeout_seconds: 
 }
 
 impl Requests {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         key_id: String,
         private_key: RsaPrivateKey,
