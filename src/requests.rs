@@ -464,10 +464,13 @@ impl Spawner {
     pub(crate) fn build() -> std::io::Result<Self> {
         let threads = std::thread::available_parallelism()
             .map(usize::from)
+            .map_err(|e| tracing::warn!("Failed to get parallelism, {e}"))
             .unwrap_or(1);
 
         let (sender, receiver) = flume::bounded(8);
         let (shutdown, shutdown_rx) = flume::bounded(threads);
+
+        tracing::warn!("Launching {threads} signature threads");
 
         let threads = (0..threads)
             .map(|i| {
