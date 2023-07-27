@@ -312,7 +312,7 @@ async fn do_server_main(
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
                 web::resource("/inbox")
-                    .wrap(config.digest_middleware())
+                    .wrap(config.digest_middleware().spawner(verify_spawner.clone()))
                     .wrap(VerifySignature::new(
                         MyVerify(
                             requests,
@@ -320,7 +320,7 @@ async fn do_server_main(
                             state.clone(),
                             verify_spawner.clone(),
                         ),
-                        Default::default(),
+                        http_signature_normalization_actix::Config::new(),
                     ))
                     .wrap(DebugPayload(config.debug()))
                     .route(web::post().to(inbox)),
