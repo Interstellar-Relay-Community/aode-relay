@@ -290,7 +290,9 @@ async fn do_server_main(
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
-            .app_data(web::Data::new(requests.clone()))
+            .app_data(web::Data::new(
+                requests.clone().spawner(verify_spawner.clone()),
+            ))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server))
