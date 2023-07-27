@@ -263,12 +263,7 @@ async fn do_server_main(
 
     let (signature_threads, verify_threads) = match config.signature_threads() {
         0 | 1 => (1, 1),
-        n if n <= VERIFY_RATIO => {
-            let verify_threads = (n / VERIFY_RATIO).max(1);
-            let signature_threads = n.saturating_sub(verify_threads).max(n);
-
-            (signature_threads, verify_threads)
-        }
+        n if n <= VERIFY_RATIO => (n, 1),
         n => {
             let verify_threads = (n / VERIFY_RATIO).max(1);
             let signature_threads = n.saturating_sub(verify_threads).max(VERIFY_RATIO);
