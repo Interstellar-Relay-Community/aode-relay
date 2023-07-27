@@ -18,7 +18,7 @@ rustPlatform.buildRustPackage {
   passthru.tests = { inherit (nixosTests) relay; };
 
   meta = with lib; {
-    description = "A simple image hosting service";
+    description = "An ActivityPub relay";
     homepage = "https://git.asonix.dog/asonix/relay";
     license = with licenses; [ agpl3Plus ];
   };
