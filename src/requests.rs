@@ -461,12 +461,7 @@ pub(crate) struct Spawner {
 }
 
 impl Spawner {
-    pub(crate) fn build() -> std::io::Result<Self> {
-        let threads = std::thread::available_parallelism()
-            .map(usize::from)
-            .map_err(|e| tracing::warn!("Failed to get parallelism, {e}"))
-            .unwrap_or(1);
-
+    pub(crate) fn build(threads: usize) -> std::io::Result<Self> {
         let (sender, receiver) = flume::bounded(8);
         let (shutdown, shutdown_rx) = flume::bounded(threads);
 

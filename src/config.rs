@@ -48,6 +48,7 @@ pub(crate) struct ParsedConfig {
     deliver_concurrency: u64,
     client_timeout: u64,
     client_pool_size: usize,
+    signature_threads: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -74,6 +75,7 @@ pub struct Config {
     deliver_concurrency: u64,
     client_timeout: u64,
     client_pool_size: usize,
+    signature_threads: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -144,6 +146,7 @@ impl std::fmt::Debug for Config {
             .field("deliver_concurrency", &self.deliver_concurrency)
             .field("client_timeout", &self.client_timeout)
             .field("client_pool_size", &self.client_pool_size)
+            .field("signature_threads", &self.signature_threads)
             .finish()
     }
 }
@@ -176,6 +179,7 @@ impl Config {
             .set_default("deliver_concurrency", 8u64)?
             .set_default("client_timeout", 10u64)?
             .set_default("client_pool_size", 20u64)?
+            .set_default("signature_threads", None as Option<u64>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -250,6 +254,16 @@ impl Config {
             deliver_concurrency: config.deliver_concurrency,
             client_timeout: config.client_timeout,
             client_pool_size: config.client_pool_size,
+            signature_threads: config.signature_threads,
+        })
+    }
+
+    pub(crate) fn signature_threads(&self) -> usize {
+        self.signature_threads.unwrap_or_else(|| {
+            std::thread::available_parallelism()
+                .map(usize::from)
+                .map_err(|e| tracing::warn!("Failed to get parallelism, {e}"))
+                .unwrap_or(1)
         })
     }
 

@@ -259,7 +259,7 @@ async fn do_server_main(
 
     let keys = config.open_keys()?;
 
-    let spawner = Spawner::build()?;
+    let spawner = Spawner::build(config.signature_threads())?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {

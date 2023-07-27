@@ -108,6 +108,7 @@ PROMETHEUS_PORT=9000
 CLIENT_TIMEOUT=10
 CLIENT_POOL_SIZE=20
 DELIVER_CONCURRENCY=8
+SIGNATURE_THREADS=2
 ```
 
 #### Descriptions
@@ -168,6 +169,10 @@ files", you can either decrease this number or increase the ulimit for your syst
 ##### `DELIVER_CONCURRENCY`
 Optional - How many deliver requests the relay should allow to be in-flight per thread. the default
 is 8
+##### `SIGNATURE_THREADS`
+Optional - Override number of threads used for signing and verifying requests. Default is
+`std::thread::available_parallelism()` (It tries to detect how many cores you have). If it cannot
+detect the correct number of cores, it falls back to 1.
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.
