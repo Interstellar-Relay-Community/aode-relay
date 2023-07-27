@@ -45,7 +45,10 @@ pub(crate) struct ParsedConfig {
     local_blurb: Option<String>,
     prometheus_addr: Option<IpAddr>,
     prometheus_port: Option<u16>,
+    deliver_concurrency: u64,
+    client_timeout: u64,
     client_pool_size: usize,
+    signature_threads: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -69,7 +72,10 @@ pub struct Config {
     local_domains: Vec<String>,
     local_blurb: Option<String>,
     prometheus_config: Option<PrometheusConfig>,
+    deliver_concurrency: u64,
+    client_timeout: u64,
     client_pool_size: usize,
+    signature_threads: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -137,7 +143,10 @@ impl std::fmt::Debug for Config {
             .field("local_domains", &self.local_domains)
             .field("local_blurb", &self.local_blurb)
             .field("prometheus_config", &self.prometheus_config)
+            .field("deliver_concurrency", &self.deliver_concurrency)
+            .field("client_timeout", &self.client_timeout)
             .field("client_pool_size", &self.client_pool_size)
+            .field("signature_threads", &self.signature_threads)
             .finish()
     }
 }
@@ -167,7 +176,10 @@ impl Config {
             .set_default("local_blurb", None as Option<&str>)?
             .set_default("prometheus_addr", None as Option<&str>)?
             .set_default("prometheus_port", None as Option<u16>)?
+            .set_default("deliver_concurrency", 8u64)?
+            .set_default("client_timeout", 10u64)?
             .set_default("client_pool_size", 20u64)?
+            .set_default("signature_threads", None as Option<u64>)?
             .add_source(Environment::default())
             .build()?;
 
@@ -239,8 +251,28 @@ impl Config {
             local_domains,
             local_blurb: config.local_blurb,
             prometheus_config,
+            deliver_concurrency: config.deliver_concurrency,
+            client_timeout: config.client_timeout,
             client_pool_size: config.client_pool_size,
+            signature_threads: config.signature_threads,
         })
+    }
+
+    pub(crate) fn signature_threads(&self) -> usize {
+        self.signature_threads.unwrap_or_else(|| {
+            std::thread::available_parallelism()
+                .map(usize::from)
+                .map_err(|e| tracing::warn!("Failed to get parallelism, {e}"))
+                .unwrap_or(1)
+        })
+    }
+
+    pub(crate) fn client_timeout(&self) -> u64 {
+        self.client_timeout
+    }
+
+    pub(crate) fn deliver_concurrency(&self) -> u64 {
+        self.deliver_concurrency
     }
 
     pub(crate) fn prometheus_bind_address(&self) -> Option<SocketAddr> {
@@ -298,7 +330,7 @@ impl Config {
                         .add_tag_attributes("link", &["rel"])
                         .link_rel(None)
                         .clean(blurb)
-                        .to_string()
+                        .to_string(),
                 ));
             }
         }
@@ -316,7 +348,7 @@ impl Config {
                         .add_tag_attributes("link", &["rel"])
                         .link_rel(None)
                         .clean(blurb)
-                        .to_string()
+                        .to_string(),
                 ));
             }
         }

@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.86"
+version = "0.3.91"
 authors = ["asonix <asonix@asonix.dog>"]
 license = "AGPL-3.0"
 readme = "README.md"
@@ -40,6 +40,7 @@ config = "0.13.0"
 console-subscriber = { version = "0.1", optional = true }
 dashmap = "5.1.0"
 dotenv = "0.15.0"
+flume = "0.10.14"
 futures-util = "0.3.17"
 lru = "0.11.0"
 metrics = "0.21.0"
@@ -88,7 +89,7 @@ default-features = false
 features = ["background-jobs-actix", "error-logging"]
 
 [dependencies.http-signature-normalization-actix]
-version = "0.8.0"
+version = "0.9.1"
 default-features = false
 features = ["client", "server", "sha-2"]
 

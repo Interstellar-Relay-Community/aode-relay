@@ -17,7 +17,7 @@ use crate::{
     data::{ActorCache, MediaCache, NodeCache, State},
     error::{Error, ErrorKind},
     jobs::{process_listeners::Listeners, record_last_online::RecordLastOnline},
-    requests::Requests,
+    requests::{Requests, Spawner},
 };
 use background_jobs::{
     memory_storage::{ActixTimer, Storage},
@@ -44,7 +44,10 @@ pub(crate) fn create_workers(
     actors: ActorCache,
     media: MediaCache,
     config: Config,
+    spawner: Spawner,
 ) -> JobServer {
+    let deliver_concurrency = config.deliver_concurrency();
+
     let queue_handle = WorkerConfig::new(Storage::new(ActixTimer), move |queue_handle| {
         JobState::new(
             state.clone(),
@@ -52,6 +55,7 @@ pub(crate) fn create_workers(
             JobServer::new(queue_handle),
             media.clone(),
             config.clone(),
+            spawner.clone(),
         )
     })
     .register::<Deliver>()
@@ -68,7 +72,7 @@ pub(crate) fn create_workers(
     .register::<apub::Undo>()
     .set_worker_count("maintenance", 2)
     .set_worker_count("apub", 2)
-    .set_worker_count("deliver", 8)
+    .set_worker_count("deliver", deliver_concurrency)
     .start();
 
     queue_handle.every(Duration::from_secs(60 * 5), Listeners);
@@ -108,9 +112,10 @@ impl JobState {
         job_server: JobServer,
         media: MediaCache,
         config: Config,
+        spawner: Spawner,
     ) -> Self {
         JobState {
-            requests: state.requests(&config),
+            requests: state.requests(&config, spawner),
             node_cache: state.node_cache(),
             actors,
             config,

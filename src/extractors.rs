@@ -1,6 +1,6 @@
 use actix_web::{
     dev::Payload,
-    error::{BlockingError, ParseError},
+    error::ParseError,
     http::{
         header::{from_one_raw_str, Header, HeaderName, HeaderValue, TryIntoHeaderValue},
         StatusCode,
@@ -10,11 +10,11 @@ use actix_web::{
 };
 use bcrypt::{BcryptError, DEFAULT_COST};
 use futures_util::future::LocalBoxFuture;
-use http_signature_normalization_actix::prelude::InvalidHeaderValue;
+use http_signature_normalization_actix::{prelude::InvalidHeaderValue, Canceled, Spawn};
 use std::{convert::Infallible, str::FromStr, time::Instant};
 use tracing_error::SpanTrace;
 
-use crate::db::Db;
+use crate::{db::Db, requests::Spawner};
 
 #[derive(Clone)]
 pub(crate) struct AdminConfig {
@@ -37,10 +37,10 @@ pub(crate) struct Admin {
     db: Data<Db>,
 }
 
+type PrepareTuple = (Data<Db>, Data<AdminConfig>, Data<Spawner>, XApiToken);
+
 impl Admin {
-    fn prepare_verify(
-        req: &HttpRequest,
-    ) -> Result<(Data<Db>, Data<AdminConfig>, XApiToken), Error> {
+    fn prepare_verify(req: &HttpRequest) -> Result<PrepareTuple, Error> {
         let hashed_api_token = req
             .app_data::<Data<AdminConfig>>()
             .ok_or_else(Error::missing_config)?
@@ -53,16 +53,23 @@ impl Admin {
             .ok_or_else(Error::missing_db)?
             .clone();
 
-        Ok((db, hashed_api_token, x_api_token))
+        let spawner = req
+            .app_data::<Data<Spawner>>()
+            .ok_or_else(Error::missing_spawner)?
+            .clone();
+
+        Ok((db, hashed_api_token, spawner, x_api_token))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
     async fn verify(
         hashed_api_token: Data<AdminConfig>,
+        spawner: Data<Spawner>,
         x_api_token: XApiToken,
     ) -> Result<(), Error> {
         let span = tracing::Span::current();
-        if actix_web::web::block(move || span.in_scope(|| hashed_api_token.verify(x_api_token)))
+        if spawner
+            .spawn_blocking(move || span.in_scope(|| hashed_api_token.verify(x_api_token)))
             .await
             .map_err(Error::canceled)??
         {
@@ -107,6 +114,13 @@ impl Error {
         }
     }
 
+    fn missing_spawner() -> Self {
+        Error {
+            context: SpanTrace::capture().to_string(),
+            kind: ErrorKind::MissingSpawner,
+        }
+    }
+
     fn bcrypt_verify(e: BcryptError) -> Self {
         Error {
             context: SpanTrace::capture().to_string(),
@@ -128,7 +142,7 @@ impl Error {
         }
     }
 
-    fn canceled(_: BlockingError) -> Self {
+    fn canceled(_: Canceled) -> Self {
         Error {
             context: SpanTrace::capture().to_string(),
             kind: ErrorKind::Canceled,
@@ -146,6 +160,9 @@ enum ErrorKind {
 
     #[error("Missing Db")]
     MissingDb,
+
+    #[error("Missing Spawner")]
+    MissingSpawner,
 
     #[error("Panic in verify")]
     Canceled,
@@ -182,8 +199,8 @@ impl FromRequest for Admin {
         let now = Instant::now();
         let res = Self::prepare_verify(req);
         Box::pin(async move {
-            let (db, c, t) = res?;
-            Self::verify(c, t).await?;
+            let (db, c, s, t) = res?;
+            Self::verify(c, s, t).await?;
             metrics::histogram!(
                 "relay.admin.verify",
                 now.elapsed().as_micros() as f64 / 1_000_000_f64

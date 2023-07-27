@@ -246,3 +246,9 @@ impl From<rsa::errors::Error> for ErrorKind {
         ErrorKind::Rsa(e)
     }
 }
+
+impl From<http_signature_normalization_actix::Canceled> for ErrorKind {
+    fn from(_: http_signature_normalization_actix::Canceled) -> Self {
+        Self::Canceled
+    }
+}

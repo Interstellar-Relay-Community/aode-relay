@@ -34,6 +34,7 @@ mod routes;
 mod telegram;
 
 use crate::data::NodeConfig;
+use crate::requests::Spawner;
 
 use self::{
     args::Args,
@@ -150,7 +151,11 @@ fn client_main(config: Config, args: Args) -> JoinHandle<Result<(), anyhow::Erro
 }
 
 async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
-    let client = requests::build_client(&config.user_agent(), config.client_pool_size());
+    let client = requests::build_client(
+        &config.user_agent(),
+        config.client_pool_size(),
+        config.client_timeout(),
+    );
 
     if !args.blocks().is_empty() || !args.allowed().is_empty() {
         if args.undo() {
@@ -257,12 +262,19 @@ async fn do_server_main(
 
     let keys = config.open_keys()?;
 
+    let spawner = Spawner::build(config.signature_threads())?;
+
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
-        let requests = state.requests(&config);
+        let requests = state.requests(&config, spawner.clone());
 
-        let job_server =
-            create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
+        let job_server = create_workers(
+            state.clone(),
+            actors.clone(),
+            media.clone(),
+            config.clone(),
+            spawner.clone(),
+        );
 
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
@@ -272,7 +284,8 @@ async fn do_server_main(
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server))
             .app_data(web::Data::new(media.clone()))
-            .app_data(web::Data::new(collector.clone()));
+            .app_data(web::Data::new(collector.clone()))
+            .app_data(web::Data::new(spawner.clone()));
 
         let app = if let Some(data) = config.admin_config() {
             app.app_data(data)
@@ -290,7 +303,7 @@ async fn do_server_main(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
                     .wrap(VerifySignature::new(
-                        MyVerify(requests, actors.clone(), state.clone()),
+                        MyVerify(requests, actors.clone(), state.clone(), spawner.clone()),
                         Default::default(),
                     ))
                     .wrap(DebugPayload(config.debug()))

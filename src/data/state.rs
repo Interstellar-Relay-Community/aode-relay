@@ -43,7 +43,7 @@ impl State {
         self.node_cache.clone()
     }
 
-    pub(crate) fn requests(&self, config: &Config) -> Requests {
+    pub(crate) fn requests(&self, config: &Config, spawner: crate::requests::Spawner) -> Requests {
         Requests::new(
             config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),
@@ -51,6 +51,8 @@ impl State {
             self.breakers.clone(),
             self.last_online.clone(),
             config.client_pool_size(),
+            config.client_timeout(),
+            spawner,
         )
     }
 

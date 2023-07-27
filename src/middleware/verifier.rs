@@ -2,12 +2,11 @@ use crate::{
     apub::AcceptedActors,
     data::{ActorCache, State},
     error::{Error, ErrorKind},
-    requests::Requests,
+    requests::{Requests, Spawner},
 };
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
-use actix_web::web;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm};
+use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm, Spawn};
 use rsa::{
     pkcs1v15::Signature, pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, sha2::Sha256,
     signature::Verifier, RsaPublicKey,
@@ -15,7 +14,7 @@ use rsa::{
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug)]
-pub(crate) struct MyVerify(pub Requests, pub ActorCache, pub State);
+pub(crate) struct MyVerify(pub Requests, pub ActorCache, pub State, pub Spawner);
 
 impl MyVerify {
     #[tracing::instrument("Verify request", skip(self, signature, signing_string))]
@@ -55,7 +54,13 @@ impl MyVerify {
                 None => (),
             };
 
-            let res = do_verify(&actor.public_key, signature.clone(), signing_string.clone()).await;
+            let res = do_verify(
+                &self.3,
+                &actor.public_key,
+                signature.clone(),
+                signing_string.clone(),
+            )
+            .await;
 
             if let Err(e) = res {
                 if !was_cached {
@@ -85,7 +90,7 @@ impl MyVerify {
         // Now we make sure we fetch an updated actor
         let actor = self.1.get_no_cache(&actor_id, &self.0).await?;
 
-        do_verify(&actor.public_key, signature, signing_string).await?;
+        do_verify(&self.3, &actor.public_key, signature, signing_string).await?;
 
         Ok(true)
     }
@@ -116,6 +121,7 @@ impl PublicKeyResponse {
 
 #[tracing::instrument("Verify signature")]
 async fn do_verify(
+    spawner: &Spawner,
     public_key: &str,
     signature: String,
     signing_string: String,
@@ -123,21 +129,22 @@ async fn do_verify(
     let public_key = RsaPublicKey::from_public_key_pem(public_key.trim())?;
 
     let span = tracing::Span::current();
-    web::block(move || {
-        span.in_scope(|| {
-            let decoded = STANDARD.decode(signature)?;
-            let signature =
-                Signature::try_from(decoded.as_slice()).map_err(ErrorKind::ReadSignature)?;
+    spawner
+        .spawn_blocking(move || {
+            span.in_scope(|| {
+                let decoded = STANDARD.decode(signature)?;
+                let signature =
+                    Signature::try_from(decoded.as_slice()).map_err(ErrorKind::ReadSignature)?;
 
-            let verifying_key = VerifyingKey::<Sha256>::new(public_key);
-            verifying_key
-                .verify(signing_string.as_bytes(), &signature)
-                .map_err(ErrorKind::VerifySignature)?;
+                let verifying_key = VerifyingKey::<Sha256>::new(public_key);
+                verifying_key
+                    .verify(signing_string.as_bytes(), &signature)
+                    .map_err(ErrorKind::VerifySignature)?;
 
-            Ok(()) as Result<(), Error>
+                Ok(()) as Result<(), Error>
+            })
         })
-    })
-    .await??;
+        .await??;
 
     Ok(())
 }
