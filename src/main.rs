@@ -242,6 +242,8 @@ fn server_main(
     actix_rt::spawn(do_server_main(db, actors, media, collector, config))
 }
 
+const VERIFY_RATIO: usize = 7;
+
 async fn do_server_main(
     db: Db,
     actors: ActorCache,
@@ -259,8 +261,24 @@ async fn do_server_main(
 
     let keys = config.open_keys()?;
 
-    let spawner = Spawner::build("signature-thread", config.signature_threads())?;
-    let verify_spawner = Spawner::build("verify-thread", (config.signature_threads() / 8).max(1))?;
+    let (signature_threads, verify_threads) = match config.signature_threads() {
+        0 | 1 => (1, 1),
+        n if n <= VERIFY_RATIO => {
+            let verify_threads = (n / VERIFY_RATIO).max(1);
+            let signature_threads = n.saturating_sub(verify_threads).max(n);
+
+            (signature_threads, verify_threads)
+        }
+        n => {
+            let verify_threads = (n / VERIFY_RATIO).max(1);
+            let signature_threads = n.saturating_sub(verify_threads).max(VERIFY_RATIO);
+
+            (signature_threads, verify_threads)
+        }
+    };
+
+    let spawner = Spawner::build("signature-thread", signature_threads)?;
+    let verify_spawner = Spawner::build("verify-thread", verify_threads)?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {

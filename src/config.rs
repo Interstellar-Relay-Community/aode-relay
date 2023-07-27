@@ -259,12 +259,14 @@ impl Config {
     }
 
     pub(crate) fn signature_threads(&self) -> usize {
-        self.signature_threads.unwrap_or_else(|| {
-            std::thread::available_parallelism()
-                .map(usize::from)
-                .map_err(|e| tracing::warn!("Failed to get parallelism, {e}"))
-                .unwrap_or(1)
-        })
+        self.signature_threads
+            .unwrap_or_else(|| {
+                std::thread::available_parallelism()
+                    .map(usize::from)
+                    .map_err(|e| tracing::warn!("Failed to get parallelism, {e}"))
+                    .unwrap_or(1)
+            })
+            .max(1)
     }
 
     pub(crate) fn client_timeout(&self) -> u64 {
