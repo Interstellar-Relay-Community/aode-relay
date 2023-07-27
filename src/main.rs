@@ -260,6 +260,7 @@ async fn do_server_main(
     let keys = config.open_keys()?;
 
     let spawner = Spawner::build(config.signature_threads())?;
+    let verify_spawner = Spawner::build((config.signature_threads() / 2).max(1))?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
@@ -282,7 +283,7 @@ async fn do_server_main(
             .app_data(web::Data::new(job_server))
             .app_data(web::Data::new(media.clone()))
             .app_data(web::Data::new(collector.clone()))
-            .app_data(web::Data::new(spawner.clone()));
+            .app_data(web::Data::new(verify_spawner.clone()));
 
         let app = if let Some(data) = config.admin_config() {
             app.app_data(data)
@@ -300,7 +301,12 @@ async fn do_server_main(
                 web::resource("/inbox")
                     .wrap(config.digest_middleware())
                     .wrap(VerifySignature::new(
-                        MyVerify(requests, actors.clone(), state.clone(), spawner.clone()),
+                        MyVerify(
+                            requests,
+                            actors.clone(),
+                            state.clone(),
+                            verify_spawner.clone(),
+                        ),
                         Default::default(),
                     ))
                     .wrap(DebugPayload(config.debug()))
