@@ -208,6 +208,11 @@ impl Requests {
         }
     }
 
+    pub(crate) fn spawner(mut self, spawner: Spawner) -> Self {
+        self.config = self.config.spawner(spawner);
+        self
+    }
+
     pub(crate) fn reset_breaker(&self, iri: &IriString) {
         self.breakers.succeed(iri);
     }

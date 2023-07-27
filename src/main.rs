@@ -315,7 +315,7 @@ async fn do_server_main(
                     .wrap(config.digest_middleware().spawner(verify_spawner.clone()))
                     .wrap(VerifySignature::new(
                         MyVerify(
-                            requests,
+                            requests.spawner(verify_spawner.clone()),
                             actors.clone(),
                             state.clone(),
                             verify_spawner.clone(),
