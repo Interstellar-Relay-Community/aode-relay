@@ -37,10 +37,10 @@ pub(crate) struct Admin {
     db: Data<Db>,
 }
 
+type PrepareTuple = (Data<Db>, Data<AdminConfig>, Data<Spawner>, XApiToken);
+
 impl Admin {
-    fn prepare_verify(
-        req: &HttpRequest,
-    ) -> Result<(Data<Db>, Data<AdminConfig>, Data<Spawner>, XApiToken), Error> {
+    fn prepare_verify(req: &HttpRequest) -> Result<PrepareTuple, Error> {
         let hashed_api_token = req
             .app_data::<Data<AdminConfig>>()
             .ok_or_else(Error::missing_config)?
