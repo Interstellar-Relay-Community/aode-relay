@@ -12,11 +12,9 @@ fn signature_thread(receiver: flume::Receiver<Box<dyn FnOnce() + Send>>, id: usi
     while let Ok(f) = receiver.recv() {
         let start = Instant::now();
         metrics::increment_counter!("relay.signature-thread.operation.start", "id" => id.to_string());
-        let res = std::panic::catch_unwind(AssertUnwindSafe(move || {
-            (f)();
-        }));
+        let res = std::panic::catch_unwind(AssertUnwindSafe(f));
         metrics::increment_counter!("relay.signature-thread.operation.end", "complete" => res.is_ok().to_string(), "id" => id.to_string());
-        metrics::histogram!("relay.signature-thread.operation.duration", start.elapsed().as_secs_f64(), "id" => id.to_string());
+        metrics::histogram!("relay.signature-thread.operation.duration", start.elapsed().as_secs_f64(), "complete" => res.is_ok().to_string(), "id" => id.to_string());
 
         if let Err(e) = res {
             tracing::warn!("Signature fn panicked: {e:?}");
