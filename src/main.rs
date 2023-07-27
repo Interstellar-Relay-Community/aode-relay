@@ -272,8 +272,8 @@ async fn do_server_main(
         }
     };
 
-    let spawner = Spawner::build("signature-thread", signature_threads)?;
-    let verify_spawner = Spawner::build("verify-thread", verify_threads)?;
+    let spawner = Spawner::build("sign-cpu", signature_threads)?;
+    let verify_spawner = Spawner::build("verify-cpu", verify_threads)?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
