@@ -31,9 +31,8 @@ mod jobs;
 mod middleware;
 mod requests;
 mod routes;
+mod spawner;
 mod telegram;
-
-use crate::requests::Spawner;
 
 use self::{
     args::Args,
@@ -43,6 +42,7 @@ use self::{
     jobs::create_workers,
     middleware::{DebugPayload, MyVerify, RelayResolver, Timings},
     routes::{actor, healthz, inbox, index, nodeinfo, nodeinfo_meta, statics},
+    spawner::Spawner,
 };
 
 fn init_subscriber(

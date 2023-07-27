@@ -1,13 +1,14 @@
 use crate::{
     data::LastOnline,
     error::{Error, ErrorKind},
+    spawner::Spawner,
 };
 use activitystreams::iri_string::types::IriString;
 use actix_web::http::header::Date;
 use awc::{error::SendRequestError, Client, ClientResponse, Connector};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
-use http_signature_normalization_actix::{prelude::*, Canceled, Spawn};
+use http_signature_normalization_actix::prelude::*;
 use rand::thread_rng;
 use rsa::{
     pkcs1v15::SigningKey,
@@ -16,13 +17,8 @@ use rsa::{
     RsaPrivateKey,
 };
 use std::{
-    panic::AssertUnwindSafe,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    thread::JoinHandle,
-    time::{Duration, Instant, SystemTime},
+    sync::Arc,
+    time::{Duration, SystemTime},
 };
 use tracing_awc::Tracing;
 
@@ -420,183 +416,5 @@ impl Signer {
         let signature =
             signing_key.try_sign_with_rng(&mut thread_rng(), signing_string.as_bytes())?;
         Ok(STANDARD.encode(signature.to_bytes().as_ref()))
-    }
-}
-
-fn signature_thread(
-    receiver: flume::Receiver<Box<dyn FnOnce() + Send>>,
-    shutdown: flume::Receiver<()>,
-    id: usize,
-) {
-    let guard = MetricsGuard::guard(id);
-    let stopping = AtomicBool::new(false);
-
-    while !stopping.load(Ordering::Acquire) {
-        flume::Selector::new()
-            .recv(&receiver, |res| match res {
-                Ok(f) => {
-                    let start = Instant::now();
-                    metrics::increment_counter!("relay.signature-thread.operation.start", "id" => id.to_string());
-                    let res = std::panic::catch_unwind(AssertUnwindSafe(move || {
-                        (f)();
-                    }));
-                    metrics::increment_counter!("relay.signature-thread.operation.end", "complete" => res.is_ok().to_string(), "id" => id.to_string());
-                    metrics::histogram!("relay.signature-thread.operation.duration", start.elapsed().as_secs_f64(), "id" => id.to_string());
-
-                    if let Err(e) = res {
-                        tracing::warn!("Signature fn panicked: {e:?}");
-                    }
-                }
-                Err(_) => {
-                    tracing::warn!("Receive error, stopping");
-                    stopping.store(true, Ordering::Release)
-                }
-            })
-            .recv(&shutdown, |res| {
-                if res.is_ok() {
-                    tracing::warn!("Stopping");
-                } else {
-                    tracing::warn!("Shutdown receive error, stopping");
-                }
-                stopping.store(true, Ordering::Release)
-            })
-            .wait();
-    }
-
-    guard.disarm();
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct Spawner {
-    sender: flume::Sender<Box<dyn FnOnce() + Send>>,
-    threads: Option<Arc<Vec<JoinHandle<()>>>>,
-    shutdown: flume::Sender<()>,
-}
-
-struct MetricsGuard {
-    id: usize,
-    start: Instant,
-    armed: bool,
-}
-
-impl MetricsGuard {
-    fn guard(id: usize) -> Self {
-        metrics::increment_counter!("relay.signature-thread.launched", "id" => id.to_string());
-
-        Self {
-            id,
-            start: Instant::now(),
-            armed: true,
-        }
-    }
-
-    fn disarm(mut self) {
-        self.armed = false;
-    }
-}
-
-impl Drop for MetricsGuard {
-    fn drop(&mut self) {
-        metrics::increment_counter!("relay.signature-thread.closed", "clean" => (!self.armed).to_string(), "id" => self.id.to_string());
-        metrics::histogram!("relay.signature-thread.duration", self.start.elapsed().as_secs_f64(), "clean" => (!self.armed).to_string(), "id" => self.id.to_string());
-    }
-}
-
-impl Spawner {
-    pub(crate) fn build(threads: usize) -> std::io::Result<Self> {
-        let (sender, receiver) = flume::bounded(8);
-        let (shutdown, shutdown_rx) = flume::bounded(threads);
-
-        tracing::warn!("Launching {threads} signature threads");
-
-        let threads = (0..threads)
-            .map(|i| {
-                let receiver = receiver.clone();
-                let shutdown_rx = shutdown_rx.clone();
-                std::thread::Builder::new()
-                    .name(format!("signature-thread-{i}"))
-                    .spawn(move || {
-                        signature_thread(receiver, shutdown_rx, i);
-                    })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(Spawner {
-            sender,
-            threads: Some(Arc::new(threads)),
-            shutdown,
-        })
-    }
-}
-
-impl Drop for Spawner {
-    fn drop(&mut self) {
-        if let Some(threads) = self.threads.take().and_then(Arc::into_inner) {
-            for _ in &threads {
-                let _ = self.shutdown.send(());
-            }
-
-            for thread in threads {
-                let _ = thread.join();
-            }
-        }
-    }
-}
-
-async fn timer<Fut>(fut: Fut) -> Fut::Output
-where
-    Fut: std::future::Future,
-{
-    let id = uuid::Uuid::new_v4();
-
-    metrics::increment_counter!("relay.spawner.wait-timer.start");
-
-    let mut interval = actix_rt::time::interval(Duration::from_secs(5));
-
-    // pass the first tick (instant)
-    interval.tick().await;
-
-    let mut fut = std::pin::pin!(fut);
-
-    let mut counter = 0;
-    loop {
-        tokio::select! {
-            out = &mut fut => {
-                metrics::increment_counter!("relay.spawner.wait-timer.end");
-                return out;
-            }
-            _ = interval.tick() => {
-                counter += 1;
-                metrics::increment_counter!("relay.spawner.wait-timer.pending");
-                tracing::warn!("Blocking operation {id} is taking a long time, {} seconds", counter * 5);
-            }
-        }
-    }
-}
-
-impl Spawn for Spawner {
-    type Future<T> = std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, Canceled>>>>;
-
-    fn spawn_blocking<Func, Out>(&self, func: Func) -> Self::Future<Out>
-    where
-        Func: FnOnce() -> Out + Send + 'static,
-        Out: Send + 'static,
-    {
-        let sender = self.sender.clone();
-
-        Box::pin(async move {
-            let (tx, rx) = flume::bounded(1);
-
-            let _ = sender
-                .send_async(Box::new(move || {
-                    if tx.send((func)()).is_err() {
-                        tracing::warn!("Requestor hung up");
-                        metrics::increment_counter!("relay.spawner.disconnected");
-                    }
-                }))
-                .await;
-
-            timer(rx.recv_async()).await.map_err(|_| Canceled)
-        })
     }
 }

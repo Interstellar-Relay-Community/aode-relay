@@ -17,7 +17,8 @@ use crate::{
     data::{ActorCache, MediaCache, NodeCache, State},
     error::{Error, ErrorKind},
     jobs::{process_listeners::Listeners, record_last_online::RecordLastOnline},
-    requests::{Requests, Spawner},
+    requests::Requests,
+    spawner::Spawner,
 };
 use background_jobs::{
     memory_storage::{ActixTimer, Storage},

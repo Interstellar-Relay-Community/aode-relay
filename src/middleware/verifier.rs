@@ -2,7 +2,8 @@ use crate::{
     apub::AcceptedActors,
     data::{ActorCache, State},
     error::{Error, ErrorKind},
-    requests::{Requests, Spawner},
+    requests::Requests,
+    spawner::Spawner,
 };
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use base64::{engine::general_purpose::STANDARD, Engine};
