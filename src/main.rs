@@ -259,8 +259,8 @@ async fn do_server_main(
 
     let keys = config.open_keys()?;
 
-    let spawner = Spawner::build(config.signature_threads())?;
-    let verify_spawner = Spawner::build((config.signature_threads() / 2).max(1))?;
+    let spawner = Spawner::build("signature-thread", config.signature_threads())?;
+    let verify_spawner = Spawner::build("verify-thread", (config.signature_threads() / 8).max(1))?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
