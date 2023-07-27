@@ -30,8 +30,6 @@ ENV PRETTY_LOG false
 ENV PUBLISH_BLOCKS true
 ENV SLED_PATH "/var/lib/aode-relay/sled/db-0.34"
 ENV RUST_LOG warn
-ENV PROMETHEUS_ADDR 0.0.0.0
-ENV PROMETHEUS_PORT 8081
 
 VOLUME "/var/lib/aode-relay"
 
@@ -39,6 +37,6 @@ ENTRYPOINT ["/sbin/tini", "--"]
 
 CMD ["/usr/bin/aode-relay"]
 
-EXPOSE 8080 8081
+EXPOSE 8080
 
-HEALTHCHECK CMD curl --silent --fail "localhost:$PORT/.well-known/nodeinfo" > /dev/null || exit 1
+HEALTHCHECK CMD curl -sSf "localhost:$PORT/healthz" > /dev/null || exit 1
