@@ -39,7 +39,7 @@ impl std::fmt::Debug for Breakers {
 }
 
 impl Breakers {
-    fn should_try(&self, url: &IriString) -> bool {
+    pub(crate) fn should_try(&self, url: &IriString) -> bool {
         if let Some(authority) = url.authority_str() {
             if let Some(breaker) = self.inner.get(authority) {
                 breaker.should_try()
