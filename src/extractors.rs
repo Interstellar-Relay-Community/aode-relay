@@ -14,7 +14,7 @@ use http_signature_normalization_actix::{prelude::InvalidHeaderValue, Canceled, 
 use std::{convert::Infallible, str::FromStr, time::Instant};
 use tracing_error::SpanTrace;
 
-use crate::{db::Db, requests::Spawner};
+use crate::{db::Db, spawner::Spawner};
 
 #[derive(Clone)]
 pub(crate) struct AdminConfig {

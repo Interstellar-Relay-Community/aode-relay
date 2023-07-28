@@ -4,6 +4,7 @@ use crate::{
     db::Db,
     error::Error,
     requests::{Breakers, Requests},
+    spawner::Spawner,
 };
 use activitystreams::iri_string::types::IriString;
 use actix_web::web;
@@ -43,7 +44,7 @@ impl State {
         self.node_cache.clone()
     }
 
-    pub(crate) fn requests(&self, config: &Config, spawner: crate::requests::Spawner) -> Requests {
+    pub(crate) fn requests(&self, config: &Config, spawner: Spawner) -> Requests {
         Requests::new(
             config.generate_url(UrlKind::MainKey).to_string(),
             self.private_key.clone(),

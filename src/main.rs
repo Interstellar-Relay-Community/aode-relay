@@ -31,10 +31,8 @@ mod jobs;
 mod middleware;
 mod requests;
 mod routes;
+mod spawner;
 mod telegram;
-
-use crate::data::NodeConfig;
-use crate::requests::Spawner;
 
 use self::{
     args::Args,
@@ -44,6 +42,7 @@ use self::{
     jobs::create_workers,
     middleware::{DebugPayload, MyVerify, RelayResolver, Timings},
     routes::{actor, healthz, inbox, index, nodeinfo, nodeinfo_meta, statics},
+    spawner::Spawner,
 };
 
 fn init_subscriber(
@@ -243,6 +242,8 @@ fn server_main(
     actix_rt::spawn(do_server_main(db, actors, media, collector, config))
 }
 
+const VERIFY_RATIO: usize = 7;
+
 async fn do_server_main(
     db: Db,
     actors: ActorCache,
@@ -262,7 +263,19 @@ async fn do_server_main(
 
     let keys = config.open_keys()?;
 
-    let spawner = Spawner::build(config.signature_threads())?;
+    let (signature_threads, verify_threads) = match config.signature_threads() {
+        0 | 1 => (1, 1),
+        n if n <= VERIFY_RATIO => (n, 1),
+        n => {
+            let verify_threads = (n / VERIFY_RATIO).max(1);
+            let signature_threads = n.saturating_sub(verify_threads).max(VERIFY_RATIO);
+
+            (signature_threads, verify_threads)
+        }
+    };
+
+    let spawner = Spawner::build("sign-cpu", signature_threads)?;
+    let verify_spawner = Spawner::build("verify-cpu", verify_threads)?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
@@ -279,13 +292,15 @@ async fn do_server_main(
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
-            .app_data(web::Data::new(requests.clone()))
+            .app_data(web::Data::new(
+                requests.clone().spawner(verify_spawner.clone()),
+            ))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(job_server))
             .app_data(web::Data::new(media.clone()))
             .app_data(web::Data::new(collector.clone()))
-            .app_data(web::Data::new(spawner.clone()));
+            .app_data(web::Data::new(verify_spawner.clone()));
 
         let app = if let Some(data) = config.admin_config() {
             app.app_data(data)
@@ -301,10 +316,15 @@ async fn do_server_main(
             .service(web::resource("/media/{path}").route(web::get().to(routes::media)))
             .service(
                 web::resource("/inbox")
-                    .wrap(config.digest_middleware())
+                    .wrap(config.digest_middleware().spawner(verify_spawner.clone()))
                     .wrap(VerifySignature::new(
-                        MyVerify(requests, actors.clone(), state.clone(), spawner.clone()),
-                        Default::default(),
+                        MyVerify(
+                            requests.spawner(verify_spawner.clone()),
+                            actors.clone(),
+                            state.clone(),
+                            verify_spawner.clone(),
+                        ),
+                        http_signature_normalization_actix::Config::new(),
                     ))
                     .wrap(DebugPayload(config.debug()))
                     .route(web::post().to(inbox)),
