@@ -64,14 +64,14 @@ jobs:
           outputs: type=image,name=${{ env.DOCKER_IMAGE }},push-by-digest=${{ github.event_name != 'pull_request' }},name-canonical=true,push=${{ github.event_name != 'pull_request' }}
       - name: Export digest
         run: |
-          mkdir -p /tmp/digests
+          mkdir -p $RUNNER_TEMP/digests
           digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          touch "$RUNNER_TEMP/digests/${digest#sha256:}"
       - name: Upload digest
         uses: actions/upload-artifact@v3
         with:
           name: digests
-          path: /tmp/digests/*
+          path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
 
@@ -85,7 +85,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: digests
-          path: /tmp/digests
+          path: ${{ runner.temp }}/digests
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Log in to the GitHub Container registry
@@ -109,7 +109,7 @@ jobs:
             type=semver,pattern={{raw}}
             type=ref,event=pr
       - name: Create manifest list and push
-        working-directory: /tmp/digests
+        working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.DOCKER_IMAGE }}@sha256:%s ' *)
