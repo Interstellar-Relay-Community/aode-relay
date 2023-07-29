@@ -112,6 +112,10 @@ impl State {
         self.object_cache.write().unwrap().put(object_id, actor_id);
     }
 
+    pub(crate) fn is_connected(&self, iri: &IriString) -> bool {
+        self.breakers.should_try(iri)
+    }
+
     #[tracing::instrument(level = "debug", name = "Building state", skip_all)]
     pub(crate) async fn build(db: Db, node_config: HashMap<String, NodeConfig>) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {

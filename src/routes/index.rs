@@ -42,6 +42,10 @@ pub(crate) async fn route(
     let mut local = Vec::new();
 
     for node in all_nodes {
+        if !state.is_connected(&node.base) {
+            continue;
+        }
+
         if node
             .base
             .authority_str()
