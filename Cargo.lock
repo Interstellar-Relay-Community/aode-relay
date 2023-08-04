@@ -423,6 +423,7 @@ dependencies = [
  "pin-project-lite",
  "quanta",
  "rand",
+ "ring",
  "rsa",
  "rsa-magic-public-key",
  "ructe",
@@ -1460,9 +1461,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7978cadb8c73ab0d7115a4260e8a64188212ce44d11f0b0109c4beebc6bbb5c9"
+checksum = "f16b1af0de27fe75ea5c1da8da1ce826274cc623bda49eb5e9395aa4ea0b34d4"
 dependencies = [
  "actix-http",
  "actix-rt",
@@ -1471,7 +1472,7 @@ dependencies = [
  "base64 0.13.1",
  "futures-util",
  "http-signature-normalization",
- "sha2",
+ "ring",
  "thiserror",
  "tokio",
  "tracing",
@@ -2743,7 +2744,6 @@ dependencies = [
  "pkcs1",
  "pkcs8",
  "rand_core",
- "sha2",
  "signature",
  "spki",
  "subtle",
