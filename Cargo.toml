@@ -50,8 +50,8 @@ metrics-exporter-prometheus = { version = "0.12.0", default-features = false, fe
 metrics-util = "0.15.0"
 mime = "0.3.16"
 minify-html = "0.11.0"
-opentelemetry = { version = "0.19", features = ["rt-tokio"] }
-opentelemetry-otlp = "0.12"
+opentelemetry = { version = "0.20", features = ["rt-tokio"] }
+opentelemetry-otlp = "0.13"
 pin-project-lite = "0.2.9"
 quanta = "0.11.0"
 rand = "0.8"
@@ -71,11 +71,11 @@ teloxide = { version = "0.12.0", default-features = false, features = [
 thiserror = "1.0"
 time = { version = "0.3.17", features = ["serde"] }
 tracing = "0.1"
-tracing-awc = "0.1.7"
+tracing-awc = "0.1.8"
 tracing-error = "0.2"
 tracing-futures = "0.2"
 tracing-log = "0.1"
-tracing-opentelemetry = "0.19"
+tracing-opentelemetry = "0.20"
 tracing-subscriber = { version = "0.3", features = [
   "ansi",
   "env-filter",
@@ -95,7 +95,7 @@ default-features = false
 features = ["client", "server", "ring"]
 
 [dependencies.tracing-actix-web]
-version = "0.7.5"
+version = "0.7.6"
 
 [build-dependencies]
 anyhow = "1.0"
