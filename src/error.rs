@@ -81,6 +81,9 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't encode public key, {0}")]
     Spki(#[from] rsa::pkcs8::spki::Error),
 
+    #[error("Couldn't sign request")]
+    SignRequest,
+
     #[error("Couldn't parse IRI, {0}")]
     ParseIri(#[from] activitystreams::iri_string::validate::Error),
 
@@ -105,11 +108,11 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't sign digest")]
     Signature(#[from] rsa::signature::Error),
 
-    #[error("Couldn't read signature")]
-    ReadSignature(rsa::signature::Error),
-
     #[error("Couldn't verify signature")]
-    VerifySignature(rsa::signature::Error),
+    VerifySignature,
+
+    #[error("Failed to encode key der")]
+    DerEncode,
 
     #[error("Couldn't parse the signature header")]
     HeaderValidation(#[from] actix_web::http::header::InvalidHeaderValue),

@@ -8,10 +8,7 @@ use crate::{
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use http_signature_normalization_actix::{prelude::*, verify::DeprecatedAlgorithm, Spawn};
-use rsa::{
-    pkcs1v15::Signature, pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, sha2::Sha256,
-    signature::Verifier, RsaPublicKey,
-};
+use rsa::{pkcs1::EncodeRsaPublicKey, pkcs8::DecodePublicKey, RsaPublicKey};
 use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug)]
@@ -128,19 +125,23 @@ async fn do_verify(
     signing_string: String,
 ) -> Result<(), Error> {
     let public_key = RsaPublicKey::from_public_key_pem(public_key.trim())?;
+    let public_key_der = public_key
+        .to_pkcs1_der()
+        .map_err(|_| ErrorKind::DerEncode)?;
+    let public_key = ring::signature::UnparsedPublicKey::new(
+        &ring::signature::RSA_PKCS1_2048_8192_SHA256,
+        public_key_der,
+    );
 
     let span = tracing::Span::current();
     spawner
         .spawn_blocking(move || {
             span.in_scope(|| {
                 let decoded = STANDARD.decode(signature)?;
-                let signature =
-                    Signature::try_from(decoded.as_slice()).map_err(ErrorKind::ReadSignature)?;
 
-                let verifying_key = VerifyingKey::<Sha256>::new(public_key);
-                verifying_key
-                    .verify(signing_string.as_bytes(), &signature)
-                    .map_err(ErrorKind::VerifySignature)?;
+                public_key
+                    .verify(signing_string.as_bytes(), decoded.as_slice())
+                    .map_err(|_| ErrorKind::VerifySignature)?;
 
                 Ok(()) as Result<(), Error>
             })

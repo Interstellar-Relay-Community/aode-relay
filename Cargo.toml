@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.98"
+version = "0.3.99"
 authors = ["asonix <asonix@asonix.dog>"]
 license = "AGPL-3.0"
 readme = "README.md"
@@ -55,7 +55,8 @@ opentelemetry-otlp = "0.12"
 pin-project-lite = "0.2.9"
 quanta = "0.11.0"
 rand = "0.8"
-rsa = { version = "0.9", features = ["sha2"] }
+ring = "0.16.20"
+rsa = { version = "0.9" }
 rsa-magic-public-key = "0.8.0"
 rustls = "0.20.7"
 rustls-pemfile = "1.0.1"
@@ -89,9 +90,9 @@ default-features = false
 features = ["background-jobs-actix", "error-logging"]
 
 [dependencies.http-signature-normalization-actix]
-version = "0.10.0"
+version = "0.10.1"
 default-features = false
-features = ["client", "server", "sha-2"]
+features = ["client", "server", "ring"]
 
 [dependencies.tracing-actix-web]
 version = "0.7.5"

@@ -8,14 +8,12 @@ use actix_web::http::header::Date;
 use awc::{error::SendRequestError, Client, ClientResponse, Connector};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
-use http_signature_normalization_actix::prelude::*;
-use rand::thread_rng;
-use rsa::{
-    pkcs1v15::SigningKey,
-    sha2::{Digest, Sha256},
-    signature::{RandomizedSigner, SignatureEncoding},
-    RsaPrivateKey,
+use http_signature_normalization_actix::{digest::ring::Sha256, prelude::*};
+use ring::{
+    rand::SystemRandom,
+    signature::{RsaKeyPair, RSA_PKCS1_SHA256},
 };
+use rsa::{pkcs1::EncodeRsaPrivateKey, RsaPrivateKey};
 use std::{
     sync::Arc,
     time::{Duration, SystemTime},
@@ -145,7 +143,8 @@ pub(crate) struct Requests {
     client: Client,
     key_id: String,
     user_agent: String,
-    private_key: RsaPrivateKey,
+    private_key: Arc<RsaKeyPair>,
+    rng: SystemRandom,
     config: Config<Spawner>,
     breakers: Breakers,
     last_online: Arc<LastOnline>,
@@ -196,12 +195,16 @@ impl Requests {
         timeout_seconds: u64,
         spawner: Spawner,
     ) -> Self {
+        let private_key_der = private_key.to_pkcs1_der().expect("Can encode der");
+        let private_key = ring::signature::RsaKeyPair::from_der(private_key_der.as_bytes())
+            .expect("Key is valid");
         Requests {
             pool_size,
             client: build_client(&user_agent, pool_size, timeout_seconds),
             key_id,
             user_agent,
-            private_key,
+            private_key: Arc::new(private_key),
+            rng: SystemRandom::new(),
             config: Config::new().mastodon_compat().spawner(spawner),
             breakers,
             last_online,
@@ -407,19 +410,29 @@ impl Requests {
     fn signer(&self) -> Signer {
         Signer {
             private_key: self.private_key.clone(),
+            rng: self.rng.clone(),
         }
     }
 }
 
 struct Signer {
-    private_key: RsaPrivateKey,
+    private_key: Arc<RsaKeyPair>,
+    rng: SystemRandom,
 }
 
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
-        let signing_key = SigningKey::<Sha256>::new(self.private_key.clone());
-        let signature =
-            signing_key.try_sign_with_rng(&mut thread_rng(), signing_string.as_bytes())?;
-        Ok(STANDARD.encode(signature.to_bytes().as_ref()))
+        let mut signature = vec![0; self.private_key.public_modulus_len()];
+
+        self.private_key
+            .sign(
+                &RSA_PKCS1_SHA256,
+                &self.rng,
+                signing_string.as_bytes(),
+                &mut signature,
+            )
+            .map_err(|_| ErrorKind::SignRequest)?;
+
+        Ok(STANDARD.encode(&signature))
     }
 }
