@@ -36,7 +36,7 @@ pub(crate) async fn route(
     state: web::Data<State>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, Error> {
-    let all_nodes = state.node_cache().nodes().await?;
+    let all_nodes = state.node_cache.nodes().await?;
 
     let mut nodes = Vec::new();
     let mut local = Vec::new();

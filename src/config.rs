@@ -46,7 +46,9 @@ pub(crate) struct ParsedConfig {
     prometheus_port: Option<u16>,
     deliver_concurrency: u64,
     client_timeout: u64,
-    client_pool_size: usize,
+    proxy_url: Option<IriString>,
+    proxy_username: Option<String>,
+    proxy_password: Option<String>,
     signature_threads: Option<usize>,
 }
 
@@ -73,7 +75,7 @@ pub struct Config {
     prometheus_config: Option<PrometheusConfig>,
     deliver_concurrency: u64,
     client_timeout: u64,
-    client_pool_size: usize,
+    proxy_config: Option<ProxyConfig>,
     signature_threads: Option<usize>,
 }
 
@@ -87,6 +89,12 @@ struct TlsConfig {
 struct PrometheusConfig {
     addr: IpAddr,
     port: u16,
+}
+
+#[derive(Clone, Debug)]
+struct ProxyConfig {
+    url: IriString,
+    auth: Option<(String, String)>,
 }
 
 #[derive(Debug)]
@@ -144,7 +152,7 @@ impl std::fmt::Debug for Config {
             .field("prometheus_config", &self.prometheus_config)
             .field("deliver_concurrency", &self.deliver_concurrency)
             .field("client_timeout", &self.client_timeout)
-            .field("client_pool_size", &self.client_pool_size)
+            .field("proxy_config", &self.proxy_config)
             .field("signature_threads", &self.signature_threads)
             .finish()
     }
@@ -177,7 +185,9 @@ impl Config {
             .set_default("prometheus_port", None as Option<u16>)?
             .set_default("deliver_concurrency", 8u64)?
             .set_default("client_timeout", 10u64)?
-            .set_default("client_pool_size", 20u64)?
+            .set_default("proxy_url", None as Option<&str>)?
+            .set_default("proxy_username", None as Option<&str>)?
+            .set_default("proxy_password", None as Option<&str>)?
             .set_default("signature_threads", None as Option<u64>)?
             .add_source(Environment::default())
             .build()?;
@@ -220,6 +230,26 @@ impl Config {
             (None, None) => None,
         };
 
+        let proxy_config = match (config.proxy_username, config.proxy_password) {
+            (Some(username), Some(password)) => config.proxy_url.map(|url| ProxyConfig {
+                url,
+                auth: Some((username, password)),
+            }),
+            (Some(_), None) => {
+                tracing::warn!(
+                    "PROXY_USERNAME is set but PROXY_PASSWORD is not set, not setting Proxy Auth"
+                );
+                config.proxy_url.map(|url| ProxyConfig { url, auth: None })
+            }
+            (None, Some(_)) => {
+                tracing::warn!(
+                    "PROXY_PASSWORD is set but PROXY_USERNAME is not set, not setting Proxy Auth"
+                );
+                config.proxy_url.map(|url| ProxyConfig { url, auth: None })
+            }
+            (None, None) => config.proxy_url.map(|url| ProxyConfig { url, auth: None }),
+        };
+
         let source_url = match Self::git_hash() {
             Some(hash) => format!(
                 "{}{}{hash}",
@@ -252,7 +282,7 @@ impl Config {
             prometheus_config,
             deliver_concurrency: config.deliver_concurrency,
             client_timeout: config.client_timeout,
-            client_pool_size: config.client_pool_size,
+            proxy_config,
             signature_threads: config.signature_threads,
         })
     }
@@ -468,8 +498,10 @@ impl Config {
         )
     }
 
-    pub(crate) fn client_pool_size(&self) -> usize {
-        self.client_pool_size
+    pub(crate) fn proxy_config(&self) -> Option<(&IriString, Option<(&str, &str)>)> {
+        self.proxy_config.as_ref().map(|ProxyConfig { url, auth }| {
+            (url, auth.as_ref().map(|(u, p)| (u.as_str(), p.as_str())))
+        })
     }
 
     pub(crate) fn source_code(&self) -> &IriString {

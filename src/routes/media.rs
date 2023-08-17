@@ -19,7 +19,7 @@ pub(crate) async fn route(
             response.insert_header((name.clone(), value.clone()));
         }
 
-        return Ok(response.body(BodyStream::new(res)));
+        return Ok(response.body(BodyStream::new(res.bytes_stream())));
     }
 
     Ok(HttpResponse::NotFound().finish())

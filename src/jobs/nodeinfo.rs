@@ -27,6 +27,7 @@ impl QueryNodeinfo {
     #[tracing::instrument(name = "Query node info", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         if !state
+            .state
             .node_cache
             .is_nodeinfo_outdated(self.actor_id.clone())
             .await
@@ -42,6 +43,7 @@ impl QueryNodeinfo {
         let well_known_uri = iri!(format!("{scheme}://{authority}/.well-known/nodeinfo"));
 
         let well_known = match state
+            .state
             .requests
             .fetch_json::<WellKnown>(&well_known_uri)
             .await
@@ -60,7 +62,7 @@ impl QueryNodeinfo {
             return Ok(());
         };
 
-        let nodeinfo = match state.requests.fetch_json::<Nodeinfo>(&href).await {
+        let nodeinfo = match state.state.requests.fetch_json::<Nodeinfo>(&href).await {
             Ok(nodeinfo) => nodeinfo,
             Err(e) if e.is_breaker() => {
                 tracing::debug!("Not retrying due to failed breaker");
@@ -70,6 +72,7 @@ impl QueryNodeinfo {
         };
 
         state
+            .state
             .node_cache
             .set_info(
                 self.actor_id.clone(),

@@ -5,7 +5,7 @@ use actix_web::{
     http::StatusCode,
     HttpResponse,
 };
-use http_signature_normalization_actix::PrepareSignError;
+use http_signature_normalization_reqwest::SignError;
 use std::{convert::Infallible, fmt::Debug, io};
 use tracing_error::SpanTrace;
 
@@ -84,6 +84,12 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't sign request")]
     SignRequest,
 
+    #[error("Couldn't make request")]
+    Reqwest(#[from] reqwest::Error),
+
+    #[error("Couldn't build client")]
+    ReqwestMiddleware(#[from] reqwest_middleware::Error),
+
     #[error("Couldn't parse IRI, {0}")]
     ParseIri(#[from] activitystreams::iri_string::validate::Error),
 
@@ -102,8 +108,8 @@ pub(crate) enum ErrorKind {
     #[error("Couldn't do the json thing, {0}")]
     Json(#[from] serde_json::Error),
 
-    #[error("Couldn't build signing string, {0}")]
-    PrepareSign(#[from] PrepareSignError),
+    #[error("Couldn't sign request, {0}")]
+    Sign(#[from] SignError),
 
     #[error("Couldn't sign digest")]
     Signature(#[from] rsa::signature::Error),
@@ -248,6 +254,12 @@ impl From<rsa::errors::Error> for ErrorKind {
 
 impl From<http_signature_normalization_actix::Canceled> for ErrorKind {
     fn from(_: http_signature_normalization_actix::Canceled) -> Self {
+        Self::Canceled
+    }
+}
+
+impl From<http_signature_normalization_reqwest::Canceled> for ErrorKind {
+    fn from(_: http_signature_normalization_reqwest::Canceled) -> Self {
         Self::Canceled
     }
 }

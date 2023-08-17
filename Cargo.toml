@@ -28,11 +28,10 @@ actix-web = { version = "4.0.1", default-features = false, features = [
   "compress-brotli",
   "compress-gzip",
 ] }
-actix-webfinger = "0.4.0"
+actix-webfinger = { version = "0.5.0", default-features = false }
 activitystreams = "0.7.0-alpha.25"
 activitystreams-ext = "0.1.0-alpha.3"
 ammonia = "3.1.0"
-awc = { version = "3.0.0", default-features = false, features = ["rustls"] }
 bcrypt = "0.15"
 base64 = "0.21"
 clap = { version = "4.0.0", features = ["derive"] }
@@ -55,6 +54,9 @@ opentelemetry-otlp = "0.13"
 pin-project-lite = "0.2.9"
 quanta = "0.11.0"
 rand = "0.8"
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "stream"]}
+reqwest-middleware = "0.2"
+reqwest-tracing = "0.4.5"
 ring = "0.16.20"
 rsa = { version = "0.9" }
 rsa-magic-public-key = "0.8.0"
@@ -71,7 +73,6 @@ teloxide = { version = "0.12.0", default-features = false, features = [
 thiserror = "1.0"
 time = { version = "0.3.17", features = ["serde"] }
 tracing = "0.1"
-tracing-awc = "0.1.8"
 tracing-error = "0.2"
 tracing-futures = "0.2"
 tracing-log = "0.1"
@@ -92,7 +93,12 @@ features = ["background-jobs-actix", "error-logging"]
 [dependencies.http-signature-normalization-actix]
 version = "0.10.1"
 default-features = false
-features = ["client", "server", "ring"]
+features = ["server", "ring"]
+
+[dependencies.http-signature-normalization-reqwest]
+version = "0.10.0"
+default-features = false
+features = ["middleware", "ring"]
 
 [dependencies.tracing-actix-web]
 version = "0.7.6"

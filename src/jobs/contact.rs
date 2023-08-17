@@ -32,6 +32,7 @@ impl QueryContact {
 
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let contact_outdated = state
+            .state
             .node_cache
             .is_contact_outdated(self.actor_id.clone())
             .await;
@@ -41,6 +42,7 @@ impl QueryContact {
         }
 
         let contact = match state
+            .state
             .requests
             .fetch::<AcceptedActors>(&self.contact_id)
             .await
@@ -57,6 +59,7 @@ impl QueryContact {
             to_contact(contact).ok_or(ErrorKind::Extract("contact"))?;
 
         state
+            .state
             .node_cache
             .set_contact(self.actor_id, username, display_name, url, avatar)
             .await?;

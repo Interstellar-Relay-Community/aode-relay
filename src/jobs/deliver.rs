@@ -35,7 +35,7 @@ impl Deliver {
 
     #[tracing::instrument(name = "Deliver", skip(state))]
     async fn permform(self, state: JobState) -> Result<(), Error> {
-        if let Err(e) = state.requests.deliver(&self.to, &self.data).await {
+        if let Err(e) = state.state.requests.deliver(&self.to, &self.data).await {
             if e.is_breaker() {
                 tracing::debug!("Not trying due to failed breaker");
                 return Ok(());
