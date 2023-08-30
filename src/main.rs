@@ -399,7 +399,7 @@ async fn do_server_main(
             .with_no_client_auth()
             .with_single_cert(certs, key)?;
         server
-            .bind_rustls(bind_address, server_config)?
+            .bind_rustls_021(bind_address, server_config)?
             .run()
             .await?;
     } else {
