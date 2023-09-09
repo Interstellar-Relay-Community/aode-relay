@@ -1387,9 +1387,9 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.10.2"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c82b0217cd33ff0d3530558a2a762017585b0c3d0bd208ddc6b3944c13660b7f"
+checksum = "c8d7de237db731e75fbfa0ebeeb70e366f5f9cdcf45af4a41eca8516b80162ca"
 dependencies = [
  "actix-http",
  "actix-rt",
