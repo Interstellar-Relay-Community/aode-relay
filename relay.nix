@@ -6,12 +6,13 @@
 
 rustPlatform.buildRustPackage {
   pname = "relay";
-  version = "0.3.101";
+  version = "0.3.102";
   src = ./.;
   cargoLock.lockFile = ./Cargo.lock;
 
   PROTOC = "${protobuf}/bin/protoc";
   PROTOC_INCLUDE = "${protobuf}/include";
+  RUSTFLAGS = "--cfg tokio_unstable";
 
   nativeBuildInputs = [ ];
 
