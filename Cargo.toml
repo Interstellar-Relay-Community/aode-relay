@@ -72,7 +72,7 @@ tracing = "0.1"
 tracing-error = "0.2"
 tracing-futures = "0.2"
 tracing-log = "0.1"
-tracing-opentelemetry = "0.20"
+tracing-opentelemetry = "0.21"
 tracing-subscriber = { version = "0.3", features = [
   "ansi",
   "env-filter",
