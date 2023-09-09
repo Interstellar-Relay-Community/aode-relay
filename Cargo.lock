@@ -431,7 +431,7 @@ dependencies = [
  "thiserror",
  "time",
  "tokio",
- "toml 0.7.7",
+ "toml 0.7.8",
  "tracing",
  "tracing-actix-web",
  "tracing-error",
@@ -2884,9 +2884,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.105"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "693151e1ac27563d6dbcec9dee9fbd5da8539b20fa14ad3752b2e6d363ace360"
+checksum = "2cc66a619ed80bf7a0f6b17dd063a84b88f6dea1813737cf469aef1d081142c2"
 dependencies = [
  "itoa",
  "ryu",
@@ -3066,9 +3066,9 @@ dependencies = [
 
 [[package]]
 name = "streem"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56bcbf3c75c402c87b9a1947202c83bbc566ba9f4b788ee3d39db75f20c840a2"
+checksum = "641396a5ae90767cb12d21832444ab760841ee887717d802b2c456c4f8199114"
 dependencies = [
  "futures-core",
  "pin-project-lite",
@@ -3400,9 +3400,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de0a3ab2091e52d7299a39d098e200114a972df0a7724add02a273aa9aada592"
+checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
 dependencies = [
  "serde",
  "serde_spanned",
