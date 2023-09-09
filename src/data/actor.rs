@@ -2,7 +2,7 @@ use crate::{
     apub::AcceptedActors,
     db::{Actor, Db},
     error::{Error, ErrorKind},
-    requests::Requests,
+    requests::{BreakerStrategy, Requests},
 };
 use activitystreams::{iri_string::types::IriString, prelude::*};
 use std::time::{Duration, SystemTime};
@@ -71,7 +71,9 @@ impl ActorCache {
         id: &IriString,
         requests: &Requests,
     ) -> Result<Actor, Error> {
-        let accepted_actor = requests.fetch::<AcceptedActors>(id).await?;
+        let accepted_actor = requests
+            .fetch::<AcceptedActors>(id, BreakerStrategy::Require2XX)
+            .await?;
 
         let input_authority = id.authority_components().ok_or(ErrorKind::MissingDomain)?;
         let accepted_actor_id = accepted_actor

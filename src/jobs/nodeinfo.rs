@@ -1,6 +1,7 @@
 use crate::{
     error::{Error, ErrorKind},
     jobs::{Boolish, JobState, QueryContact},
+    requests::BreakerStrategy,
 };
 use activitystreams::{iri, iri_string::types::IriString, primitives::OneOrMany};
 use background_jobs::ActixJob;
@@ -45,7 +46,7 @@ impl QueryNodeinfo {
         let well_known = match state
             .state
             .requests
-            .fetch_json::<WellKnown>(&well_known_uri)
+            .fetch_json::<WellKnown>(&well_known_uri, BreakerStrategy::Allow404AndBelow)
             .await
         {
             Ok(well_known) => well_known,
@@ -62,7 +63,12 @@ impl QueryNodeinfo {
             return Ok(());
         };
 
-        let nodeinfo = match state.state.requests.fetch_json::<Nodeinfo>(&href).await {
+        let nodeinfo = match state
+            .state
+            .requests
+            .fetch_json::<Nodeinfo>(&href, BreakerStrategy::Require2XX)
+            .await
+        {
             Ok(nodeinfo) => nodeinfo,
             Err(e) if e.is_breaker() => {
                 tracing::debug!("Not retrying due to failed breaker");

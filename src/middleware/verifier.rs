@@ -2,7 +2,7 @@ use crate::{
     apub::AcceptedActors,
     data::{ActorCache, State},
     error::{Error, ErrorKind},
-    requests::Requests,
+    requests::{BreakerStrategy, Requests},
     spawner::Spawner,
 };
 use activitystreams::{base::BaseExt, iri, iri_string::types::IriString};
@@ -70,7 +70,11 @@ impl MyVerify {
 
             actor_id
         } else {
-            match self.0.fetch::<PublicKeyResponse>(&public_key_id).await {
+            match self
+                .0
+                .fetch::<PublicKeyResponse>(&public_key_id, BreakerStrategy::Require2XX)
+                .await
+            {
                 Ok(res) => res.actor_id().ok_or(ErrorKind::MissingId),
                 Err(e) => {
                     if e.is_gone() {

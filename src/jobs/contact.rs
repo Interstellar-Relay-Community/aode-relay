@@ -2,6 +2,7 @@ use crate::{
     apub::AcceptedActors,
     error::{Error, ErrorKind},
     jobs::JobState,
+    requests::BreakerStrategy,
 };
 use activitystreams::{iri_string::types::IriString, object::Image, prelude::*};
 use background_jobs::ActixJob;
@@ -44,7 +45,7 @@ impl QueryContact {
         let contact = match state
             .state
             .requests
-            .fetch::<AcceptedActors>(&self.contact_id)
+            .fetch::<AcceptedActors>(&self.contact_id, BreakerStrategy::Allow404AndBelow)
             .await
         {
             Ok(contact) => contact,

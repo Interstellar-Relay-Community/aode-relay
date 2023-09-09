@@ -24,6 +24,16 @@ const ONE_MINUTE: u64 = 60 * ONE_SECOND;
 const ONE_HOUR: u64 = 60 * ONE_MINUTE;
 const ONE_DAY: u64 = 24 * ONE_HOUR;
 
+#[derive(Debug)]
+pub(crate) enum BreakerStrategy {
+    // Requires a successful response
+    Require2XX,
+    // Allows HTTP 2xx-401
+    Allow401AndBelow,
+    // Allows HTTP 2xx-404
+    Allow404AndBelow,
+}
+
 #[derive(Clone)]
 pub(crate) struct Breakers {
     inner: Arc<DashMap<String, Breaker>>,
@@ -193,6 +203,7 @@ impl Requests {
     async fn check_response(
         &self,
         parsed_url: &IriString,
+        strategy: BreakerStrategy,
         res: Result<reqwest::Response, reqwest_middleware::Error>,
     ) -> Result<reqwest::Response, Error> {
         if res.is_err() {
@@ -203,7 +214,13 @@ impl Requests {
 
         let status = res.status();
 
-        if status.is_server_error() {
+        let success = match strategy {
+            BreakerStrategy::Require2XX => status.is_success(),
+            BreakerStrategy::Allow401AndBelow => (200..=401).contains(&status.as_u16()),
+            BreakerStrategy::Allow404AndBelow => (200..=404).contains(&status.as_u16()),
+        };
+
+        if !success {
             self.breakers.fail(&parsed_url);
 
             if let Ok(s) = res.text().await {
@@ -215,22 +232,33 @@ impl Requests {
             return Err(ErrorKind::Status(parsed_url.to_string(), status).into());
         }
 
-        self.last_online.mark_seen(&parsed_url);
-        self.breakers.succeed(&parsed_url);
+        // only actually succeed a breaker on 2xx response
+        if status.is_success() {
+            self.last_online.mark_seen(&parsed_url);
+            self.breakers.succeed(&parsed_url);
+        }
 
         Ok(res)
     }
 
     #[tracing::instrument(name = "Fetch Json", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_json<T>(&self, url: &IriString) -> Result<T, Error>
+    pub(crate) async fn fetch_json<T>(
+        &self,
+        url: &IriString,
+        strategy: BreakerStrategy,
+    ) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
-        self.do_fetch(url, "application/json").await
+        self.do_fetch(url, "application/json", strategy).await
     }
 
     #[tracing::instrument(name = "Fetch Json", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_json_msky<T>(&self, url: &IriString) -> Result<T, Error>
+    pub(crate) async fn fetch_json_msky<T>(
+        &self,
+        url: &IriString,
+        strategy: BreakerStrategy,
+    ) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -240,6 +268,7 @@ impl Requests {
                 &serde_json::json!({}),
                 "application/json",
                 "application/json",
+                strategy,
             )
             .await?
             .bytes()
@@ -249,31 +278,50 @@ impl Requests {
     }
 
     #[tracing::instrument(name = "Fetch Activity+Json", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch<T>(&self, url: &IriString) -> Result<T, Error>
+    pub(crate) async fn fetch<T>(
+        &self,
+        url: &IriString,
+        strategy: BreakerStrategy,
+    ) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
-        self.do_fetch(url, "application/activity+json").await
+        self.do_fetch(url, "application/activity+json", strategy)
+            .await
     }
 
-    async fn do_fetch<T>(&self, url: &IriString, accept: &str) -> Result<T, Error>
+    async fn do_fetch<T>(
+        &self,
+        url: &IriString,
+        accept: &str,
+        strategy: BreakerStrategy,
+    ) -> Result<T, Error>
     where
         T: serde::de::DeserializeOwned,
     {
-        let body = self.do_fetch_response(url, accept).await?.bytes().await?;
+        let body = self
+            .do_fetch_response(url, accept, strategy)
+            .await?
+            .bytes()
+            .await?;
 
         Ok(serde_json::from_slice(&body)?)
     }
 
     #[tracing::instrument(name = "Fetch response", skip(self), fields(signing_string))]
-    pub(crate) async fn fetch_response(&self, url: &IriString) -> Result<reqwest::Response, Error> {
-        self.do_fetch_response(url, "*/*").await
+    pub(crate) async fn fetch_response(
+        &self,
+        url: &IriString,
+        strategy: BreakerStrategy,
+    ) -> Result<reqwest::Response, Error> {
+        self.do_fetch_response(url, "*/*", strategy).await
     }
 
     pub(crate) async fn do_fetch_response(
         &self,
         url: &IriString,
         accept: &str,
+        strategy: BreakerStrategy,
     ) -> Result<reqwest::Response, Error> {
         if !self.breakers.should_try(url) {
             return Err(ErrorKind::Breaker.into());
@@ -295,7 +343,7 @@ impl Requests {
 
         let res = self.client.execute(request).await;
 
-        let res = self.check_response(url, res).await?;
+        let res = self.check_response(url, strategy, res).await?;
 
         Ok(res)
     }
@@ -305,7 +353,12 @@ impl Requests {
         skip_all,
         fields(inbox = inbox.to_string().as_str(), signing_string)
     )]
-    pub(crate) async fn deliver<T>(&self, inbox: &IriString, item: &T) -> Result<(), Error>
+    pub(crate) async fn deliver<T>(
+        &self,
+        inbox: &IriString,
+        item: &T,
+        strategy: BreakerStrategy,
+    ) -> Result<(), Error>
     where
         T: serde::ser::Serialize + std::fmt::Debug,
     {
@@ -314,6 +367,7 @@ impl Requests {
             item,
             "application/activity+json",
             "application/activity+json",
+            strategy,
         )
         .await?;
         Ok(())
@@ -325,6 +379,7 @@ impl Requests {
         item: &T,
         content_type: &str,
         accept: &str,
+        strategy: BreakerStrategy,
     ) -> Result<reqwest::Response, Error>
     where
         T: serde::ser::Serialize + std::fmt::Debug,
@@ -357,7 +412,7 @@ impl Requests {
 
         let res = self.client.execute(request).await;
 
-        let res = self.check_response(inbox, res).await?;
+        let res = self.check_response(inbox, strategy, res).await?;
 
         Ok(res)
     }

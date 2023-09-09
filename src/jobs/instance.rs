@@ -2,6 +2,7 @@ use crate::{
     config::UrlKind,
     error::{Error, ErrorKind},
     jobs::{Boolish, JobState},
+    requests::BreakerStrategy,
 };
 use activitystreams::{iri, iri_string::types::IriString};
 use background_jobs::ActixJob;
@@ -42,7 +43,10 @@ impl QueryInstance {
                 state
                     .state
                     .requests
-                    .fetch_json::<Instance>(&mastodon_instance_uri)
+                    .fetch_json::<Instance>(
+                        &mastodon_instance_uri,
+                        BreakerStrategy::Allow404AndBelow,
+                    )
                     .await
             }
             InstanceApiType::Misskey => {
@@ -50,7 +54,10 @@ impl QueryInstance {
                 state
                     .state
                     .requests
-                    .fetch_json_msky::<MisskeyMeta>(&msky_meta_uri)
+                    .fetch_json_msky::<MisskeyMeta>(
+                        &msky_meta_uri,
+                        BreakerStrategy::Allow404AndBelow,
+                    )
                     .await
                     .map(|res| res.into())
             }
