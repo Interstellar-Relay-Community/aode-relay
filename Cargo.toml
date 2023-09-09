@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.99"
+version = "0.3.102"
 authors = ["asonix <asonix@asonix.dog>"]
 license = "AGPL-3.0"
 readme = "README.md"
@@ -23,16 +23,11 @@ default = []
 [dependencies]
 anyhow = "1.0"
 actix-rt = "2.7.0"
-actix-web = { version = "4.0.1", default-features = false, features = [
-  "rustls",
-  "compress-brotli",
-  "compress-gzip",
-] }
-actix-webfinger = "0.4.0"
+actix-web = { version = "4.4.0", default-features = false, features = ["compress-brotli", "compress-gzip", "rustls-0_21"] }
+actix-webfinger = { version = "0.5.0", default-features = false }
 activitystreams = "0.7.0-alpha.25"
 activitystreams-ext = "0.1.0-alpha.3"
 ammonia = "3.1.0"
-awc = { version = "3.0.0", default-features = false, features = ["rustls"] }
 bcrypt = "0.15"
 base64 = "0.21"
 clap = { version = "4.0.0", features = ["derive"] }
@@ -40,7 +35,7 @@ config = "0.13.0"
 console-subscriber = { version = "0.1", optional = true }
 dashmap = "5.1.0"
 dotenv = "0.15.0"
-flume = "0.10.14"
+flume = "0.11.0"
 futures-util = "0.3.17"
 lru = "0.11.0"
 metrics = "0.21.0"
@@ -50,15 +45,18 @@ metrics-exporter-prometheus = { version = "0.12.0", default-features = false, fe
 metrics-util = "0.15.0"
 mime = "0.3.16"
 minify-html = "0.11.0"
-opentelemetry = { version = "0.19", features = ["rt-tokio"] }
-opentelemetry-otlp = "0.12"
+opentelemetry = { version = "0.20", features = ["rt-tokio"] }
+opentelemetry-otlp = "0.13"
 pin-project-lite = "0.2.9"
 quanta = "0.11.0"
 rand = "0.8"
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "stream"]}
+reqwest-middleware = "0.2"
+reqwest-tracing = "0.4.5"
 ring = "0.16.20"
 rsa = { version = "0.9" }
 rsa-magic-public-key = "0.8.0"
-rustls = "0.20.7"
+rustls = "0.21.0"
 rustls-pemfile = "1.0.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -71,11 +69,10 @@ teloxide = { version = "0.12.0", default-features = false, features = [
 thiserror = "1.0"
 time = { version = "0.3.17", features = ["serde"] }
 tracing = "0.1"
-tracing-awc = "0.1.7"
 tracing-error = "0.2"
 tracing-futures = "0.2"
 tracing-log = "0.1"
-tracing-opentelemetry = "0.19"
+tracing-opentelemetry = "0.21"
 tracing-subscriber = { version = "0.3", features = [
   "ansi",
   "env-filter",
@@ -92,10 +89,15 @@ features = ["background-jobs-actix", "error-logging"]
 [dependencies.http-signature-normalization-actix]
 version = "0.10.1"
 default-features = false
-features = ["client", "server", "ring"]
+features = ["server", "ring"]
+
+[dependencies.http-signature-normalization-reqwest]
+version = "0.10.0"
+default-features = false
+features = ["middleware", "ring"]
 
 [dependencies.tracing-actix-web]
-version = "0.7.5"
+version = "0.7.6"
 
 [build-dependencies]
 anyhow = "1.0"

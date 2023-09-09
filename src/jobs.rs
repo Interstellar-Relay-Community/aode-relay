@@ -14,11 +14,9 @@ pub(crate) use self::{
 
 use crate::{
     config::Config,
-    data::{ActorCache, MediaCache, NodeCache, State},
+    data::{ActorCache, MediaCache, State},
     error::{Error, ErrorKind},
     jobs::{process_listeners::Listeners, record_last_online::RecordLastOnline},
-    requests::Requests,
-    spawner::Spawner,
 };
 use background_jobs::{
     memory_storage::{ActixTimer, Storage},
@@ -45,7 +43,6 @@ pub(crate) fn create_workers(
     actors: ActorCache,
     media: MediaCache,
     config: Config,
-    spawner: Spawner,
 ) -> JobServer {
     let deliver_concurrency = config.deliver_concurrency();
 
@@ -56,7 +53,6 @@ pub(crate) fn create_workers(
             JobServer::new(queue_handle),
             media.clone(),
             config.clone(),
-            spawner.clone(),
         )
     })
     .register::<Deliver>()
@@ -84,12 +80,10 @@ pub(crate) fn create_workers(
 
 #[derive(Clone, Debug)]
 pub(crate) struct JobState {
-    requests: Requests,
     state: State,
     actors: ActorCache,
     config: Config,
     media: MediaCache,
-    node_cache: NodeCache,
     job_server: JobServer,
 }
 
@@ -113,15 +107,12 @@ impl JobState {
         job_server: JobServer,
         media: MediaCache,
         config: Config,
-        spawner: Spawner,
     ) -> Self {
         JobState {
-            requests: state.requests(&config, spawner),
-            node_cache: state.node_cache(),
+            state,
             actors,
             config,
             media,
-            state,
             job_server,
         }
     }

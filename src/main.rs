@@ -1,17 +1,21 @@
 // need this for ructe
 #![allow(clippy::needless_borrow)]
 
+use std::time::Duration;
+
 use activitystreams::iri_string::types::IriString;
 use actix_rt::task::JoinHandle;
 use actix_web::{middleware::Compress, web, App, HttpServer};
 use collector::MemoryCollector;
 #[cfg(feature = "console")]
 use console_subscriber::ConsoleLayer;
+use error::Error;
 use http_signature_normalization_actix::middleware::VerifySignature;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use metrics_util::layers::FanoutBuilder;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
+use reqwest_middleware::ClientWithMiddleware;
 use rustls::ServerConfig;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
@@ -33,6 +37,8 @@ mod requests;
 mod routes;
 mod spawner;
 mod telegram;
+
+use crate::config::UrlKind;
 
 use self::{
     args::Args,
@@ -100,6 +106,38 @@ fn init_subscriber(
     Ok(())
 }
 
+fn build_client(
+    user_agent: &str,
+    timeout_seconds: u64,
+    proxy: Option<(&IriString, Option<(&str, &str)>)>,
+) -> Result<ClientWithMiddleware, Error> {
+    let builder = reqwest::Client::builder().user_agent(user_agent.to_string());
+
+    let builder = if let Some((url, auth)) = proxy {
+        let proxy = reqwest::Proxy::all(url.as_str())?;
+
+        let proxy = if let Some((username, password)) = auth {
+            proxy.basic_auth(username, password)
+        } else {
+            proxy
+        };
+
+        builder.proxy(proxy)
+    } else {
+        builder
+    };
+
+    let client = builder
+        .timeout(Duration::from_secs(timeout_seconds))
+        .build()?;
+
+    let client_with_middleware = reqwest_middleware::ClientBuilder::new(client)
+        .with(reqwest_tracing::TracingMiddleware::default())
+        .build();
+
+    Ok(client_with_middleware)
+}
+
 #[actix_rt::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
@@ -150,11 +188,11 @@ fn client_main(config: Config, args: Args) -> JoinHandle<Result<(), anyhow::Erro
 }
 
 async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
-    let client = requests::build_client(
+    let client = build_client(
         &config.user_agent(),
-        config.client_pool_size(),
         config.client_timeout(),
-    );
+        config.proxy_config(),
+    )?;
 
     if !args.blocks().is_empty() || !args.allowed().is_empty() {
         if args.undo() {
@@ -251,17 +289,14 @@ async fn do_server_main(
     collector: MemoryCollector,
     config: Config,
 ) -> Result<(), anyhow::Error> {
+    let client = build_client(
+        &config.user_agent(),
+        config.client_timeout(),
+        config.proxy_config(),
+    )?;
+
     tracing::warn!("Creating state");
     let node_config = std::collections::HashMap::new();
-
-    let state = State::build(db.clone(), node_config).await?;
-
-    if let Some((token, admin_handle)) = config.telegram_info() {
-        tracing::warn!("Creating telegram handler");
-        telegram::start(admin_handle.to_owned(), db.clone(), token);
-    }
-
-    let keys = config.open_keys()?;
 
     let (signature_threads, verify_threads) = match config.signature_threads() {
         0 | 1 => (1, 1),
@@ -274,26 +309,29 @@ async fn do_server_main(
         }
     };
 
-    let spawner = Spawner::build("sign-cpu", signature_threads)?;
     let verify_spawner = Spawner::build("verify-cpu", verify_threads)?;
+    let sign_spawner = Spawner::build("sign-cpu", signature_threads)?;
+
+    let key_id = config.generate_url(UrlKind::MainKey).to_string();
+    let state = State::build(db.clone(), key_id, sign_spawner, client, node_config).await?;
+
+    if let Some((token, admin_handle)) = config.telegram_info() {
+        tracing::warn!("Creating telegram handler");
+        telegram::start(admin_handle.to_owned(), db.clone(), token);
+    }
+
+    let keys = config.open_keys()?;
 
     let bind_address = config.bind_address();
     let server = HttpServer::new(move || {
-        let requests = state.requests(&config, spawner.clone());
-
-        let job_server = create_workers(
-            state.clone(),
-            actors.clone(),
-            media.clone(),
-            config.clone(),
-            spawner.clone(),
-        );
+        let job_server =
+            create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
 
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
             .app_data(web::Data::new(
-                requests.clone().spawner(verify_spawner.clone()),
+                state.requests.clone().spawner(verify_spawner.clone()),
             ))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
@@ -319,7 +357,7 @@ async fn do_server_main(
                     .wrap(config.digest_middleware().spawner(verify_spawner.clone()))
                     .wrap(VerifySignature::new(
                         MyVerify(
-                            requests.spawner(verify_spawner.clone()),
+                            state.requests.clone().spawner(verify_spawner.clone()),
                             actors.clone(),
                             state.clone(),
                             verify_spawner.clone(),
@@ -366,7 +404,7 @@ async fn do_server_main(
             .with_no_client_auth()
             .with_single_cert(certs, key)?;
         server
-            .bind_rustls(bind_address, server_config)?
+            .bind_rustls_021(bind_address, server_config)?
             .run()
             .await?;
     } else {

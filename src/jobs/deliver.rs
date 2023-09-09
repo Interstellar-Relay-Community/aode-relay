@@ -1,6 +1,7 @@
 use crate::{
     error::Error,
     jobs::{debug_object, JobState},
+    requests::BreakerStrategy,
 };
 use activitystreams::iri_string::types::IriString;
 use background_jobs::{ActixJob, Backoff};
@@ -35,7 +36,12 @@ impl Deliver {
 
     #[tracing::instrument(name = "Deliver", skip(state))]
     async fn permform(self, state: JobState) -> Result<(), Error> {
-        if let Err(e) = state.requests.deliver(&self.to, &self.data).await {
+        if let Err(e) = state
+            .state
+            .requests
+            .deliver(&self.to, &self.data, BreakerStrategy::Allow401AndBelow)
+            .await
+        {
             if e.is_breaker() {
                 tracing::debug!("Not trying due to failed breaker");
                 return Ok(());

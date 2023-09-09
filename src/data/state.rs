@@ -1,5 +1,4 @@
 use crate::{
-    config::{Config, UrlKind},
     data::NodeCache,
     db::Db,
     error::Error,
@@ -10,6 +9,7 @@ use activitystreams::iri_string::types::IriString;
 use actix_web::web;
 use lru::LruCache;
 use rand::thread_rng;
+use reqwest_middleware::ClientWithMiddleware;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
@@ -19,10 +19,10 @@ use super::node::NodeConfig;
 
 #[derive(Clone)]
 pub struct State {
+    pub(crate) requests: Requests,
     pub(crate) public_key: RsaPublicKey,
-    private_key: RsaPrivateKey,
     object_cache: Arc<RwLock<LruCache<IriString, IriString>>>,
-    node_cache: NodeCache,
+    pub(crate) node_cache: NodeCache,
     pub(crate) node_config: Arc<RwLock<HashMap<String, NodeConfig>>>,
     breakers: Breakers,
     pub(crate) last_online: Arc<LastOnline>,
@@ -40,23 +40,6 @@ impl std::fmt::Debug for State {
 }
 
 impl State {
-    pub(crate) fn node_cache(&self) -> NodeCache {
-        self.node_cache.clone()
-    }
-
-    pub(crate) fn requests(&self, config: &Config, spawner: Spawner) -> Requests {
-        Requests::new(
-            config.generate_url(UrlKind::MainKey).to_string(),
-            self.private_key.clone(),
-            config.user_agent(),
-            self.breakers.clone(),
-            self.last_online.clone(),
-            config.client_pool_size(),
-            config.client_timeout(),
-            spawner,
-        )
-    }
-
     #[tracing::instrument(
         level = "debug",
         name = "Get inboxes for other domains",
@@ -117,7 +100,13 @@ impl State {
     }
 
     #[tracing::instrument(level = "debug", name = "Building state", skip_all)]
-    pub(crate) async fn build(db: Db, node_config: HashMap<String, NodeConfig>) -> Result<Self, Error> {
+    pub(crate) async fn build(
+        db: Db,
+        key_id: String,
+        spawner: Spawner,
+        client: ClientWithMiddleware,
+        node_config: HashMap<String, NodeConfig>,
+    ) -> Result<Self, Error> {
         let private_key = if let Ok(Some(key)) = db.private_key().await {
             tracing::debug!("Using existing key");
             key
@@ -136,17 +125,29 @@ impl State {
 
         let public_key = private_key.to_public_key();
 
-        let state = State {
-            public_key,
+        let breakers = Breakers::default();
+        let last_online = Arc::new(LastOnline::empty());
+
+        let requests = Requests::new(
+            key_id,
             private_key,
+            breakers.clone(),
+            last_online.clone(),
+            spawner,
+            client,
+        );
+
+        let state = State {
+            requests,
+            public_key,
             object_cache: Arc::new(RwLock::new(LruCache::new(
                 (1024 * 8).try_into().expect("nonzero"),
             ))),
             node_cache: NodeCache::new(db.clone()),
             node_config: Arc::new(RwLock::new(node_config)),
-            breakers: Breakers::default(),
+            breakers,
             db,
-            last_online: Arc::new(LastOnline::empty()),
+            last_online,
         };
 
         Ok(state)

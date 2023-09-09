@@ -2,6 +2,7 @@ use crate::{
     config::UrlKind,
     error::{Error, ErrorKind},
     jobs::{Boolish, JobState},
+    requests::BreakerStrategy,
 };
 use activitystreams::{iri, iri_string::types::IriString};
 use background_jobs::ActixJob;
@@ -40,15 +41,23 @@ impl QueryInstance {
             InstanceApiType::Mastodon => {
                 let mastodon_instance_uri = iri!(format!("{scheme}://{authority}/api/v1/instance"));
                 state
+                    .state
                     .requests
-                    .fetch_json::<Instance>(&mastodon_instance_uri)
+                    .fetch_json::<Instance>(
+                        &mastodon_instance_uri,
+                        BreakerStrategy::Allow404AndBelow,
+                    )
                     .await
             }
             InstanceApiType::Misskey => {
                 let msky_meta_uri = iri!(format!("{scheme}://{authority}/api/meta"));
                 state
+                    .state
                     .requests
-                    .fetch_json_msky::<MisskeyMeta>(&msky_meta_uri)
+                    .fetch_json_msky::<MisskeyMeta>(
+                        &msky_meta_uri,
+                        BreakerStrategy::Allow404AndBelow,
+                    )
                     .await
                     .map(|res| res.into())
             }
@@ -58,10 +67,12 @@ impl QueryInstance {
     #[tracing::instrument(name = "Query instance", skip(state))]
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let contact_outdated = state
+            .state
             .node_cache
             .is_contact_outdated(self.actor_id.clone())
             .await;
         let instance_outdated = state
+            .state
             .node_cache
             .is_instance_outdated(self.actor_id.clone())
             .await;
@@ -123,6 +134,7 @@ impl QueryInstance {
             let avatar = state.config.generate_url(UrlKind::Media(uuid));
 
             state
+                .state
                 .node_cache
                 .set_contact(
                     self.actor_id.clone(),
@@ -137,6 +149,7 @@ impl QueryInstance {
         let description = ammonia::clean(&description);
 
         state
+            .state
             .node_cache
             .set_instance(
                 self.actor_id,

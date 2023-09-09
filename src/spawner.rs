@@ -162,3 +162,32 @@ impl Spawn for Spawner {
         })
     }
 }
+
+impl http_signature_normalization_reqwest::Spawn for Spawner {
+    type Future<T> = std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, http_signature_normalization_reqwest::Canceled>> + Send>> where T: Send;
+
+    fn spawn_blocking<Func, Out>(&self, func: Func) -> Self::Future<Out>
+    where
+        Func: FnOnce() -> Out + Send + 'static,
+        Out: Send + 'static,
+    {
+        let sender = self.sender.as_ref().expect("Sender exists").clone();
+
+        Box::pin(async move {
+            let (tx, rx) = flume::bounded(1);
+
+            let _ = sender
+                .send_async(Box::new(move || {
+                    if tx.try_send((func)()).is_err() {
+                        tracing::warn!("Requestor hung up");
+                        metrics::increment_counter!("relay.spawner.disconnected");
+                    }
+                }))
+                .await;
+
+            timer(rx.recv_async())
+                .await
+                .map_err(|_| http_signature_normalization_reqwest::Canceled)
+        })
+    }
+}

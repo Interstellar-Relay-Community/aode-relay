@@ -108,7 +108,6 @@ LOCAL_BLURB="<p>Welcome to my cool relay where I have cool relay things happenin
 PROMETHEUS_ADDR=0.0.0.0
 PROMETHEUS_PORT=9000
 CLIENT_TIMEOUT=10
-CLIENT_POOL_SIZE=20
 DELIVER_CONCURRENCY=8
 SIGNATURE_THREADS=2
 ```
@@ -163,11 +162,6 @@ Optional - Port to bind to for serving the prometheus scrape endpoint
 ##### `CLIENT_TIMEOUT`
 Optional - How long the relay will hold open a connection (in seconds) to a remote server during
 fetches and deliveries. This defaults to 10
-##### `CLIENT_POOL_SIZE`
-Optional - How many connections the relay should maintain per thread. This value will be multiplied
-by the number of cores available to the relay. This defaults to 20, so a 4-core machine will have a
-maximum of 160 simultaneous outbound connections. If you run into problems related to "Too many open
-files", you can either decrease this number or increase the ulimit for your system.
 ##### `DELIVER_CONCURRENCY`
 Optional - How many deliver requests the relay should allow to be in-flight per thread. the default
 is 8
@@ -175,6 +169,12 @@ is 8
 Optional - Override number of threads used for signing and verifying requests. Default is
 `std::thread::available_parallelism()` (It tries to detect how many cores you have). If it cannot
 detect the correct number of cores, it falls back to 1.
+##### 'PROXY_URL'
+Optional - URL of an HTTP proxy to forward outbound requests through
+##### 'PROXY_USERNAME'
+Optional - username to provide to the HTTP proxy set with `PROXY_URL` through HTTP Basic Auth
+##### 'PROXY_PASSWORD'
+Optional - password to provide to the HTTP proxy set with `PROXY_URL` through HTTP Basic Auth
 
 ### Subscribing
 Mastodon admins can subscribe to this relay by adding the `/inbox` route to their relay settings.

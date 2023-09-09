@@ -3,12 +3,14 @@ use crate::{
     collector::Snapshot,
     config::{AdminUrlKind, Config},
     error::{Error, ErrorKind},
+    extractors::XApiToken,
 };
-use awc::Client;
+use actix_web::http::header::Header;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::de::DeserializeOwned;
 
 pub(crate) async fn allow(
-    client: &Client,
+    client: &ClientWithMiddleware,
     config: &Config,
     domains: Vec<String>,
 ) -> Result<(), Error> {
@@ -16,7 +18,7 @@ pub(crate) async fn allow(
 }
 
 pub(crate) async fn disallow(
-    client: &Client,
+    client: &ClientWithMiddleware,
     config: &Config,
     domains: Vec<String>,
 ) -> Result<(), Error> {
@@ -24,7 +26,7 @@ pub(crate) async fn disallow(
 }
 
 pub(crate) async fn block(
-    client: &Client,
+    client: &ClientWithMiddleware,
     config: &Config,
     domains: Vec<String>,
 ) -> Result<(), Error> {
@@ -32,35 +34,50 @@ pub(crate) async fn block(
 }
 
 pub(crate) async fn unblock(
-    client: &Client,
+    client: &ClientWithMiddleware,
     config: &Config,
     domains: Vec<String>,
 ) -> Result<(), Error> {
     post_domains(client, config, domains, AdminUrlKind::Unblock).await
 }
 
-pub(crate) async fn allowed(client: &Client, config: &Config) -> Result<AllowedDomains, Error> {
+pub(crate) async fn allowed(
+    client: &ClientWithMiddleware,
+    config: &Config,
+) -> Result<AllowedDomains, Error> {
     get_results(client, config, AdminUrlKind::Allowed).await
 }
 
-pub(crate) async fn blocked(client: &Client, config: &Config) -> Result<BlockedDomains, Error> {
+pub(crate) async fn blocked(
+    client: &ClientWithMiddleware,
+    config: &Config,
+) -> Result<BlockedDomains, Error> {
     get_results(client, config, AdminUrlKind::Blocked).await
 }
 
-pub(crate) async fn connected(client: &Client, config: &Config) -> Result<ConnectedActors, Error> {
+pub(crate) async fn connected(
+    client: &ClientWithMiddleware,
+    config: &Config,
+) -> Result<ConnectedActors, Error> {
     get_results(client, config, AdminUrlKind::Connected).await
 }
 
-pub(crate) async fn stats(client: &Client, config: &Config) -> Result<Snapshot, Error> {
+pub(crate) async fn stats(
+    client: &ClientWithMiddleware,
+    config: &Config,
+) -> Result<Snapshot, Error> {
     get_results(client, config, AdminUrlKind::Stats).await
 }
 
-pub(crate) async fn last_seen(client: &Client, config: &Config) -> Result<LastSeen, Error> {
+pub(crate) async fn last_seen(
+    client: &ClientWithMiddleware,
+    config: &Config,
+) -> Result<LastSeen, Error> {
     get_results(client, config, AdminUrlKind::LastSeen).await
 }
 
 async fn get_results<T: DeserializeOwned>(
-    client: &Client,
+    client: &ClientWithMiddleware,
     config: &Config,
     url_kind: AdminUrlKind,
 ) -> Result<T, Error> {
@@ -68,9 +85,9 @@ async fn get_results<T: DeserializeOwned>(
 
     let iri = config.generate_admin_url(url_kind);
 
-    let mut res = client
+    let res = client
         .get(iri.as_str())
-        .insert_header(x_api_token)
+        .header(XApiToken::name(), x_api_token.to_string())
         .send()
         .await
         .map_err(|e| ErrorKind::SendRequest(iri.to_string(), e.to_string()))?;
@@ -88,7 +105,7 @@ async fn get_results<T: DeserializeOwned>(
 }
 
 async fn post_domains(
-    client: &Client,
+    client: &ClientWithMiddleware,
     config: &Config,
     domains: Vec<String>,
     url_kind: AdminUrlKind,
@@ -99,8 +116,9 @@ async fn post_domains(
 
     let res = client
         .post(iri.as_str())
-        .insert_header(x_api_token)
-        .send_json(&Domains { domains })
+        .header(XApiToken::name(), x_api_token.to_string())
+        .json(&Domains { domains })
+        .send()
         .await
         .map_err(|e| ErrorKind::SendRequest(iri.to_string(), e.to_string()))?;
 

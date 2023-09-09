@@ -1,4 +1,8 @@
-use crate::{data::MediaCache, error::Error, requests::Requests};
+use crate::{
+    data::MediaCache,
+    error::Error,
+    requests::{BreakerStrategy, Requests},
+};
 use actix_web::{body::BodyStream, web, HttpResponse};
 use uuid::Uuid;
 
@@ -11,7 +15,9 @@ pub(crate) async fn route(
     let uuid = uuid.into_inner();
 
     if let Some(url) = media.get_url(uuid).await? {
-        let res = requests.fetch_response(&url).await?;
+        let res = requests
+            .fetch_response(&url, BreakerStrategy::Allow404AndBelow)
+            .await?;
 
         let mut response = HttpResponse::build(res.status());
 
@@ -19,7 +25,7 @@ pub(crate) async fn route(
             response.insert_header((name.clone(), value.clone()));
         }
 
-        return Ok(response.body(BodyStream::new(res)));
+        return Ok(response.body(BodyStream::new(res.bytes_stream())));
     }
 
     Ok(HttpResponse::NotFound().finish())

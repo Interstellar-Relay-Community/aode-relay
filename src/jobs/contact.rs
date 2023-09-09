@@ -2,6 +2,7 @@ use crate::{
     apub::AcceptedActors,
     error::{Error, ErrorKind},
     jobs::JobState,
+    requests::BreakerStrategy,
 };
 use activitystreams::{iri_string::types::IriString, object::Image, prelude::*};
 use background_jobs::ActixJob;
@@ -32,6 +33,7 @@ impl QueryContact {
 
     async fn perform(self, state: JobState) -> Result<(), Error> {
         let contact_outdated = state
+            .state
             .node_cache
             .is_contact_outdated(self.actor_id.clone())
             .await;
@@ -41,8 +43,9 @@ impl QueryContact {
         }
 
         let contact = match state
+            .state
             .requests
-            .fetch::<AcceptedActors>(&self.contact_id)
+            .fetch::<AcceptedActors>(&self.contact_id, BreakerStrategy::Allow404AndBelow)
             .await
         {
             Ok(contact) => contact,
@@ -57,6 +60,7 @@ impl QueryContact {
             to_contact(contact).ok_or(ErrorKind::Extract("contact"))?;
 
         state
+            .state
             .node_cache
             .set_contact(self.actor_id, username, display_name, url, avatar)
             .await?;
