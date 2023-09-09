@@ -9,12 +9,11 @@ use actix_web::{
     FromRequest, HttpMessage, HttpRequest, HttpResponse, ResponseError,
 };
 use bcrypt::{BcryptError, DEFAULT_COST};
-use futures_util::future::LocalBoxFuture;
 use http_signature_normalization_actix::{prelude::InvalidHeaderValue, Canceled, Spawn};
 use std::{convert::Infallible, str::FromStr, time::Instant};
 use tracing_error::SpanTrace;
 
-use crate::{db::Db, spawner::Spawner};
+use crate::{db::Db, future::LocalBoxFuture, spawner::Spawner};
 
 #[derive(Clone)]
 pub(crate) struct AdminConfig {

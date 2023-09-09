@@ -31,6 +31,7 @@ mod data;
 mod db;
 mod error;
 mod extractors;
+mod future;
 mod jobs;
 mod middleware;
 mod requests;

@@ -401,7 +401,6 @@ dependencies = [
  "dashmap",
  "dotenv",
  "flume",
- "futures-util",
  "http-signature-normalization-actix",
  "http-signature-normalization-reqwest",
  "lru",
@@ -427,6 +426,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sled",
+ "streem",
  "teloxide",
  "thiserror",
  "time",
@@ -3062,6 +3062,16 @@ checksum = "9d1e996ef02c474957d681f1b05213dfb0abab947b446a62d37770b23500184a"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "streem"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56bcbf3c75c402c87b9a1947202c83bbc566ba9f4b788ee3d39db75f20c840a2"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
 ]
 
 [[package]]

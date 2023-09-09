@@ -36,7 +36,6 @@ console-subscriber = { version = "0.1", optional = true }
 dashmap = "5.1.0"
 dotenv = "0.15.0"
 flume = "0.11.0"
-futures-util = "0.3.17"
 lru = "0.11.0"
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.0", default-features = false, features = [
@@ -80,6 +79,7 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 tokio = { version = "1", features = ["macros", "sync"] }
 uuid = { version = "1", features = ["v4", "serde"] }
+streem = "0.1.0"
 
 [dependencies.background-jobs]
 version = "0.15.0"

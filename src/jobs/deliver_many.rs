@@ -1,10 +1,10 @@
 use crate::{
     error::Error,
+    future::LocalBoxFuture,
     jobs::{debug_object, Deliver, JobState},
 };
 use activitystreams::iri_string::types::IriString;
 use background_jobs::ActixJob;
-use futures_util::future::LocalBoxFuture;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct DeliverMany {
