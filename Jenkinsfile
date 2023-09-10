@@ -39,7 +39,7 @@ pipeline {
                 DOCKER_REGISTRY = 'ghcr.io'
                 GITHUB_ORG = 'interstellar-relay-community'
                 DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/${env.GITHUB_ORG}/aode-relay"
-                GHCR_TOKEN = credentials('perillamint-github-pat-package-rw')
+                GHCR_TOKEN = credentials('siliconforest-jenkins-github-pat-package-rw')
             }
             stages {
                 stage('Prepare') {
