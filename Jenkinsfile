@@ -4,6 +4,7 @@ pipeline {
         stage('Test') {
             agent {
                 docker {
+                    label 'linux-x86_64'
                     image 'ghcr.io/cleanc-lab/rust:1.72.0-slim-bookworm' 
                     args '--privileged --net=host -v /var/run/docker.sock:/var/run/docker.sock'
                 }
