@@ -383,7 +383,7 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "ap-relay"
-version = "0.3.102"
+version = "0.3.104"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
@@ -401,7 +401,6 @@ dependencies = [
  "dashmap",
  "dotenv",
  "flume",
- "futures-util",
  "http-signature-normalization-actix",
  "http-signature-normalization-reqwest",
  "lru",
@@ -427,11 +426,12 @@ dependencies = [
  "serde",
  "serde_json",
  "sled",
+ "streem",
  "teloxide",
  "thiserror",
  "time",
  "tokio",
- "toml 0.7.7",
+ "toml 0.7.8",
  "tracing",
  "tracing-actix-web",
  "tracing-error",
@@ -1387,17 +1387,18 @@ dependencies = [
 
 [[package]]
 name = "http-signature-normalization-actix"
-version = "0.10.1"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f16b1af0de27fe75ea5c1da8da1ce826274cc623bda49eb5e9395aa4ea0b34d4"
+checksum = "c8d7de237db731e75fbfa0ebeeb70e366f5f9cdcf45af4a41eca8516b80162ca"
 dependencies = [
  "actix-http",
  "actix-rt",
  "actix-web",
  "base64 0.13.1",
- "futures-util",
+ "futures-core",
  "http-signature-normalization",
  "ring",
+ "streem",
  "thiserror",
  "tokio",
  "tracing",
@@ -2884,9 +2885,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.105"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "693151e1ac27563d6dbcec9dee9fbd5da8539b20fa14ad3752b2e6d363ace360"
+checksum = "2cc66a619ed80bf7a0f6b17dd063a84b88f6dea1813737cf469aef1d081142c2"
 dependencies = [
  "itoa",
  "ryu",
@@ -3062,6 +3063,16 @@ checksum = "9d1e996ef02c474957d681f1b05213dfb0abab947b446a62d37770b23500184a"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "streem"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "641396a5ae90767cb12d21832444ab760841ee887717d802b2c456c4f8199114"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
 ]
 
 [[package]]
@@ -3390,9 +3401,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de0a3ab2091e52d7299a39d098e200114a972df0a7724add02a273aa9aada592"
+checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
 dependencies = [
  "serde",
  "serde_spanned",
