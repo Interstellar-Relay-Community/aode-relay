@@ -4,14 +4,11 @@ use actix_web::{
     web::BytesMut,
     HttpMessage,
 };
-use futures_util::{
-    future::TryFutureExt,
-    stream::{once, TryStreamExt},
-};
 use std::{
     future::{ready, Ready},
     task::{Context, Poll},
 };
+use streem::IntoStreamer;
 
 #[derive(Clone, Debug)]
 pub(crate) struct DebugPayload(pub bool);
@@ -53,19 +50,23 @@ where
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         if self.0 && req.method() == Method::POST {
-            let pl = req.take_payload();
+            let mut pl = req.take_payload().into_streamer();
+
             req.set_payload(Payload::Stream {
-                payload: Box::pin(once(
-                    pl.try_fold(BytesMut::new(), |mut acc, bytes| async {
-                        acc.extend(bytes);
-                        Ok(acc)
-                    })
-                    .map_ok(|bytes| {
-                        let bytes = bytes.freeze();
-                        tracing::info!("{}", String::from_utf8_lossy(&bytes));
-                        bytes
-                    }),
-                )),
+                payload: Box::pin(streem::try_from_fn(|yielder| async move {
+                    let mut buf = BytesMut::new();
+
+                    while let Some(bytes) = pl.try_next().await? {
+                        buf.extend(bytes);
+                    }
+
+                    let bytes = buf.freeze();
+                    tracing::info!("{}", String::from_utf8_lossy(&bytes));
+
+                    yielder.yield_ok(bytes).await;
+
+                    Ok(())
+                })),
             });
 
             self.1.call(req)

@@ -1,10 +1,10 @@
 use crate::{
     config::{Config, UrlKind},
     data::State,
+    future::LocalBoxFuture,
 };
 use actix_web::web::Data;
 use actix_webfinger::{Resolver, Webfinger};
-use futures_util::future::LocalBoxFuture;
 use rsa_magic_public_key::AsMagicPublicKey;
 
 pub(crate) struct RelayResolver;
