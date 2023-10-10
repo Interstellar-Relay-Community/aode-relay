@@ -1,8 +1,11 @@
 ARG ALPINE_VER="3.18"
 
-FROM rust:1-alpine${ALPINE_VER} AS builder
+FROM --platform=$BUILDPLATFORM rust:1-alpine${ALPINE_VER} AS builder
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
 
-RUN apk add --no-cache openssl libc-dev openssl-dev protobuf protobuf-dev
+RUN set -eux; \
+    apk add --no-cache musl-dev;
 
 WORKDIR /opt/aode-relay
 
@@ -10,7 +13,17 @@ ADD Cargo.lock Cargo.toml /opt/aode-relay/
 RUN cargo fetch
 
 ADD . /opt/aode-relay
-RUN cargo build --frozen --release
+RUN set -eux; \
+    case "${TARGETPLATFORM}" in \
+        linux/i386) ARCH='i686';; \
+        linux/amd64) ARCH='x86_64';; \
+        linux/arm32v6) ARCH='arm';; \
+        linux/arm32v7) ARCH='armv7';; \
+        linux/arm64) ARCH='aarch64';; \
+        *) echo "unsupported architecture"; exit 1 ;; \
+    esac; \
+    rustup target add "${ARCH}-unknown-linux-musl"; \
+    cargo build --frozen --release --target="${ARCH}-unknown-linux-musl";
 
 ################################################################################
 
