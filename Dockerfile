@@ -35,7 +35,7 @@ RUN \
 WORKDIR /opt/aode-relay
 
 ADD Cargo.lock Cargo.toml /opt/aode-relay/
-RUN cargo fetch
+RUN cargo fetch;
 
 ADD . /opt/aode-relay
 RUN set -eux; \
@@ -45,6 +45,7 @@ RUN set -eux; \
         linux/arm64) rustArch='aarch64';; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
+    ln -s "target/${rustArch}-unknown-linux-musl/release/relay" "aode-relay"; \
     RUSTFLAGS="-C linker=${rustArch}-linux-musl-gcc" cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
 
 ################################################################################
@@ -53,10 +54,10 @@ FROM alpine:3.18
 
 RUN apk add --no-cache openssl ca-certificates curl tini
 
-COPY --from=builder /opt/aode-relay/target/release/relay /usr/bin/aode-relay
+COPY --link --from=builder /opt/aode-relay/aode-relay /usr/local/bin/aode-relay
 
 # Smoke test
-RUN /usr/bin/aode-relay --help
+RUN /usr/local/bin/aode-relay --help
 
 # Some base env configuration
 ENV ADDR 0.0.0.0
@@ -73,7 +74,7 @@ VOLUME "/var/lib/aode-relay"
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD ["/usr/bin/aode-relay"]
+CMD ["/usr/local/bin/aode-relay"]
 
 EXPOSE 8080
 
