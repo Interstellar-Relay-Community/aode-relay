@@ -1,11 +1,36 @@
-ARG ALPINE_VER="3.18"
-
-FROM --platform=$BUILDPLATFORM rust:1-alpine${ALPINE_VER} AS builder
+# syntax=docker/dockerfile:1.4
+FROM --platform=$BUILDPLATFORM rust:1 AS builder
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
-RUN set -eux; \
-    apk add --no-cache musl-dev;
+RUN \
+    --mount=type=cache,target=/var/cache,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=tmpfs,target=/var/log \
+    set -eux; \
+    case "${TARGETPLATFORM}" in \
+        linux/i386) \
+            rustArch='i686'; \
+            dpkgArch='i386'; \
+        ;; \
+        linux/amd64) \
+            rustArch='x86_64'; \
+            dpkgArch='amd64'; \
+        ;; \
+        linux/arm64) \
+            rustArch='aarch64'; \
+            dpkgArch='arm64'; \
+        ;; \
+        *) echo "unsupported architecture"; exit 1 ;; \
+    esac; \
+    dpkg --add-architecture $dpkgArch; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        musl:$dpkgArch \
+        musl-dev:$dpkgArch \
+        musl-tools:$dpkgArch \
+    ; \
+    rustup target add "${rustArch}-unknown-linux-musl";
 
 WORKDIR /opt/aode-relay
 
@@ -15,23 +40,23 @@ RUN cargo fetch
 ADD . /opt/aode-relay
 RUN set -eux; \
     case "${TARGETPLATFORM}" in \
-        linux/i386) ARCH='i686';; \
-        linux/amd64) ARCH='x86_64';; \
-        linux/arm32v6) ARCH='arm';; \
-        linux/arm32v7) ARCH='armv7';; \
-        linux/arm64) ARCH='aarch64';; \
+        linux/i386) rustArch='i686';; \
+        linux/amd64) rustArch='x86_64';; \
+        linux/arm64) rustArch='aarch64';; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
-    rustup target add "${ARCH}-unknown-linux-musl"; \
-    cargo build --frozen --release --target="${ARCH}-unknown-linux-musl";
+    RUSTFLAGS="-C linker=${rustArch}-linux-musl-gcc" cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
 
 ################################################################################
 
-FROM alpine:${ALPINE_VER}
+FROM alpine:3.18
 
 RUN apk add --no-cache openssl ca-certificates curl tini
 
 COPY --from=builder /opt/aode-relay/target/release/relay /usr/bin/aode-relay
+
+# Smoke test
+RUN /usr/bin/aode-relay --help
 
 # Some base env configuration
 ENV ADDR 0.0.0.0
