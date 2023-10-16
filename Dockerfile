@@ -26,7 +26,6 @@ RUN \
     dpkg --add-architecture $dpkgArch; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        musl:$dpkgArch \
         musl-dev:$dpkgArch \
         musl-tools:$dpkgArch \
     ; \
@@ -46,7 +45,8 @@ RUN set -eux; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
     ln -s "target/${rustArch}-unknown-linux-musl/release/relay" "aode-relay"; \
-    RUSTFLAGS="-C linker=${rustArch}-linux-musl-gcc" cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
+    # Workaround to use gnu-gcc instead of musl-gcc: https://github.com/rust-lang/rust/issues/95926
+    RUSTFLAGS="-C target-cpu=generic -C linker=${rustArch}-linux-gnu-gcc" cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
 
 ################################################################################
 
