@@ -28,7 +28,7 @@ actix-webfinger = { version = "0.5.0", default-features = false }
 activitystreams = "0.7.0-alpha.25"
 activitystreams-ext = "0.1.0-alpha.3"
 ammonia = "3.1.0"
-async-cpupool = { version = "0.1.0", git = "https://git.asonix.dog/safe-async/async-cpupool" }
+async-cpupool = "0.1.0"
 bcrypt = "0.15"
 base64 = "0.21"
 clap = { version = "4.0.0", features = ["derive"] }

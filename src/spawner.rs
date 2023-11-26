@@ -8,14 +8,13 @@ pub(crate) struct Spawner {
 }
 
 impl Spawner {
-    pub(crate) fn build(name: &'static str, threads: u16) -> Self {
+    pub(crate) fn build(name: &'static str, threads: u16) -> anyhow::Result<Self> {
         let pool = CpuPool::configure()
             .name(name)
             .max_threads(threads)
-            .build()
-            .expect("valid configuration");
+            .build()?;
 
-        Spawner { pool }
+        Ok(Spawner { pool })
     }
 
     pub(crate) async fn close(self) {

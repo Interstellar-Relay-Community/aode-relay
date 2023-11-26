@@ -311,8 +311,8 @@ async fn do_server_main(
         }
     };
 
-    let verify_spawner = Spawner::build("verify-cpu", verify_threads.try_into()?);
-    let sign_spawner = Spawner::build("sign-cpu", signature_threads.try_into()?);
+    let verify_spawner = Spawner::build("verify-cpu", verify_threads.try_into()?)?;
+    let sign_spawner = Spawner::build("sign-cpu", signature_threads.try_into()?)?;
 
     let key_id = config.generate_url(UrlKind::MainKey).to_string();
     let state = State::build(db.clone(), key_id, sign_spawner.clone(), client).await?;
