@@ -311,11 +311,11 @@ async fn do_server_main(
         }
     };
 
-    let verify_spawner = Spawner::build("verify-cpu", verify_threads)?;
-    let sign_spawner = Spawner::build("sign-cpu", signature_threads)?;
+    let verify_spawner = Spawner::build("verify-cpu", verify_threads.try_into()?);
+    let sign_spawner = Spawner::build("sign-cpu", signature_threads.try_into()?);
 
     let key_id = config.generate_url(UrlKind::MainKey).to_string();
-    let state = State::build(db.clone(), key_id, sign_spawner, client).await?;
+    let state = State::build(db.clone(), key_id, sign_spawner.clone(), client).await?;
 
     if let Some((token, admin_handle)) = config.telegram_info() {
         tracing::warn!("Creating telegram handler");
@@ -325,6 +325,8 @@ async fn do_server_main(
     let keys = config.open_keys()?;
 
     let bind_address = config.bind_address();
+    let sign_spawner2 = sign_spawner.clone();
+    let verify_spawner2 = verify_spawner.clone();
     let server = HttpServer::new(move || {
         let job_server =
             create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
@@ -409,6 +411,9 @@ async fn do_server_main(
         tracing::warn!("Binding to {}:{}", bind_address.0, bind_address.1);
         server.bind(bind_address)?.run().await?;
     }
+
+    sign_spawner2.close().await;
+    verify_spawner2.close().await;
 
     tracing::warn!("Server closed");
 

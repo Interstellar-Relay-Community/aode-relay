@@ -37,7 +37,7 @@ console-subscriber = { version = "0.2", optional = true }
 dashmap = "5.1.0"
 dotenv = "0.15.0"
 flume = "0.11.0"
-lru = "0.11.0"
+lru = "0.12.0"
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.0", default-features = false, features = [
   "http-listener",
@@ -49,6 +49,7 @@ opentelemetry = "0.21"
 opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
 opentelemetry-otlp = "0.14"
 pin-project-lite = "0.2.9"
+# pinned to metrics-util
 quanta = "0.11.0"
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "stream"]}
