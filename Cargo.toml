@@ -82,7 +82,7 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 tokio = { version = "1", features = ["macros", "sync"] }
 uuid = { version = "1", features = ["v4", "serde"] }
-streem = "0.1.0"
+streem = "0.2.0"
 
 [dependencies.background-jobs]
 version = "0.15.0"
