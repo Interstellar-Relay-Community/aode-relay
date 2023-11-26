@@ -289,7 +289,7 @@ impl Inner {
             }
 
             let mut d = self.distributions.write().unwrap();
-            let outer_entry = d.entry(name.clone()).or_insert_with(BTreeMap::new);
+            let outer_entry = d.entry(name.clone()).or_default();
 
             let entry = outer_entry
                 .entry(labels)
