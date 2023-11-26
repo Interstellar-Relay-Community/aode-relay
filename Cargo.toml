@@ -15,7 +15,7 @@ name = "relay"
 path = "src/main.rs"
 
 [features]
-console = ["console-subscriber"]
+console = ["dep:console-subscriber"]
 default = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -28,11 +28,12 @@ actix-webfinger = { version = "0.5.0", default-features = false }
 activitystreams = "0.7.0-alpha.25"
 activitystreams-ext = "0.1.0-alpha.3"
 ammonia = "3.1.0"
+async-cpupool = { version = "0.1.0", git = "https://git.asonix.dog/safe-async/async-cpupool" }
 bcrypt = "0.15"
 base64 = "0.21"
 clap = { version = "4.0.0", features = ["derive"] }
 config = "0.13.0"
-console-subscriber = { version = "0.1", optional = true }
+console-subscriber = { version = "0.2", optional = true }
 dashmap = "5.1.0"
 dotenv = "0.15.0"
 flume = "0.11.0"
@@ -44,15 +45,16 @@ metrics-exporter-prometheus = { version = "0.12.0", default-features = false, fe
 metrics-util = "0.15.0"
 mime = "0.3.16"
 minify-html = "0.11.0"
-opentelemetry = { version = "0.20", features = ["rt-tokio"] }
-opentelemetry-otlp = "0.13"
+opentelemetry = "0.21"
+opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
+opentelemetry-otlp = "0.14"
 pin-project-lite = "0.2.9"
 quanta = "0.11.0"
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "stream"]}
 reqwest-middleware = "0.2"
 reqwest-tracing = "0.4.5"
-ring = "0.16.20"
+ring = "0.17.5"
 rsa = { version = "0.9" }
 rsa-magic-public-key = "0.8.0"
 rustls = "0.21.0"
@@ -70,8 +72,8 @@ time = { version = "0.3.17", features = ["serde"] }
 tracing = "0.1"
 tracing-error = "0.2"
 tracing-futures = "0.2"
-tracing-log = "0.1"
-tracing-opentelemetry = "0.21"
+tracing-log = "0.2"
+tracing-opentelemetry = "0.22"
 tracing-subscriber = { version = "0.3", features = [
   "ansi",
   "env-filter",
@@ -87,23 +89,23 @@ default-features = false
 features = ["background-jobs-actix", "error-logging"]
 
 [dependencies.http-signature-normalization-actix]
-version = "0.10.1"
+version = "0.11.0"
 default-features = false
 features = ["server", "ring"]
 
 [dependencies.http-signature-normalization-reqwest]
-version = "0.10.0"
+version = "0.11.0"
 default-features = false
 features = ["middleware", "ring"]
 
 [dependencies.tracing-actix-web]
-version = "0.7.6"
+version = "0.7.9"
 
 [build-dependencies]
 anyhow = "1.0"
 dotenv = "0.15.0"
 ructe = { version = "0.17.0", features = ["sass", "mime03"] }
-toml = "0.7.0"
+toml = "0.8.0"
 
 [profile.dev.package.rsa]
 opt-level = 3
