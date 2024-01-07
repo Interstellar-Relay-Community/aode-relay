@@ -44,7 +44,7 @@ metrics-exporter-prometheus = { version = "0.12.0", default-features = false, fe
 ] }
 metrics-util = "0.15.0"
 mime = "0.3.16"
-minify-html = "0.11.0"
+minify-html = "0.15.0"
 opentelemetry = "0.21"
 opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
 opentelemetry-otlp = "0.14"
