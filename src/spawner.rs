@@ -34,7 +34,7 @@ where
 {
     let id = uuid::Uuid::new_v4();
 
-    metrics::increment_counter!("relay.spawner.wait-timer.start");
+    metrics::counter!("relay.spawner.wait-timer.start").increment(1);
 
     let mut interval = actix_rt::time::interval(Duration::from_secs(5));
 
@@ -47,12 +47,12 @@ where
     loop {
         tokio::select! {
             out = &mut fut => {
-                metrics::increment_counter!("relay.spawner.wait-timer.end");
+                metrics::counter!("relay.spawner.wait-timer.end").increment(1);
                 return out;
             }
             _ = interval.tick() => {
                 counter += 1;
-                metrics::increment_counter!("relay.spawner.wait-timer.pending");
+                metrics::counter!("relay.spawner.wait-timer.pending").increment(1);
                 tracing::warn!("Blocking operation {id} is taking a long time, {} seconds", counter * 5);
             }
         }

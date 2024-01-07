@@ -40,7 +40,7 @@ impl Drop for LogOnDrop {
     fn drop(&mut self) {
         if self.arm {
             let duration = self.begin.elapsed();
-            metrics::histogram!("relay.request.complete", duration, "path" => self.path.clone(), "method" => self.method.clone());
+            metrics::histogram!("relay.request.complete", "path" => self.path.clone(), "method" => self.method.clone()).record(duration);
         }
     }
 }

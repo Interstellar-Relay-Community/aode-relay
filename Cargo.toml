@@ -28,7 +28,7 @@ actix-webfinger = { version = "0.5.0", default-features = false }
 activitystreams = "0.7.0-alpha.25"
 activitystreams-ext = "0.1.0-alpha.3"
 ammonia = "3.1.0"
-async-cpupool = "0.1.0"
+async-cpupool = "0.2.0"
 bcrypt = "0.15"
 base64 = "0.21"
 clap = { version = "4.0.0", features = ["derive"] }
@@ -38,11 +38,11 @@ dashmap = "5.1.0"
 dotenv = "0.15.0"
 flume = "0.11.0"
 lru = "0.12.0"
-metrics = "0.21.0"
-metrics-exporter-prometheus = { version = "0.12.0", default-features = false, features = [
+metrics = "0.22.0"
+metrics-exporter-prometheus = { version = "0.13.0", default-features = false, features = [
   "http-listener",
 ] }
-metrics-util = "0.15.0"
+metrics-util = "0.16.0"
 mime = "0.3.16"
 minify-html = "0.15.0"
 opentelemetry = "0.21"
@@ -50,7 +50,7 @@ opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
 opentelemetry-otlp = "0.14"
 pin-project-lite = "0.2.9"
 # pinned to metrics-util
-quanta = "0.11.0"
+quanta = "0.12.0"
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "stream"]}
 reqwest-middleware = "0.2"
@@ -85,7 +85,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 streem = "0.2.0"
 
 [dependencies.background-jobs]
-version = "0.15.0"
+version = "0.16.0"
 default-features = false
 features = ["background-jobs-actix", "error-logging"]
 

@@ -200,10 +200,8 @@ impl FromRequest for Admin {
         Box::pin(async move {
             let (db, c, s, t) = res?;
             Self::verify(c, s, t).await?;
-            metrics::histogram!(
-                "relay.admin.verify",
-                now.elapsed().as_micros() as f64 / 1_000_000_f64
-            );
+            metrics::histogram!("relay.admin.verify")
+                .record(now.elapsed().as_micros() as f64 / 1_000_000_f64);
             Ok(Admin { db })
         })
     }

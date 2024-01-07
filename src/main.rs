@@ -167,7 +167,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .add_recorder(recorder)
             .add_recorder(collector.clone())
             .build();
-        metrics::set_boxed_recorder(Box::new(recorder))?;
+        metrics::set_global_recorder(recorder).map_err(|e| anyhow::anyhow!("{e}"))?;
     } else {
         collector.install()?;
     }
