@@ -1,7 +1,7 @@
 [package]
 name = "ap-relay"
 description = "A simple activitypub relay"
-version = "0.3.105"
+version = "0.3.106-beta.1"
 authors = ["asonix <asonix@asonix.dog>"]
 license = "AGPL-3.0"
 readme = "README.md"
