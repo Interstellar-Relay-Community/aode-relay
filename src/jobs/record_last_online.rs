@@ -1,6 +1,5 @@
-use crate::{error::Error, jobs::JobState};
-use background_jobs::{ActixJob, Backoff};
-use std::{future::Future, pin::Pin};
+use crate::{error::Error, future::BoxFuture, jobs::JobState};
+use background_jobs::{Backoff, Job};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub(crate) struct RecordLastOnline;
@@ -14,9 +13,9 @@ impl RecordLastOnline {
     }
 }
 
-impl ActixJob for RecordLastOnline {
+impl Job for RecordLastOnline {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::RecordLastOnline";
     const QUEUE: &'static str = "maintenance";

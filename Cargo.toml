@@ -72,7 +72,6 @@ thiserror = "1.0"
 time = { version = "0.3.17", features = ["serde"] }
 tracing = "0.1"
 tracing-error = "0.2"
-tracing-futures = "0.2"
 tracing-log = "0.2"
 tracing-opentelemetry = "0.22"
 tracing-subscriber = { version = "0.3", features = [
@@ -85,9 +84,10 @@ uuid = { version = "1", features = ["v4", "serde"] }
 streem = "0.2.0"
 
 [dependencies.background-jobs]
-version = "0.16.0"
+version = "0.17.0"
+git = "https://git.asonix.dog/asonix/background-jobs"
 default-features = false
-features = ["background-jobs-actix", "error-logging"]
+features = ["background-jobs-actix", "background-jobs-metrics", "error-logging"]
 
 [dependencies.http-signature-normalization-actix]
 version = "0.11.0"

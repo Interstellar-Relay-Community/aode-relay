@@ -3,6 +3,7 @@ use crate::{
     config::{Config, UrlKind},
     db::Actor,
     error::{Error, ErrorKind},
+    future::BoxFuture,
     jobs::{apub::prepare_activity, Deliver, JobState, QueryInstance, QueryNodeinfo},
 };
 use activitystreams::{
@@ -10,8 +11,7 @@ use activitystreams::{
     iri_string::types::IriString,
     prelude::*,
 };
-use background_jobs::ActixJob;
-use std::{future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Follow {
@@ -111,9 +111,9 @@ fn generate_accept_follow(
     )
 }
 
-impl ActixJob for Follow {
+impl Job for Follow {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::apub::Follow";
     const QUEUE: &'static str = "apub";

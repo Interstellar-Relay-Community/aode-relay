@@ -20,6 +20,7 @@ use crate::{
 };
 use background_jobs::{
     memory_storage::{ActixTimer, Storage},
+    metrics::MetricsStorage,
     Job, QueueHandle, WorkerConfig,
 };
 use std::time::Duration;
@@ -46,15 +47,18 @@ pub(crate) fn create_workers(
 ) -> JobServer {
     let deliver_concurrency = config.deliver_concurrency();
 
-    let queue_handle = WorkerConfig::new(Storage::new(ActixTimer), move |queue_handle| {
-        JobState::new(
-            state.clone(),
-            actors.clone(),
-            JobServer::new(queue_handle),
-            media.clone(),
-            config.clone(),
-        )
-    })
+    let queue_handle = WorkerConfig::new(
+        MetricsStorage::wrap(Storage::new(ActixTimer)),
+        move |queue_handle| {
+            JobState::new(
+                state.clone(),
+                actors.clone(),
+                JobServer::new(queue_handle),
+                media.clone(),
+                config.clone(),
+            )
+        },
+    )
     .register::<Deliver>()
     .register::<DeliverMany>()
     .register::<QueryNodeinfo>()

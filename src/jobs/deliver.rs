@@ -1,11 +1,11 @@
 use crate::{
     error::Error,
+    future::BoxFuture,
     jobs::{debug_object, JobState},
     requests::BreakerStrategy,
 };
 use activitystreams::iri_string::types::IriString;
-use background_jobs::{ActixJob, Backoff};
-use std::{future::Future, pin::Pin};
+use background_jobs::{Backoff, Job};
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Deliver {
@@ -56,9 +56,9 @@ impl Deliver {
     }
 }
 
-impl ActixJob for Deliver {
+impl Job for Deliver {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::Deliver";
     const QUEUE: &'static str = "deliver";
