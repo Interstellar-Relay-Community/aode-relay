@@ -92,7 +92,7 @@ impl QueryNodeinfo {
             .metadata
             .and_then(|meta| meta.into_iter().next().and_then(|meta| meta.staff_accounts))
         {
-            if let Some(contact_id) = accounts.get(0) {
+            if let Some(contact_id) = accounts.first() {
                 state
                     .job_server
                     .queue(QueryContact::new(self.actor_id, contact_id.clone()))
