@@ -36,7 +36,7 @@ where
 
     metrics::counter!("relay.spawner.wait-timer.start").increment(1);
 
-    let mut interval = actix_rt::time::interval(Duration::from_secs(5));
+    let mut interval = tokio::time::interval(Duration::from_secs(5));
 
     // pass the first tick (instant)
     interval.tick().await;

@@ -1,5 +1,4 @@
 use activitystreams::checked::CheckError;
-use actix_rt::task::JoinError;
 use actix_web::{
     error::{BlockingError, ResponseError},
     http::StatusCode,
@@ -7,6 +6,7 @@ use actix_web::{
 };
 use http_signature_normalization_reqwest::SignError;
 use std::{convert::Infallible, fmt::Debug, io};
+use tokio::task::JoinError;
 use tracing_error::SpanTrace;
 
 pub(crate) struct Error {

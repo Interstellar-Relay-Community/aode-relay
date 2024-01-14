@@ -22,7 +22,6 @@ default = []
 
 [dependencies]
 anyhow = "1.0"
-actix-rt = "2.7.0"
 actix-web = { version = "4.4.0", default-features = false, features = ["compress-brotli", "compress-gzip", "rustls-0_21"] }
 actix-webfinger = { version = "0.5.0", default-features = false }
 activitystreams = "0.7.0-alpha.25"
@@ -79,7 +78,7 @@ tracing-subscriber = { version = "0.3", features = [
   "env-filter",
   "fmt",
 ] }
-tokio = { version = "1", features = ["macros", "sync"] }
+tokio = { version = "1", features = ["full", "tracing"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 streem = "0.2.0"
 
@@ -87,7 +86,7 @@ streem = "0.2.0"
 version = "0.17.0"
 git = "https://git.asonix.dog/asonix/background-jobs"
 default-features = false
-features = ["background-jobs-actix", "background-jobs-metrics", "error-logging"]
+features = ["error-logging", "metrics", "tokio"]
 
 [dependencies.http-signature-normalization-actix]
 version = "0.11.0"

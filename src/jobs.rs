@@ -19,9 +19,10 @@ use crate::{
     jobs::{process_listeners::Listeners, record_last_online::RecordLastOnline},
 };
 use background_jobs::{
-    memory_storage::{ActixTimer, Storage},
+    memory_storage::{Storage, TokioTimer},
     metrics::MetricsStorage,
-    Job, QueueHandle, WorkerConfig,
+    tokio::{QueueHandle, WorkerConfig},
+    Job,
 };
 use std::time::Duration;
 
@@ -44,11 +45,15 @@ pub(crate) fn create_workers(
     actors: ActorCache,
     media: MediaCache,
     config: Config,
-) -> JobServer {
+) -> std::io::Result<JobServer> {
+    let parallelism = std::thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1) as u64;
+
     let deliver_concurrency = config.deliver_concurrency();
 
     let queue_handle = WorkerConfig::new(
-        MetricsStorage::wrap(Storage::new(ActixTimer)),
+        MetricsStorage::wrap(Storage::new(TokioTimer)),
         move |queue_handle| {
             JobState::new(
                 state.clone(),
@@ -71,15 +76,15 @@ pub(crate) fn create_workers(
     .register::<apub::Forward>()
     .register::<apub::Reject>()
     .register::<apub::Undo>()
-    .set_worker_count("maintenance", 2)
-    .set_worker_count("apub", 2)
-    .set_worker_count("deliver", deliver_concurrency)
-    .start();
+    .set_worker_count("maintenance", 2 * parallelism)
+    .set_worker_count("apub", 2 * parallelism)
+    .set_worker_count("deliver", deliver_concurrency * parallelism)
+    .start()?;
 
-    queue_handle.every(Duration::from_secs(60 * 5), Listeners);
-    queue_handle.every(Duration::from_secs(60 * 10), RecordLastOnline);
+    queue_handle.every(Duration::from_secs(60 * 5), Listeners)?;
+    queue_handle.every(Duration::from_secs(60 * 10), RecordLastOnline)?;
 
-    JobServer::new(queue_handle)
+    Ok(JobServer::new(queue_handle))
 }
 
 #[derive(Clone, Debug)]

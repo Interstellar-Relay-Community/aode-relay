@@ -388,7 +388,6 @@ version = "0.3.106-beta.2"
 dependencies = [
  "activitystreams",
  "activitystreams-ext",
- "actix-rt",
  "actix-web",
  "actix-webfinger",
  "ammonia",
@@ -567,35 +566,17 @@ dependencies = [
 [[package]]
 name = "background-jobs"
 version = "0.17.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#2727645ca9d44ceefcc7e954694323eb55fd38ef"
+source = "git+https://git.asonix.dog/asonix/background-jobs#5a95a71b7c450dc0e303316f43572d0916eeef93"
 dependencies = [
- "background-jobs-actix",
  "background-jobs-core",
  "background-jobs-metrics",
-]
-
-[[package]]
-name = "background-jobs-actix"
-version = "0.17.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#2727645ca9d44ceefcc7e954694323eb55fd38ef"
-dependencies = [
- "actix-rt",
- "anyhow",
- "async-trait",
- "background-jobs-core",
- "metrics",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "uuid",
+ "background-jobs-tokio",
 ]
 
 [[package]]
 name = "background-jobs-core"
 version = "0.17.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#2727645ca9d44ceefcc7e954694323eb55fd38ef"
+source = "git+https://git.asonix.dog/asonix/background-jobs#5a95a71b7c450dc0e303316f43572d0916eeef93"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -612,12 +593,28 @@ dependencies = [
 [[package]]
 name = "background-jobs-metrics"
 version = "0.17.0"
-source = "git+https://git.asonix.dog/asonix/background-jobs#2727645ca9d44ceefcc7e954694323eb55fd38ef"
+source = "git+https://git.asonix.dog/asonix/background-jobs#5a95a71b7c450dc0e303316f43572d0916eeef93"
 dependencies = [
  "async-trait",
  "background-jobs-core",
  "metrics",
  "metrics-util",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "background-jobs-tokio"
+version = "0.17.0"
+source = "git+https://git.asonix.dog/asonix/background-jobs#5a95a71b7c450dc0e303316f43572d0916eeef93"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "background-jobs-core",
+ "metrics",
+ "serde",
+ "serde_json",
+ "tokio",
  "tracing",
  "uuid",
 ]
@@ -3790,6 +3787,7 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
+ "num_cpus",
  "parking_lot 0.12.1",
  "pin-project-lite",
  "signal-hook-registry",

@@ -46,7 +46,7 @@ pub(crate) fn start(admin_handle: String, db: Db, token: &str) {
     let bot = Bot::new(token);
     let admin_handle = Arc::new(admin_handle);
 
-    actix_rt::spawn(async move {
+    tokio::spawn(async move {
         let command_handler = teloxide::filter_command::<Command, _>().endpoint(
             move |bot: Bot, msg: Message, cmd: Command| {
                 let admin_handle = admin_handle.clone();

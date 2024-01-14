@@ -4,7 +4,6 @@
 use std::time::Duration;
 
 use activitystreams::iri_string::types::IriString;
-use actix_rt::task::JoinHandle;
 use actix_web::{middleware::Compress, web, App, HttpServer};
 use collector::MemoryCollector;
 #[cfg(feature = "console")]
@@ -18,6 +17,7 @@ use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::Resource;
 use reqwest_middleware::ClientWithMiddleware;
 use rustls::ServerConfig;
+use tokio::task::JoinHandle;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
@@ -141,7 +141,7 @@ fn build_client(
     Ok(client_with_middleware)
 }
 
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
 
@@ -162,7 +162,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .with_http_listener(bind_addr)
             .build()?;
 
-        actix_rt::spawn(exporter);
+        tokio::spawn(exporter);
         let recorder = FanoutBuilder::default()
             .add_recorder(recorder)
             .add_recorder(collector.clone())
@@ -179,7 +179,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let actors = ActorCache::new(db.clone());
     let media = MediaCache::new(db.clone());
 
-    server_main(db, actors, media, collector, config).await??;
+    server_main(db, actors, media, collector, config).await?;
 
     tracing::warn!("Application exit");
 
@@ -187,7 +187,7 @@ async fn main() -> Result<(), anyhow::Error> {
 }
 
 fn client_main(config: Config, args: Args) -> JoinHandle<Result<(), anyhow::Error>> {
-    actix_rt::spawn(do_client_main(config, args))
+    tokio::spawn(do_client_main(config, args))
 }
 
 async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
@@ -273,19 +273,9 @@ async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error>
     Ok(())
 }
 
-fn server_main(
-    db: Db,
-    actors: ActorCache,
-    media: MediaCache,
-    collector: MemoryCollector,
-    config: Config,
-) -> JoinHandle<Result<(), anyhow::Error>> {
-    actix_rt::spawn(do_server_main(db, actors, media, collector, config))
-}
-
 const VERIFY_RATIO: usize = 7;
 
-async fn do_server_main(
+async fn server_main(
     db: Db,
     actors: ActorCache,
     media: MediaCache,
@@ -327,10 +317,8 @@ async fn do_server_main(
     let bind_address = config.bind_address();
     let sign_spawner2 = sign_spawner.clone();
     let verify_spawner2 = verify_spawner.clone();
+    let job_server = create_workers(state.clone(), actors.clone(), media.clone(), config.clone())?;
     let server = HttpServer::new(move || {
-        let job_server =
-            create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
-
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
@@ -339,7 +327,7 @@ async fn do_server_main(
             ))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
-            .app_data(web::Data::new(job_server))
+            .app_data(web::Data::new(job_server.clone()))
             .app_data(web::Data::new(media.clone()))
             .app_data(web::Data::new(collector.clone()))
             .app_data(web::Data::new(verify_spawner.clone()));

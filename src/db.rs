@@ -750,6 +750,11 @@ mod tests {
     {
         let db =
             Db::build_inner(true, sled::Config::new().temporary(true).open().unwrap()).unwrap();
-        actix_rt::System::new().block_on((f)(db));
+
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on((f)(db));
     }
 }
