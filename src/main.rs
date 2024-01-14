@@ -152,7 +152,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let args = Args::new();
 
     if args.any() {
-        return client_main(config, args).await?;
+        client_main(config, args).await??;
+        return Ok(());
     }
 
     let collector = MemoryCollector::new();
