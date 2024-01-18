@@ -84,7 +84,6 @@ streem = "0.2.0"
 
 [dependencies.background-jobs]
 version = "0.17.0"
-git = "https://git.asonix.dog/asonix/background-jobs"
 default-features = false
 features = ["error-logging", "metrics", "tokio"]
 
