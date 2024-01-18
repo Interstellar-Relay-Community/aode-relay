@@ -46,10 +46,6 @@ pub(crate) fn create_workers(
     media: MediaCache,
     config: Config,
 ) -> std::io::Result<JobServer> {
-    let parallelism = std::thread::available_parallelism()
-        .map(usize::from)
-        .unwrap_or(1) as u64;
-
     let deliver_concurrency = config.deliver_concurrency();
 
     let queue_handle = WorkerConfig::new(
@@ -76,9 +72,9 @@ pub(crate) fn create_workers(
     .register::<apub::Forward>()
     .register::<apub::Reject>()
     .register::<apub::Undo>()
-    .set_worker_count("maintenance", 2 * parallelism)
-    .set_worker_count("apub", 2 * parallelism)
-    .set_worker_count("deliver", deliver_concurrency * parallelism)
+    .set_worker_count("maintenance", 2)
+    .set_worker_count("apub", 2)
+    .set_worker_count("deliver", deliver_concurrency)
     .start()?;
 
     queue_handle.every(Duration::from_secs(60 * 5), Listeners)?;

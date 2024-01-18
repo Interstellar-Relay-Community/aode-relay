@@ -318,8 +318,11 @@ async fn server_main(
     let bind_address = config.bind_address();
     let sign_spawner2 = sign_spawner.clone();
     let verify_spawner2 = verify_spawner.clone();
-    let job_server = create_workers(state.clone(), actors.clone(), media.clone(), config.clone())?;
     let server = HttpServer::new(move || {
+        let job_server =
+            create_workers(state.clone(), actors.clone(), media.clone(), config.clone())
+                .expect("Failed to create job server");
+
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
             .app_data(web::Data::new(state.clone()))
@@ -328,7 +331,7 @@ async fn server_main(
             ))
             .app_data(web::Data::new(actors.clone()))
             .app_data(web::Data::new(config.clone()))
-            .app_data(web::Data::new(job_server.clone()))
+            .app_data(web::Data::new(job_server))
             .app_data(web::Data::new(media.clone()))
             .app_data(web::Data::new(collector.clone()))
             .app_data(web::Data::new(verify_spawner.clone()));
