@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.4
 FROM alpine:3.19 AS alpine
+ARG TARGETPLATFORM
 
 RUN \
     --mount=type=cache,id=$TARGETPLATFORM-alpine,target=/var/cache/apk,sharing=locked \
@@ -9,6 +10,7 @@ RUN \
 ################################################################################
 
 FROM alpine AS alpine-dev
+ARG TARGETPLATFORM
 
 RUN \
     --mount=type=cache,id=$TARGETPLATFORM-alpine,target=/var/cache/apk,sharing=locked \
@@ -18,6 +20,7 @@ RUN \
 ################################################################################
 
 FROM --platform=$BUILDPLATFORM rust:1 AS builder
+ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
 RUN \
@@ -74,6 +77,7 @@ RUN set -eux; \
 ################################################################################
 
 FROM alpine
+ARG TARGETPLATFORM
 
 RUN \
     --mount=type=cache,id=$TARGETPLATFORM-alpine,target=/var/cache/apk,sharing=locked \
