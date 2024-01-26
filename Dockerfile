@@ -68,8 +68,7 @@ RUN set -eux; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
     ln -s "target/${rustArch}-unknown-linux-musl/release/relay" "aode-relay"; \
-    # Workaround to use gnu-gcc instead of musl-gcc: https://github.com/rust-lang/rust/issues/95926
-    export RUSTFLAGS="-C target-cpu=generic -C linker=${rustArch}-linux-musl-gcc -C relocation-model=static -C target-feature=-crt-static -C link-self-contained=no -L /opt/alpine/lib -L /opt/alpine/usr/lib"; \
+    export RUSTFLAGS="-C target-cpu=generic -C linker=${rustArch}-linux-musl-gcc -C target-feature=-crt-static -C link-self-contained=no -L /opt/alpine/lib -L /opt/alpine/usr/lib"; \
     cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
 
 ################################################################################
