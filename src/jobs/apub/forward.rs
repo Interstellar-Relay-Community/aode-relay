@@ -2,11 +2,11 @@ use crate::{
     apub::AcceptedActivities,
     db::Actor,
     error::{Error, ErrorKind},
+    future::BoxFuture,
     jobs::{apub::get_inboxes, DeliverMany, JobState},
 };
 use activitystreams::prelude::*;
-use background_jobs::ActixJob;
-use std::{future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Forward {
@@ -51,9 +51,9 @@ impl Forward {
     }
 }
 
-impl ActixJob for Forward {
+impl Job for Forward {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::apub::Forward";
     const QUEUE: &'static str = "apub";

@@ -2,14 +2,14 @@ use crate::{
     config::{Config, UrlKind},
     db::Actor,
     error::{Error, ErrorKind},
+    future::BoxFuture,
     jobs::{
         apub::{get_inboxes, prepare_activity},
         DeliverMany, JobState,
     },
 };
 use activitystreams::{activity::Announce as AsAnnounce, iri_string::types::IriString};
-use background_jobs::ActixJob;
-use std::{future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Announce {
@@ -78,9 +78,9 @@ fn generate_announce(
     )
 }
 
-impl ActixJob for Announce {
+impl Job for Announce {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::apub::Announce";
     const QUEUE: &'static str = "apub";

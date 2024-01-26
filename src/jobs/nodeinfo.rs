@@ -1,18 +1,18 @@
 use crate::{
     error::{Error, ErrorKind},
+    future::BoxFuture,
     jobs::{Boolish, JobState, QueryContact},
     requests::BreakerStrategy,
 };
 use activitystreams::{iri, iri_string::types::IriString, primitives::OneOrMany};
-use background_jobs::ActixJob;
-use std::{fmt::Debug, future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryNodeinfo {
     actor_id: IriString,
 }
 
-impl Debug for QueryNodeinfo {
+impl std::fmt::Debug for QueryNodeinfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("QueryNodeinfo")
             .field("actor_id", &self.actor_id.to_string())
@@ -92,7 +92,7 @@ impl QueryNodeinfo {
             .metadata
             .and_then(|meta| meta.into_iter().next().and_then(|meta| meta.staff_accounts))
         {
-            if let Some(contact_id) = accounts.get(0) {
+            if let Some(contact_id) = accounts.first() {
                 state
                     .job_server
                     .queue(QueryContact::new(self.actor_id, contact_id.clone()))
@@ -104,9 +104,9 @@ impl QueryNodeinfo {
     }
 }
 
-impl ActixJob for QueryNodeinfo {
+impl Job for QueryNodeinfo {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::QueryNodeinfo";
     const QUEUE: &'static str = "maintenance";

@@ -3,11 +3,11 @@ use crate::{
     config::UrlKind,
     db::Actor,
     error::Error,
+    future::BoxFuture,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
 use activitystreams::prelude::BaseExt;
-use background_jobs::ActixJob;
-use std::{future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Undo {
@@ -48,9 +48,9 @@ impl Undo {
     }
 }
 
-impl ActixJob for Undo {
+impl Job for Undo {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::apub::Undo";
     const QUEUE: &'static str = "apub";

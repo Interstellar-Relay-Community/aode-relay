@@ -28,7 +28,7 @@ impl AdminConfig {
     }
 
     fn verify(&self, token: XApiToken) -> Result<bool, Error> {
-        bcrypt::verify(&token.0, &self.hashed_api_token).map_err(Error::bcrypt_verify)
+        bcrypt::verify(token.0, &self.hashed_api_token).map_err(Error::bcrypt_verify)
     }
 }
 
@@ -200,10 +200,8 @@ impl FromRequest for Admin {
         Box::pin(async move {
             let (db, c, s, t) = res?;
             Self::verify(c, s, t).await?;
-            metrics::histogram!(
-                "relay.admin.verify",
-                now.elapsed().as_micros() as f64 / 1_000_000_f64
-            );
+            metrics::histogram!("relay.admin.verify")
+                .record(now.elapsed().as_micros() as f64 / 1_000_000_f64);
             Ok(Admin { db })
         })
     }

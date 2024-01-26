@@ -432,7 +432,7 @@ struct Signer {
 
 impl Signer {
     fn sign(&self, signing_string: &str) -> Result<String, Error> {
-        let mut signature = vec![0; self.private_key.public_modulus_len()];
+        let mut signature = vec![0; self.private_key.public().modulus_len()];
 
         self.private_key
             .sign(

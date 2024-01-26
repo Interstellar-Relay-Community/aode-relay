@@ -1,4 +1,4 @@
-use metrics::{Key, Recorder, SetRecorderError};
+use metrics::{Key, Metadata, Recorder, SetRecorderError};
 use metrics_util::{
     registry::{AtomicStorage, GenerationalStorage, Recency, Registry},
     MetricKindMask, Summary,
@@ -289,7 +289,7 @@ impl Inner {
             }
 
             let mut d = self.distributions.write().unwrap();
-            let outer_entry = d.entry(name.clone()).or_insert_with(BTreeMap::new);
+            let outer_entry = d.entry(name.clone()).or_default();
 
             let entry = outer_entry
                 .entry(labels)
@@ -360,8 +360,8 @@ impl MemoryCollector {
         d.entry(key.as_str().to_owned()).or_insert(description);
     }
 
-    pub(crate) fn install(&self) -> Result<(), SetRecorderError> {
-        metrics::set_boxed_recorder(Box::new(self.clone()))
+    pub(crate) fn install(&self) -> Result<(), SetRecorderError<Self>> {
+        metrics::set_global_recorder(self.clone())
     }
 }
 
@@ -393,19 +393,19 @@ impl Recorder for MemoryCollector {
         self.add_description_if_missing(&key, description)
     }
 
-    fn register_counter(&self, key: &Key) -> metrics::Counter {
+    fn register_counter(&self, key: &Key, _: &Metadata<'_>) -> metrics::Counter {
         self.inner
             .registry
             .get_or_create_counter(key, |c| c.clone().into())
     }
 
-    fn register_gauge(&self, key: &Key) -> metrics::Gauge {
+    fn register_gauge(&self, key: &Key, _: &Metadata<'_>) -> metrics::Gauge {
         self.inner
             .registry
             .get_or_create_gauge(key, |c| c.clone().into())
     }
 
-    fn register_histogram(&self, key: &Key) -> metrics::Histogram {
+    fn register_histogram(&self, key: &Key, _: &Metadata<'_>) -> metrics::Histogram {
         self.inner
             .registry
             .get_or_create_histogram(key, |c| c.clone().into())
