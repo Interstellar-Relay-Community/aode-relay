@@ -1,24 +1,40 @@
 # syntax=docker/dockerfile:1.4
+FROM alpine:3.19 AS alpine
+ARG TARGETPLATFORM
+
+RUN \
+    --mount=type=cache,id=$TARGETPLATFORM-alpine,target=/var/cache/apk,sharing=locked \
+    set -eux; \
+    apk add -U libgcc;
+
+################################################################################
+
+FROM alpine AS alpine-dev
+ARG TARGETPLATFORM
+
+RUN \
+    --mount=type=cache,id=$TARGETPLATFORM-alpine,target=/var/cache/apk,sharing=locked \
+    set -eux; \
+    apk add -U musl-dev;
+
+################################################################################
+
 FROM --platform=$BUILDPLATFORM rust:1 AS builder
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
 RUN \
-    --mount=type=cache,target=/var/cache,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=tmpfs,target=/var/log \
+    --mount=type=cache,id=$BUILDPLATFORM-debian,target=/var/cache,sharing=locked \
+    --mount=type=cache,id=$BUILDPLATFORM-debian,target=/var/lib/apt,sharing=locked \
     set -eux; \
     case "${TARGETPLATFORM}" in \
         linux/i386) \
-            rustArch='i686'; \
             dpkgArch='i386'; \
         ;; \
         linux/amd64) \
-            rustArch='x86_64'; \
             dpkgArch='amd64'; \
         ;; \
         linux/arm64) \
-            rustArch='aarch64'; \
             dpkgArch='arm64'; \
         ;; \
         *) echo "unsupported architecture"; exit 1 ;; \
@@ -28,31 +44,45 @@ RUN \
     apt-get install -y --no-install-recommends \
         musl-dev:$dpkgArch \
         musl-tools:$dpkgArch \
-    ; \
-    rustup target add "${rustArch}-unknown-linux-musl";
+    ;
 
 WORKDIR /opt/aode-relay
+
+RUN set -eux; \
+    case "${TARGETPLATFORM}" in \
+        linux/i386) arch='i686';; \
+        linux/amd64) arch='x86_64';; \
+        linux/arm64) arch='aarch64';; \
+        *) echo "unsupported architecture"; exit 1 ;; \
+    esac; \
+    rustup target add "${arch}-unknown-linux-musl";
 
 ADD Cargo.lock Cargo.toml /opt/aode-relay/
 RUN cargo fetch;
 
 ADD . /opt/aode-relay
+COPY --link --from=alpine-dev / /opt/alpine/
+
 RUN set -eux; \
     case "${TARGETPLATFORM}" in \
-        linux/i386) rustArch='i686';; \
-        linux/amd64) rustArch='x86_64';; \
-        linux/arm64) rustArch='aarch64';; \
+        linux/i386) arch='i686';; \
+        linux/amd64) arch='x86_64';; \
+        linux/arm64) arch='aarch64';; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
-    ln -s "target/${rustArch}-unknown-linux-musl/release/relay" "aode-relay"; \
-    # Workaround to use gnu-gcc instead of musl-gcc: https://github.com/rust-lang/rust/issues/95926
-    RUSTFLAGS="-C target-cpu=generic -C linker=${rustArch}-linux-gnu-gcc" cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
+    ln -s "target/${arch}-unknown-linux-musl/release/relay" "aode-relay"; \
+    export RUSTFLAGS="-C target-cpu=generic -C linker=${arch}-linux-musl-gcc -C target-feature=-crt-static -C link-self-contained=no -L /opt/alpine/lib -L /opt/alpine/usr/lib"; \
+    cargo build --frozen --release --target="${arch}-unknown-linux-musl";
 
 ################################################################################
 
-FROM alpine:3.18
+FROM alpine
+ARG TARGETPLATFORM
 
-RUN apk add --no-cache openssl ca-certificates curl tini
+RUN \
+    --mount=type=cache,id=$TARGETPLATFORM-alpine,target=/var/cache/apk,sharing=locked \
+    set -eux; \
+    apk add -U ca-certificates curl tini;
 
 COPY --link --from=builder /opt/aode-relay/aode-relay /usr/local/bin/aode-relay
 
