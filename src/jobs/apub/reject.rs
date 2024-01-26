@@ -2,10 +2,10 @@ use crate::{
     config::UrlKind,
     db::Actor,
     error::Error,
+    future::BoxFuture,
     jobs::{apub::generate_undo_follow, Deliver, JobState},
 };
-use background_jobs::ActixJob;
-use std::{future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct Reject(pub(crate) Actor);
@@ -33,9 +33,9 @@ impl Reject {
     }
 }
 
-impl ActixJob for Reject {
+impl Job for Reject {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::apub::Reject";
     const QUEUE: &'static str = "apub";

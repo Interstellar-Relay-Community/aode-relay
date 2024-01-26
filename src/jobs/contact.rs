@@ -1,12 +1,12 @@
 use crate::{
     apub::AcceptedActors,
     error::{Error, ErrorKind},
+    future::BoxFuture,
     jobs::JobState,
     requests::BreakerStrategy,
 };
 use activitystreams::{iri_string::types::IriString, object::Image, prelude::*};
-use background_jobs::ActixJob;
-use std::{future::Future, pin::Pin};
+use background_jobs::Job;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub(crate) struct QueryContact {
@@ -85,9 +85,9 @@ fn to_contact(contact: AcceptedActors) -> Option<(String, String, IriString, Iri
     Some((username, display_name, url, avatar))
 }
 
-impl ActixJob for QueryContact {
+impl Job for QueryContact {
     type State = JobState;
-    type Future = Pin<Box<dyn Future<Output = Result<(), anyhow::Error>>>>;
+    type Future = BoxFuture<'static, anyhow::Result<()>>;
 
     const NAME: &'static str = "relay::jobs::QueryContact";
     const QUEUE: &'static str = "maintenance";

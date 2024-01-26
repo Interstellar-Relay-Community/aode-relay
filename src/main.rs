@@ -4,7 +4,6 @@
 use std::time::Duration;
 
 use activitystreams::iri_string::types::IriString;
-use actix_rt::task::JoinHandle;
 use actix_web::{middleware::Compress, web, App, HttpServer};
 use collector::MemoryCollector;
 #[cfg(feature = "console")]
@@ -13,10 +12,12 @@ use error::Error;
 use http_signature_normalization_actix::middleware::VerifySignature;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use metrics_util::layers::FanoutBuilder;
-use opentelemetry::{sdk::Resource, KeyValue};
+use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::Resource;
 use reqwest_middleware::ClientWithMiddleware;
 use rustls::ServerConfig;
+use tokio::task::JoinHandle;
 use tracing_actix_web::TracingLogger;
 use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
@@ -81,18 +82,19 @@ fn init_subscriber(
     let subscriber = subscriber.with(console_layer);
 
     if let Some(url) = opentelemetry_url {
-        let tracer =
-            opentelemetry_otlp::new_pipeline()
-                .tracing()
-                .with_trace_config(opentelemetry::sdk::trace::config().with_resource(
-                    Resource::new(vec![KeyValue::new("service.name", software_name)]),
-                ))
-                .with_exporter(
-                    opentelemetry_otlp::new_exporter()
-                        .tonic()
-                        .with_endpoint(url.as_str()),
-                )
-                .install_batch(opentelemetry::runtime::Tokio)?;
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_trace_config(
+                opentelemetry_sdk::trace::config().with_resource(Resource::new(vec![
+                    KeyValue::new("service.name", software_name),
+                ])),
+            )
+            .with_exporter(
+                opentelemetry_otlp::new_exporter()
+                    .tonic()
+                    .with_endpoint(url.as_str()),
+            )
+            .install_batch(opentelemetry_sdk::runtime::Tokio)?;
 
         let otel_layer = tracing_opentelemetry::layer()
             .with_tracer(tracer)
@@ -139,7 +141,7 @@ fn build_client(
     Ok(client_with_middleware)
 }
 
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv::dotenv().ok();
 
@@ -150,7 +152,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let args = Args::new();
 
     if args.any() {
-        return client_main(config, args).await?;
+        client_main(config, args).await??;
+        return Ok(());
     }
 
     let collector = MemoryCollector::new();
@@ -160,12 +163,12 @@ async fn main() -> Result<(), anyhow::Error> {
             .with_http_listener(bind_addr)
             .build()?;
 
-        actix_rt::spawn(exporter);
+        tokio::spawn(exporter);
         let recorder = FanoutBuilder::default()
             .add_recorder(recorder)
             .add_recorder(collector.clone())
             .build();
-        metrics::set_boxed_recorder(Box::new(recorder))?;
+        metrics::set_global_recorder(recorder).map_err(|e| anyhow::anyhow!("{e}"))?;
     } else {
         collector.install()?;
     }
@@ -177,7 +180,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let actors = ActorCache::new(db.clone());
     let media = MediaCache::new(db.clone());
 
-    server_main(db, actors, media, collector, config).await??;
+    server_main(db, actors, media, collector, config).await?;
 
     tracing::warn!("Application exit");
 
@@ -185,7 +188,7 @@ async fn main() -> Result<(), anyhow::Error> {
 }
 
 fn client_main(config: Config, args: Args) -> JoinHandle<Result<(), anyhow::Error>> {
-    actix_rt::spawn(do_client_main(config, args))
+    tokio::spawn(do_client_main(config, args))
 }
 
 async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error> {
@@ -271,19 +274,9 @@ async fn do_client_main(config: Config, args: Args) -> Result<(), anyhow::Error>
     Ok(())
 }
 
-fn server_main(
-    db: Db,
-    actors: ActorCache,
-    media: MediaCache,
-    collector: MemoryCollector,
-    config: Config,
-) -> JoinHandle<Result<(), anyhow::Error>> {
-    actix_rt::spawn(do_server_main(db, actors, media, collector, config))
-}
-
 const VERIFY_RATIO: usize = 7;
 
-async fn do_server_main(
+async fn server_main(
     db: Db,
     actors: ActorCache,
     media: MediaCache,
@@ -310,11 +303,11 @@ async fn do_server_main(
         }
     };
 
-    let verify_spawner = Spawner::build("verify-cpu", verify_threads)?;
-    let sign_spawner = Spawner::build("sign-cpu", signature_threads)?;
+    let verify_spawner = Spawner::build("verify-cpu", verify_threads.try_into()?)?;
+    let sign_spawner = Spawner::build("sign-cpu", signature_threads.try_into()?)?;
 
     let key_id = config.generate_url(UrlKind::MainKey).to_string();
-    let state = State::build(db.clone(), key_id, sign_spawner, client, node_config).await?;
+    let state = State::build(db.clone(), key_id, sign_spawner.clone(), client, node_config).await?;
 
     if let Some((token, admin_handle)) = config.telegram_info() {
         tracing::warn!("Creating telegram handler");
@@ -324,9 +317,12 @@ async fn do_server_main(
     let keys = config.open_keys()?;
 
     let bind_address = config.bind_address();
+    let sign_spawner2 = sign_spawner.clone();
+    let verify_spawner2 = verify_spawner.clone();
     let server = HttpServer::new(move || {
         let job_server =
-            create_workers(state.clone(), actors.clone(), media.clone(), config.clone());
+            create_workers(state.clone(), actors.clone(), media.clone(), config.clone())
+                .expect("Failed to create job server");
 
         let app = App::new()
             .app_data(web::Data::new(db.clone()))
@@ -412,6 +408,9 @@ async fn do_server_main(
         tracing::warn!("Binding to {}:{}", bind_address.0, bind_address.1);
         server.bind(bind_address)?.run().await?;
     }
+
+    sign_spawner2.close().await;
+    verify_spawner2.close().await;
 
     tracing::warn!("Server closed");
 
