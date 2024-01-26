@@ -47,12 +47,12 @@ WORKDIR /opt/aode-relay
 
 RUN set -eux; \
     case "${TARGETPLATFORM}" in \
-        linux/i386) rustArch='i686';; \
-        linux/amd64) rustArch='x86_64';; \
-        linux/arm64) rustArch='aarch64';; \
+        linux/i386) arch='i686';; \
+        linux/amd64) arch='x86_64';; \
+        linux/arm64) arch='aarch64';; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
-    rustup target add "${rustArch}-unknown-linux-musl";
+    rustup target add "${arch}-unknown-linux-musl";
 
 ADD Cargo.lock Cargo.toml /opt/aode-relay/
 RUN cargo fetch;
@@ -62,14 +62,14 @@ COPY --link --from=alpine-dev / /opt/alpine/
 
 RUN set -eux; \
     case "${TARGETPLATFORM}" in \
-        linux/i386) rustArch='i686';; \
-        linux/amd64) rustArch='x86_64';; \
-        linux/arm64) rustArch='aarch64';; \
+        linux/i386) arch='i686';; \
+        linux/amd64) arch='x86_64';; \
+        linux/arm64) arch='aarch64';; \
         *) echo "unsupported architecture"; exit 1 ;; \
     esac; \
-    ln -s "target/${rustArch}-unknown-linux-musl/release/relay" "aode-relay"; \
-    export RUSTFLAGS="-C target-cpu=generic -C linker=${rustArch}-linux-musl-gcc -C target-feature=-crt-static -C link-self-contained=no -L /opt/alpine/lib -L /opt/alpine/usr/lib"; \
-    cargo build --frozen --release --target="${rustArch}-unknown-linux-musl";
+    ln -s "target/${arch}-unknown-linux-musl/release/relay" "aode-relay"; \
+    export RUSTFLAGS="-C target-cpu=generic -C linker=${arch}-linux-musl-gcc -C target-feature=-crt-static -C link-self-contained=no -L /opt/alpine/lib -L /opt/alpine/usr/lib"; \
+    cargo build --frozen --release --target="${arch}-unknown-linux-musl";
 
 ################################################################################
 
