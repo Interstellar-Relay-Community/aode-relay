@@ -25,7 +25,7 @@ RUN set -eux; \
 
 ################################################################################
 
-FROM alpine
+FROM alpine:$ALPINE_VERSION
 ARG TARGETPLATFORM
 
 RUN \
