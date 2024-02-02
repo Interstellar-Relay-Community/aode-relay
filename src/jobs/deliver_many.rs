@@ -54,7 +54,9 @@ impl DeliverMany {
     }
 
     #[tracing::instrument(name = "Deliver many", skip(state))]
-    async fn perform(self, dice: u8, state: JobState) -> Result<(), Error> {
+    async fn perform(self, state: JobState) -> Result<(), Error> {
+        let dice = rand::thread_rng().gen::<u8>();
+
         for inbox in self.to {
             if self.filterable {
                 // All inbox should have... authority... but...
@@ -94,9 +96,6 @@ impl Job for DeliverMany {
     const QUEUE: &'static str = "deliver";
 
     fn run(self, state: Self::State) -> Self::Future {
-        let mut thread_rng = rand::thread_rng();
-        let dice = thread_rng.gen::<u8>();
-
-        Box::pin(async move { self.perform(dice, state).await.map_err(Into::into) })
+        Box::pin(async move { self.perform(state).await.map_err(Into::into) })
     }
 }
